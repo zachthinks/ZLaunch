@@ -877,9 +877,10 @@ from Time Machine, and `com.apple.tmp_cleaner` reclaims it as a second backstop.
 has no such daemon, so a leak there would be permanent.
 
 **Settings › Extensions › Storage** measures the same strays and offers them back, so a leak from an
-older build is recoverable without a terminal. It sits outside the enabled group deliberately: the
-files are on disk whether or not extensions are on. The row is empty in normal use — an install
-cleans up after itself — and the scan runs off-main, because measuring walks a `node_modules`.
+older build is recoverable without a terminal. Enable extensions before checking or cleaning: while
+the feature is off, its installed list is empty, so cleanup could mistake saved preferences for
+unused files. The row is empty in normal use — an install cleans up after itself — and the scan
+runs off-main, because measuring walks a `node_modules`.
 
 **Nothing here touches `~/Library/pnpm` or `~/.npm`.** Those belong to the package manager and are
 shared with every other project on the machine.

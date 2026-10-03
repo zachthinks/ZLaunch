@@ -128,7 +128,7 @@ final class ExtensionCoordinator {
 
     /// Destructive: an orphaned support directory is an extension's own files, so it asks first.
     func confirmCleanup(_ report: ExtensionCleanup.Report) async {
-        guard !report.isEmpty else { return }
+        guard extensions.isEnabled, !report.isEmpty else { return }
         let size = ExtensionCleanup.formatted(bytes: report.bytes)
         guard
             await core.confirm(
@@ -139,6 +139,7 @@ final class ExtensionCoordinator {
                 symbol: "trash", confirmTitle: "Clean Up")
         else { return }
 
+        guard extensions.isEnabled else { return }
         let installed = Set(extensions.installed.map(\.manifest.name))
         let roots = ExtensionCleanup.defaultRoots()
         let freed = await Task.detached(priority: .userInitiated) {

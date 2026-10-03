@@ -40,7 +40,6 @@ struct ExtensionsSettingsView: View {
             }
             .settingsEnabled(settings.extensionsEnabled)
 
-            // Outside the enabled group: leftovers are on disk whether or not extensions are on.
             storage
         }
         .formStyle(.grouped)
@@ -69,6 +68,9 @@ struct ExtensionsSettingsView: View {
             if case .row(.extensionsInstalled, let name)? = navigation.scrollRequest?.target {
                 (expanded, filter) = (name, "")
             }
+        }
+        .onChange(of: core.extensions.isEnabled) {
+            if !core.extensions.isEnabled { reclaimable = .init() }
         }
         .onChange(of: core.extensions.installed.count) { Task { await measureReclaimable() } }
         .task {
@@ -262,7 +264,7 @@ struct ExtensionsSettingsView: View {
                         await measureReclaimable()
                     }
                 }
-                .disabled(reclaimable.isEmpty)
+                .disabled(!core.extensions.isEnabled || reclaimable.isEmpty)
             }
         } header: {
             SettingsSectionHeader(.extensionsStorage)
@@ -270,6 +272,7 @@ struct ExtensionsSettingsView: View {
     }
 
     private var reclaimableSubtitle: String {
+        guard core.extensions.isEnabled else { return "Enable extensions to check leftover files." }
         guard !reclaimable.isEmpty else { return "Nothing to clean up." }
         let items = reclaimable.items == 1 ? "1 item" : "\(reclaimable.items) items"
         return "Reclaims \(ExtensionCleanup.formatted(bytes: reclaimable.bytes)) from \(items)."
@@ -277,11 +280,16 @@ struct ExtensionsSettingsView: View {
 
     /// Off-main: measuring walks a `node_modules`, which is tens of thousands of files.
     private func measureReclaimable() async {
+        guard core.extensions.isEnabled else {
+            reclaimable = .init()
+            return
+        }
         let installed = Set(core.extensions.installed.map(\.manifest.name))
         let roots = ExtensionCleanup.defaultRoots()
-        reclaimable = await Task.detached(priority: .utility) {
+        let report = await Task.detached(priority: .utility) {
             ExtensionCleanup.reclaimable(installed: installed, in: roots)
         }.value
+        reclaimable = core.extensions.isEnabled ? report : .init()
     }
 
     private var importSubtitle: String {
