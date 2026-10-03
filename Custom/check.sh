@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 node Custom/verify-config.mjs
 node Custom/tests/sync-test.mjs
-xcodegen generate
+node Custom/verify-project.mjs
 git diff --exit-code -- Tinycast.xcodeproj
 ./Scripts/run-tests.sh
 ./Scripts/lint.sh
