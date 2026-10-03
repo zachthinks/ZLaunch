@@ -12,13 +12,19 @@ place where future changes happen.
 
 ## Using it today
 
-The first app is **ZLaunch Dev**, a signed development build in
-`/Applications/ZLaunch Dev.app`. The build copy remains in
-`build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. It has its own
-settings, extension storage, credentials, permissions and link handler. The
-release app will be **ZLaunch**, with its own separate settings too. Moving from
-Dev to Release needs another native backup/import; it never silently borrows
-Tinycast's preferences.
+The regular **ZLaunch 0.1.1 (build 2)** app is installed at `/Applications/ZLaunch.app`.
+It is signed with Developer ID and notarized by Apple. Its own setup has been
+imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
+note and eight learning records. Its 28 migrated extensions are enabled, and
+Accessibility shows Granted in macOS settings.
+
+**ZLaunch Dev** remains a separate development app at
+`/Applications/ZLaunch Dev.app`; its build copy is in
+`build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. Regular ZLaunch,
+Dev and Tinycast each have their own settings, extension storage, credentials,
+permissions and link handler. Moving between them requires an explicit native
+backup/import and, for supported extra configuration, the local migration
+utility. None silently borrows another app's preferences.
 
 Both apps can stay installed. After importing matching shortcuts, run one at a
 time. In particular, Caps Lock/Hyper Key uses a shared macOS keyboard mapping.
@@ -71,14 +77,18 @@ The fork stays public and uses only GitHub's standard `ubuntu-latest` and
 `macos-26` hosted runners. Each custom job is disabled automatically if the
 repository becomes private. Custom workflows upload no Actions artifacts and
 create no Actions caches. These rules are checked by `Custom/verify-config.mjs`.
-No local daily worker or LaunchAgent is installed.
 
-Once the custom branch is pushed and made the fork's default branch, GitHub
-checks for new **stable** upstream releases daily. It merges the released commit
-into a candidate branch, keeps your custom changes, increments ZLaunch's own
-version, and opens an update proposal. Build, lint, identity-isolation checks
+GitHub checks for new **stable** upstream releases daily. It merges the released
+commit into a candidate branch, keeps the custom changes, increments ZLaunch's
+own version, and opens an update proposal. Build, lint, identity-isolation checks
 and the complete upstream test suite run against the exact candidate commit.
 An existing candidate can be resumed after an interrupted run.
+
+The local Codex update monitor (`zlaunch-update-status`) checks at **10am and
+6pm local time**. It stays quiet while nothing needs attention and reports an
+actionable change or required action. These checks need this Mac available and
+the Codex app open; they are separate from GitHub's daily checks. No LaunchAgent
+or separate daily worker is installed.
 
 At this initial stage, passing candidates wait for review and merging. They do
 not silently replace your working app. Routine updates can later auto-merge
@@ -86,11 +96,16 @@ after we trust the tests and add branch protection. Changes to Store/UI,
 permissions, the runtime, or the updater need a quick hands-on check as well as
 a successful build. AI does not run automatically just because a merge failed.
 
-The Release workflow is implemented and manually triggered for now. After its
-one-time signing/notarization setup, it checks the custom branch, builds the
-release, signs with your Developer ID, notarizes with Apple, verifies the result,
-and publishes a DMG and a signature-preserving ZIP to your GitHub releases.
+Publishing currently happens on this Mac after review. The local workflow checks
+the exact custom commit, builds and signs the release, notarizes it with Apple,
+verifies the result, and publishes a DMG and a signature-preserving ZIP to the
+fork's GitHub releases. This path has produced the published 0.1.0 and 0.1.1 releases.
 No Homebrew tap, upstream website or Discord announcement is touched.
+
+Public release notes explain ZLaunch changes, include the official upstream
+fixes with their source links, and link to the exact matching source commits.
+A custom patch using the same Tinycast base identifies those upstream fixes as
+inherited, rather than claiming them as new changes.
 
 The existing Tinycast updater is reused rather than adding Sparkle. Release
 ZLaunch checks **your fork's** GitHub releases. A newer valid version can show an
@@ -106,8 +121,8 @@ A textual merge conflict stops the sync. Automation records the upstream tag,
 commit and affected files, aborts the merge, and leaves the last working custom
 branch and installed app intact. A failed test or build also prevents release.
 GitHub retains the conflict report in the run log and job summary; its normal
-Actions notifications apply. This project does not install a separate chat reminder or promise a
-notification on every run.
+Actions notifications apply. The local Codex monitor also reports when update
+status needs attention; it does not send a status message for every run.
 
 Tell Codex: “Resolve the latest ZLaunch upstream update while preserving my
 Store and customization.” Codex should read the failure, compare the official
@@ -121,21 +136,34 @@ A change can merge cleanly and still behave differently; that is why tests and
 hands-on verification remain necessary. No promise that all future conflicts
 will be rare or automatically resolvable is made.
 
-## One-time online release setup still needed
+## Publishing and remaining verification
 
-A local Developer ID identity exists and has signed the Dev build. Hosted release
-signing needs its private certificate placed securely in GitHub Secrets, plus
-Apple notarization credentials. No private certificate or password has been
-exported or uploaded by this setup. Do not put those in chat or source control.
+Local signing and notarization are configured. `Custom/publish.sh` uses the
+`ZLaunch-Local` notarization profile stored in this Mac's Keychain. No private
+certificate, password or notarization credential has been uploaded to GitHub
+or committed to source control.
 
-The hosted workflow expects `ZLAUNCH_SIGNING_P12_BASE64`,
-`ZLAUNCH_SIGNING_P12_PASSWORD`, `ZLAUNCH_APPLE_ID`, and `ZLAUNCH_APP_PASSWORD` in
-the `zlaunch-release` environment. An operator can instead publish on this Mac
-using a notarization Keychain profile and `Custom/publish.sh`. Before activating
-release, configure review protection for that environment, verify the full
-workflow with a real signed/notarized artifact, and test one in-app update and
-rollback using only custom bundles. Until then, online updates are prepared,
-not live.
+The hosted Release workflow remains an alternative that needs separate signing
+and notarization secrets before it can publish. GitHub's free daily sync and
+checks already work without those secrets. Passing candidates still require
+review and merging, and local publishing still requires action; maintenance is
+not fully unattended.
+
+The regular 0.1.1 app is installed and running. The real updater successfully
+downloaded, verified, installed and relaunched 0.1.1 from 0.1.0. We then quit
+ZLaunch cleanly, restored the retained notarized 0.1.0 app bundle, verified it
+ran with the same setup, and used the in-app updater again to return to 0.1.1.
+All 78 preference keys remained identical; extension files and settings stayed
+intact. Only two SQLite shared-memory bookkeeping files changed during normal
+launching. Tinycast remained byte-for-byte unchanged throughout.
+
+Retain the previous signed release and the private backups. Rollback means
+quitting ZLaunch and restoring its previous app bundle, while keeping its own
+settings in place. The updater intentionally refuses older versions, so it
+cannot perform a downgrade. To return to official Tinycast, quit ZLaunch and
+open the still-installed Tinycast app; its original settings remain separate.
+Older releases may not understand future data formats, so assess that before
+rolling back across a major upstream change.
 
 ## Settings migration
 
@@ -148,10 +176,12 @@ settings-file syncing and some per-extension/snippet/Shortcut bindings.
 
 The separate local extension migration copies payloads and strictly screened
 non-secret preferences into ZLaunch's own directories. It never copies OAuth
-or Keychain items, executes an extension, or changes the official root. It also transfers screened AI connection metadata and the saved default model,
-but leaves keys and feature consents behind. Sign in again where necessary. Optional capabilities excluded by native import remain
-opt-in. Check the migration report for omitted preferences; do not assume a
-shortcut counted by import was successfully registered while another app owns it.
+or Keychain items, executes an extension, or changes the official root. It also
+transfers screened AI connection metadata and the saved default model, but
+leaves keys and feature consents behind. Sign in again where necessary. Optional
+capabilities excluded by native import remain opt-in. Check the migration report
+for omitted preferences; do not assume a shortcut counted by import was
+successfully registered while another app owns it.
 
 Your pre-import backup contains private data and is stored locally outside the
 Git repository. Never attach it to a public issue or commit it. Both the native
