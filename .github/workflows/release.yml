@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   build:
+    if: github.repository == 'abue-ammar/tinycast'
     runs-on: macos-26
     # Consumed by the `universal` job, so the channel identity is derived in exactly one place.
     outputs:
@@ -220,7 +221,7 @@ jobs:
       # The site bakes the latest version and the changelog in at build time, so a stable release
       # rebuilds it. A dispatch is the one event GITHUB_TOKEN may start another workflow with.
       - name: Rebuild the website
-        if: github.event.inputs.channel == 'stable'
+        if: github.repository == 'abue-ammar/tinycast' && github.event.inputs.channel == 'stable'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run website.yml --repo "$GITHUB_REPOSITORY" --ref main
@@ -281,7 +282,7 @@ jobs:
   # nothing here can change what the Apple silicon job above publishes.
   universal:
     needs: build
-    if: github.event.inputs.channel == 'stable'
+    if: github.repository == 'abue-ammar/tinycast' && github.event.inputs.channel == 'stable'
     runs-on: macos-26
     env:
       VERSION: ${{ needs.build.outputs.full_version }}

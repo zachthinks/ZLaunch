@@ -1,3 +1,5 @@
+> This document describes upstream Tinycast. ZLaunch identity, signing, updates, and migration differences are in [Custom/README.md](../../Custom/README.md).
+
 # Raycast extensions
 
 Tinycast runs Raycast extensions: the same `package.json` + prebuilt CommonJS bundles Raycast itself

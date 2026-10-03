@@ -1,3 +1,5 @@
+> This document describes upstream Tinycast. ZLaunch identity, signing, updates, and migration differences are in [Custom/README.md](../../Custom/README.md).
+
 # Updates
 
 Tinycast checks GitHub Releases once a day, offers the newest release for its own channel in a native

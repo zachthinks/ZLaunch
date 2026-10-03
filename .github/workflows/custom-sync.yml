@@ -1,0 +1,56 @@
+name: ZLaunch upstream sync
+on:
+  schedule:
+    - cron: '17 13 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: zlaunch-upstream-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      candidate: ${{ steps.sync.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: custom/main
+          fetch-depth: 0
+      - name: Prepare upstream candidate
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'ZLaunch sync'
+          git config user.email 'zlaunch-sync@users.noreply.github.com'
+          git remote add upstream https://github.com/abue-ammar/tinycast.git
+          mkdir -p build
+          node Custom/sync.mjs
+          BRANCH="$(git branch --show-current)"
+          if [ "$BRANCH" != custom/main ]; then
+            git push origin "$BRANCH"
+            printf '%s\n' 'An upstream release has been merged into the custom branch. Automated checks must pass before merging. UI and updater changes need a manual smoke check.' > build/sync-pr.md
+            if [ "$(gh pr list --base custom/main --head "$BRANCH" --state open --json number --jq 'length')" = 0 ]; then
+              gh pr create --base custom/main --head "$BRANCH" --title 'Update ZLaunch from upstream' --body-file build/sync-pr.md
+            fi
+            echo "candidate=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Retain conflict report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-conflicts
+          path: build/sync-conflicts.txt
+          if-no-files-found: ignore
+  checks:
+    needs: sync
+    if: needs.sync.outputs.candidate != ''
+    uses: ./.github/workflows/custom-checks.yml
+    with:
+      ref: ${{ needs.sync.outputs.candidate }}
+    permissions:
+      contents: read

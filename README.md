@@ -1,3 +1,8 @@
+# ZLaunch
+
+A personal Tinycast fork. Start with [the plain-English ZLaunch guide](Custom/README.md).
+The original project documentation follows.
+
 # Tinycast
 
 **A tiny, fully native macOS launcher. One hotkey, everything you reach for all day, under 100 MB of

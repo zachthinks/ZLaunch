@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   triage:
+    if: github.repository == 'abue-ammar/tinycast'
     runs-on: ubuntu-latest
     steps:
       - name: Comment on issue

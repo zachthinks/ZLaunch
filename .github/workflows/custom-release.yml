@@ -1,0 +1,57 @@
+name: ZLaunch release
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: zlaunch-release
+  cancel-in-progress: false
+jobs:
+  release:
+    environment: zlaunch-release
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: custom/main
+          fetch-depth: 0
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
+          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+      - run: brew install swiftlint xcodegen
+      - run: ./Custom/check.sh
+      - name: Import custom signing identity
+        env:
+          P12_BASE64: ${{ secrets.ZLAUNCH_SIGNING_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.ZLAUNCH_SIGNING_P12_PASSWORD }}
+        run: |
+          test -n "$P12_BASE64"
+          KEYCHAIN="$RUNNER_TEMP/zlaunch.keychain-db"
+          KPW="$(openssl rand -base64 24)"
+          echo "::add-mask::$KPW"
+          printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$KPW" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KPW" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/signing.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KPW" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN"
+          rm "$RUNNER_TEMP/signing.p12"
+      - name: Configure notarization
+        env:
+          APPLE_ID: ${{ secrets.ZLAUNCH_APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.ZLAUNCH_APP_PASSWORD }}
+        run: |
+          test -n "$APPLE_ID" && test -n "$APP_PASSWORD"
+          xcrun notarytool store-credentials ZLaunch-CI --apple-id "$APPLE_ID" --team-id FVY9AS28CU --password "$APP_PASSWORD"
+      - name: Sign, notarize, package, publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTARY_PROFILE: ZLaunch-CI
+          BUILD_NUMBER: ${{ github.run_number }}
+          CHECKS_VERIFIED: 1
+        run: ./Custom/publish.sh
+      - name: Remove signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || true

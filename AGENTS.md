@@ -118,7 +118,7 @@ feature's doc, under its own `## Invariants`.
   constant or type instead. Cap 100 characters, delete rather than update, and never comment a change
   you just made. Nothing lints this; get it right the first time.
   Full rules: [standards.md#comments](docs/standards.md#comments).
-- **Debug builds are their own channel** — `Tinycast Dev.app` / `com.tinycast.app.dev` — so a local run
+- **Debug builds are their own channel** — `ZLaunch Dev.app` / `com.zachthinks.zlaunch.dev` — so a local run
   never shares prefs, caches, TCC grants or the login item with an installed copy. Anything newly
   persisted must stay keyed by `Bundle.main.bundleIdentifier`.
 - **XcodeGen owns the project.** `Tinycast.xcodeproj` is committed but generated from `project.yml`;
@@ -133,3 +133,16 @@ Each item is explained in [testing.md](docs/testing.md#definition-of-done).
 - `./Scripts/lint.sh` is clean.
 - `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` returns nothing.
 - Any doc your change made wrong is fixed in the same commit.
+
+
+## ZLaunch fork
+
+Read `Custom/README.md` before changing identity, release automation or migration.
+This is Zach's custom fork: upstream contribution approval applies only when
+sending changes to upstream, not when implementing requested custom features.
+Keep `upstream` read-only and isolate custom commits on `custom/main`. Preserve
+the installed official app and its data. Prefer extensions over native changes
+when the host API can support the feature. Keep release and Dev namespaces,
+OAuth callbacks and signer trust isolated. Never commit user backups, local
+settings, extension payloads, tokens or signing secrets. Shipping uses the
+custom workflows, never the upstream release workflow.
