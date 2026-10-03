@@ -125,6 +125,7 @@ struct InstalledAITests {
         await theRoundCapEndsTheTurnTheWayTheLoopDoes(fixture)
         await unlimitedPassesNoTurnCap(fixture)
         await concurrentCallsAreAskedOneAtATime(fixture)
+        await stoppingCancelsTheActiveAndQueuedConsent(fixture)
         await aCrashedTurnsFilesAreRemovedAtLaunch(fixture)
         await aManagedMCPPolicyLeavesBothFlagsOff(fixture)
         await aReadersVariablesReachTheToolButNeverItsIsolation(fixture)
@@ -627,7 +628,8 @@ struct InstalledAITests {
             kind: .claude, model: "pair", effort: nil, toolServers: session)
         expect(
             reader.calls.map(\.tool) == ["first_tool", "second_tool"] && reader.mostAtOnce == 1,
-            "two calls held open together are asked about one after the other, in order")
+            "two calls held open together are asked about one after the other, in order"
+                + " (observed: \(reader.calls.map(\.tool).joined(separator: ", ")); peak: \(reader.mostAtOnce))")
         expect(
             reader.dialogs == 1,
             "and the second is decided after the first dialog closes, so its grant is seen")
@@ -636,6 +638,29 @@ struct InstalledAITests {
             answers.count == 2 && answers.allSatisfy { $0.contains(#""behavior":"allow""#) }
                 && events.last == .finished,
             "both calls are allowed on the one channel and the turn finishes")
+    }
+
+    private static func stoppingCancelsTheActiveAndQueuedConsent(_ fixture: Fixture) async {
+        let reader = GrantingReader()
+        reader.waitsForCancellation = true
+        let session = AIToolServerSession(rounds: 25) {
+            await fixture.session(allowing: true, asked: Box()).servers()
+        } consent: { call in
+            await reader.answer(call)
+        }
+        let turn = Task {
+            await fixture.events(kind: .claude, model: "pair-cancel", effort: nil, toolServers: session)
+        }
+        let firstIsWaiting = await fixture.awaitCondition { reader.calls.count == 1 }
+        let bothWereSent = await fixture.awaitFile("pair-cancel-requests.log", containing: "sent")
+        expect(firstIsWaiting && bothWereSent, "both consent requests arrive while the first remains open")
+        turn.cancel()
+        _ = await turn.value
+        let canceled = await fixture.awaitCondition { reader.wasCancelled }
+        expect(canceled, "stopping the turn cancels its open consent question")
+        expect(
+            reader.calls.map(\.tool) == ["first_tool"] && reader.mostAtOnce == 1,
+            "stopping never asks the queued consent question")
     }
 
     private static func theRoundCapEndsTheTurnTheWayTheLoopDoes(_ fixture: Fixture) async {
@@ -768,6 +793,8 @@ private final class GrantingReader {
     var calls: [AIToolServerCall] = []
     var dialogs = 0
     var mostAtOnce = 0
+    var waitsForCancellation = false
+    var wasCancelled = false
     private var atOnce = 0
     private var granted = false
 
@@ -778,6 +805,10 @@ private final class GrantingReader {
         defer { atOnce -= 1 }
         guard !granted else { return true }
         dialogs += 1
+        if waitsForCancellation {
+            do { try await Task.sleep(for: .seconds(60)) } catch { wasCancelled = true }
+            return false
+        }
         try? await Task.sleep(for: .milliseconds(150))
         granted = true
         return true
@@ -926,7 +957,7 @@ private final class Fixture {
     }
 
     /// Cleanup outlives the stream on purpose, so the assertion waits instead of racing it.
-    private func awaitCondition(_ isSatisfied: () -> Bool) async -> Bool {
+    func awaitCondition(_ isSatisfied: () -> Bool) async -> Bool {
         let deadline = ContinuousClock.now + .seconds(5)
         while ContinuousClock.now < deadline {
             if isSatisfied() { return true }

@@ -664,7 +664,10 @@ extension ExtensionTests {
             boots.last?.0 == "second"
                 && storage.localStorageValue(extension: "first", key: "completed") == .number(2))
         secondController.menuDidClose(secondController.menu)
-        await settle(200)
+        let unloadDeadline = ContinuousClock.now + .seconds(5)
+        while (manager.isRunning || lastRuntime != nil) && ContinuousClock.now < unloadDeadline {
+            await settle(10)
+        }
         check("reopened action sessions unload after closing", !manager.isRunning && lastRuntime == nil)
 
         controller.menuWillOpen(controller.menu)

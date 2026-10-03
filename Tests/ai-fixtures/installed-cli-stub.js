@@ -35,8 +35,8 @@ function claudeToolLoop() {
     emit({ type: "result", subtype: "error_max_turns", is_error: true, result: "" });
     return;
   }
-  if (modelIndex >= 0 && args[modelIndex + 1] === "pair") {
-    claudeParallelCalls(read, emit);
+  if (modelIndex >= 0 && ["pair", "pair-cancel"].includes(args[modelIndex + 1])) {
+    claudeParallelCalls(read, emit, args[modelIndex + 1]);
     return;
   }
 
@@ -90,7 +90,7 @@ function claudeToolLoop() {
 }
 
 /** Two calls in one assistant turn, both held open before either is answered. */
-function claudeParallelCalls(read, emit) {
+function claudeParallelCalls(read, emit, model) {
   const calls = [["toolu_a", "first_tool"], ["toolu_b", "second_tool"]];
   emit({
     type: "assistant",
@@ -105,6 +105,7 @@ function claudeParallelCalls(read, emit) {
     request_id: "req_" + index,
     request: { subtype: "can_use_tool", tool_name: "mcp__probe__" + tool, input: {} },
   }));
+  record(model + "-requests.log", "sent");
   for (const _ of calls) record("claude-control.log", read.next().value ?? "{}");
   emit({
     type: "user",
