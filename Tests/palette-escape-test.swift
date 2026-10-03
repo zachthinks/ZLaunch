@@ -38,6 +38,14 @@ struct PaletteEscapeTests {
     }
 
     static func main() {
+        expect(resolve(mode: .extensionStoreDetail, canGoBack: true), .goBack,
+            "Store details return to the listing without a focused search field")
+        expect(resolve(mode: .extensionStore, canGoBack: true), .goBack,
+            "Store returns to the launcher")
+        expect(resolve(query: "github", mode: .extensionStore, canGoBack: true), .clearQuery,
+            "Store clears a typed search before going back")
+        expect(resolve(menuOpen: true, mode: .extensionStore, canGoBack: true), .closeMenu,
+            "Store closes its category menu before leaving")
         expect(
             resolve(menuOpen: true, menuQuery: "paste"),
             .clearMenuQuery,

@@ -7,7 +7,6 @@ struct ExtensionsSettingsView: View {
     @State private var expanded: String?
     @State private var filter = ""
     @State private var importCandidates: ImportCandidates?
-    @State private var browsingStore = false
     @State private var installingFromGitHub = false
     @State private var error: String?
     @State private var updateError: String?
@@ -22,6 +21,7 @@ struct ExtensionsSettingsView: View {
     var body: some View {
         @Bindable var settings = core.settings
         return Form {
+            FeatureCommandsSection(owner: .extensions, anchor: .extensionsCommands)
             FeatureSwitchSection(
                 anchor: .extensionsExtensions,
                 enableTitle: "Enable extensions",
@@ -57,9 +57,6 @@ struct ExtensionsSettingsView: View {
                     Task { await importAll(chosen) }
                 },
                 onCancel: { importCandidates = nil })
-        }
-        .settingsEditorPanel(isPresented: $browsingStore) {
-            ExtensionStorePanel(onClose: { browsingStore = false })
         }
         .settingsEditorPanel(isPresented: $installingFromGitHub) {
             ExtensionGitHubPanel(onClose: { installingFromGitHub = false })
@@ -195,12 +192,12 @@ struct ExtensionsSettingsView: View {
     private var install: some View {
         Section {
             SettingsRow(
-                title: "Search extensions", subtitle: "Ready-built from the Raycast Store.",
+                title: "Extension Store", subtitle: "Browse, search and install Raycast extensions.",
                 anchor: .extensionsInstall
             ) {
-                ExtensionSettingsIcon(systemName: "magnifyingglass")
+                SymbolImage(name: "ZLaunchStore", size: Theme.Size.settingsRowIcon)
             } trailing: {
-                Button("Search…") { browsingStore = true }
+                Button("Browse Store…") { core.extensionCoordinator.showStore() }
             }
             SettingsRow(
                 title: "Install from GitHub",

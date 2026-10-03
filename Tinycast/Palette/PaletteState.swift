@@ -38,6 +38,7 @@ final class PaletteState {
     var followToken = UUID()
     /// AppKit binds ⌘. to `cancelOperation:`, so the field editor eats it before `onKeyPress`.
     private(set) var pinChordToken = UUID()
+    private(set) var escapeToken = UUID()
     /// Bumped when AppKit resolves ⌘1…⌘0 to a slot index from the physical number row.
     private(set) var favoriteSlotToken = UUID()
     /// The last slot index from `noteFavoriteSlot`, consumed by the SwiftUI layer.
@@ -169,6 +170,10 @@ final class PaletteState {
 
     func notePinChord() {
         pinChordToken = UUID()
+    }
+
+    func noteEscape() {
+        escapeToken = UUID()
     }
 
     func noteMenuPresentation() {

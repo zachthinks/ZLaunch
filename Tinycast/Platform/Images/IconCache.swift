@@ -253,6 +253,11 @@ enum IconCache {
     static func symbolIcon(named name: String, tint: SymbolTint? = nil) -> NSImage {
         let key = symbolKey(name, tint)
         if let cached = cache.object(forKey: key) { return cached }
+        if let asset = NSImage(named: name), !asset.isTemplate {
+            let (icon, cost) = fitted(asset, to: appIconExtent)
+            cache.setObject(icon, forKey: key, cost: cost)
+            return icon
+        }
 
         let side = displayPixel
         let isDark = darkSurface.withLock { $0 }

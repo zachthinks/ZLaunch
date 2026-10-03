@@ -23,6 +23,7 @@ struct SettingsBackupTest {
         let excluded = SettingsBackupCoverage.deliberatelyExcluded
         let external = SettingsBackupCoverage.externallySourced
         let allKeys = AppSettingsKey.allCases.map(\.rawValue)
+        check("launcher style rides the settings backup", mirrored["paletteStyle"] == .paletteStyle)
         let mirroredKeys = mirrored.values.map(\.rawValue)
 
         let uncovered = allKeys.filter { !mirroredKeys.contains($0) && excluded[$0] == nil }

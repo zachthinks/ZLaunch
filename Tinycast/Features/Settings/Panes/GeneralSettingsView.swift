@@ -89,6 +89,14 @@ struct GeneralSettingsView: View {
                 } label: {
                     SettingsRowTitle(.generalAppearance, "Theme")
                 }
+                Picker(selection: $settings.paletteStyle) {
+                    ForEach(PaletteStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                } label: {
+                    SettingsRowTitle(.generalAppearance, "Launcher style")
+                    Text("Classic uses a quieter surface and flat controls inspired by Raycast v1.")
+                }
                 InterfaceSizeRow()
                 WindowModeRow()
                 Toggle(isOn: $settings.showFavoritesInCompactMode) {
@@ -203,7 +211,7 @@ struct GeneralSettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Tinycast will relearn your preferred results as you use the launcher.")
+            Text("ZLaunch will relearn your preferred results as you use the launcher.")
         }
         .onAppear(perform: refreshInputSources)
         .onReceive(

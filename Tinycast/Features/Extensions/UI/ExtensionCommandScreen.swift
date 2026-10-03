@@ -2,7 +2,7 @@ import QuartzCore
 import SwiftUI
 
 /// Restated here so launcher motion can change without moving an extension surface.
-@MainActor private enum ExtensionMenuMotion {
+@MainActor enum ExtensionMenuMotion {
     private static let entryScale: CGFloat = 0.94
     private static let exitScaleDelta: CGFloat = 0.04
 

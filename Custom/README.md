@@ -18,8 +18,9 @@ imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and
 Accessibility shows Granted in macOS settings.
 
-**ZLaunch Dev** remains a separate development app at
-`/Applications/ZLaunch Dev.app`; its build copy is in
+**ZLaunch Dev** remains a separate development configuration. Its installed copy
+was removed; its saved data is retained. The current Dev build is at
+
 `build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. Regular ZLaunch,
 Dev and Tinycast each have their own settings, extension storage, credentials,
 permissions and link handler. Moving between them requires an explicit native
@@ -39,21 +40,43 @@ extension must supply that URI. A provider tied only to Raycast callbacks
 cannot work unchanged; HTTPS relays must support the custom scheme. Live
 provider/relay compatibility remains unverified.
 
-## What is already available in the Store
+## What is available in the Store
 
-Tinycast already supplies Raycast Store search, download/install, update checks,
-GitHub-source installation, and native List/Detail/Form/Grid/menu-bar rendering.
-ZLaunch reuses that implementation. Its first discovery screen adds shortcuts to
-Developer Tools, Productivity, Notes and AI searches. Those buttons are search
-starting points, not a new category API or a compatibility guarantee.
+Open ZLaunch and search for **Store**, or choose **Browse Store…** in Settings →
+Extensions. The native Store follows Raycast v1's launcher layout: a compact
+keyboard-selectable list, Featured, Trending and All Extensions sections, and a
+searchable category picker beside the search field (⌘P). Those sections come
+from Raycast's live catalog; category filters use its actual category search.
 
-The store lives in Settings → Extensions. Enable extensions, then open Search.
-Extension compatibility varies: Raycast-only AI, browser/window services and the
-OAuth proxy are not implemented. The search endpoint is unofficial and could
-change; folder/GitHub installation remains an alternative. No third-party code
-is run just by showing a search result.
+Return opens an extension's detail page, with screenshots, its description,
+commands, author, contributors, update date, README and source links when the
+catalog provides them. Return on that page installs it; ⌘Return installs a
+selected listing directly. Installed extensions show a checkmark. Arrow keys
+navigate, ⌘K opens actions, and Escape returns to the previous screen. More
+results can be loaded without losing the current selection.
+
+Installation reuses Tinycast's prebuilt installer and update tracking. Enable
+extensions before installing; the existing consent dialog still applies. No
+third-party code runs just from browsing. Compatibility varies: Raycast-only AI,
+browser/window services and its OAuth proxy remain unsupported. Raycast's
+endpoints are unofficial and may change; folder/GitHub installation remains
+available. Dev and release installations stay separate.
+
+This Store revision is included in ZLaunch 0.1.2. Automated checks and manual
+verification are recorded in `Custom/store-verification.md`.
+
+ZLaunch also offers **Raycast Classic** under Settings → General →
+Appearance → Launcher style. It gives every launcher screen a quieter surface,
+smaller corners and search type, and a flat footer. **Original Glass** remains
+the default. System/Light/Dark and interface size are independent choices.
 
 ## How future customization stays maintainable
+
+User-facing app labels, permission descriptions and status messages identify
+ZLaunch. About links distinguish this fork from Tinycast's upstream community
+and developer; the Support window explicitly identifies upstream donations.
+The `.tinycast` backup format, internal identifiers and license attribution
+retain their original names.
 
 An extension is the first choice for a new command or service that fits the
 existing extension API. Keep your own extension source outside the launcher and

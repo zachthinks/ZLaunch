@@ -207,6 +207,10 @@ final class AppSettings {
         didSet { defaults.set(appearance.rawValue, forKey: Key.appearance.rawValue) }
     }
 
+    var paletteStyle: PaletteStyle {
+        didSet { defaults.set(paletteStyle.rawValue, forKey: Key.paletteStyle.rawValue) }
+    }
+
     /// Which separators the calculator reads and writes; `.system` follows Language & Region.
     var calcNumberStyle: CalcNumberStyle {
         didSet { defaults.set(calcNumberStyle.rawValue, forKey: Key.calcNumberStyle.rawValue) }
@@ -618,6 +622,8 @@ final class AppSettings {
             ?? .navigateBackOrClose
         appearance =
             defaults.string(forKey: Key.appearance.rawValue).flatMap(AppAppearance.init) ?? .system
+        paletteStyle =
+            defaults.string(forKey: Key.paletteStyle.rawValue).flatMap(PaletteStyle.init) ?? .glass
         calcNumberStyle =
             defaults.string(forKey: Key.calcNumberStyle.rawValue).flatMap(CalcNumberStyle.init)
             ?? .system

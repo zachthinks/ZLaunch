@@ -463,10 +463,18 @@ build produces.
 
 Settings → Extensions offers four routes, under **Install New**:
 
-1. **Search extensions** — searches the Raycast Store and installs the bundle it already built. Nothing
-   is compiled, so no Node or package manager is involved. The search is
-   `raycast.com/frontend_api/extensions/search`, the endpoint the store's own site uses; it is
-   unofficial, so Install from GitHub is the way in when it changes.
+1. **Extension Store** — opens the native Store in the palette, also available through the **Store**
+   launcher command. It follows Raycast v1's list layout, with live Featured, Trending and All Extensions,
+   a searchable category picker (⌘P), and paginated search. Return opens details with screenshots,
+   commands and source/README links; Return there installs, and ⌘Return installs from the list.
+   `ExtensionStoreSession`, owned by `AppCore`, cancels stale requests and deduplicates pages by name.
+   `ExtensionStoreScreen` owns the visible row order; section-qualified IDs keep featured entries
+   distinct from their appearances in All Extensions. The native palette hosts the feature opaquely.
+   Installation resolves a fresh download URL and reuses `ExtensionManager` and `ExtensionInstaller`.
+   Nothing is compiled, so no Node or package manager is involved. Search and category queries use
+   `raycast.com/frontend_api/extensions/search`; curated feeds use `api/v1/extensions/featured` and
+   `api/v1/extensions/trending`, and browsing uses `api/v1/store_listings`. These are unofficial;
+   Install from GitHub remains available if they change.
 2. **Install from GitHub** — builds one extension from its source on this Mac. See below.
 3. **Import from Raycast** — copies the already-built bundles out of a local Raycast. Nothing is
    compiled, so no Node, npm or network is involved. The pane also scans whenever it opens, and says

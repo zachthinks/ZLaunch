@@ -13,6 +13,7 @@ enum CommandID: String, CaseIterable, Sendable {
     case clipboardHistory = "command:clipboard-history"
     case pasteSequentially = "command:paste-sequentially"
     case searchEmoji = "command:search-emoji"
+    case extensionStore = "command:extension-store"
     case searchFiles = "command:search-files"
     case searchMenuItems = "command:search-menu-items"
     case switchWindows = "command:switch-windows"
@@ -59,6 +60,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .clipboardHistory: return "Clipboard History"
         case .pasteSequentially: return "Paste Sequentially"
         case .searchEmoji: return "Search Emoji & Symbols"
+        case .extensionStore: return "Store"
         case .searchFiles: return "Search Files"
         case .searchMenuItems: return "Search Menu Bar Items"
         case .switchWindows: return "Switch Windows"
@@ -88,10 +90,10 @@ enum CommandID: String, CaseIterable, Sendable {
         case .importSettings: return "Import Backup"
         case .importFromRaycast: return "Import from Raycast"
         case .checkForUpdates: return "Check for Updates"
-        case .settings: return "Tinycast Settings"
-        case .about: return "About Tinycast"
-        case .support: return "Support Tinycast"
-        case .quit: return "Quit Tinycast"
+        case .settings: return "ZLaunch Settings"
+        case .about: return "About ZLaunch"
+        case .support: return "Support ZLaunch"
+        case .quit: return "Quit ZLaunch"
         }
     }
 
@@ -107,6 +109,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .clipboardHistory: return "doc.on.clipboard"
         case .pasteSequentially: return "list.bullet.clipboard"
         case .searchEmoji: return "face.smiling"
+        case .extensionStore: return "ZLaunchStore"
         case .searchFiles: return "doc.text.magnifyingglass"
         case .searchMenuItems: return "menubar.rectangle"
         case .switchWindows: return "macwindow.on.rectangle"
@@ -168,6 +171,7 @@ enum CommandID: String, CaseIterable, Sendable {
         switch self {
         case .quickAI: ["ai"]
         case .aiChat: ["chat"]
+        case .extensionStore: ["store", "extensions"]
         default: []
         }
     }

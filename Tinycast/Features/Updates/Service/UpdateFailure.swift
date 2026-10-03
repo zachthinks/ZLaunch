@@ -18,17 +18,17 @@ enum UpdateFailure: LocalizedError, Equatable {
         case .extractFailed(let detail):
             return "The downloaded archive could not be expanded. \(detail)"
         case .noAppInArchive:
-            return "The downloaded archive does not contain Tinycast."
+            return "The downloaded archive does not contain ZLaunch."
         case .quarantined:
-            return "macOS quarantined the downloaded app and Tinycast could not clear the flag."
+            return "macOS quarantined the downloaded app and ZLaunch could not clear the flag."
         case .bundleMismatch:
-            return "The downloaded app is not this build of Tinycast."
+            return "The downloaded app is not this build of ZLaunch."
         case .identityMismatch:
             return "The downloaded app is not signed by the identity this copy was signed with."
         case .versionMismatch(let expected, let found):
             return "The downloaded app is version \(found), not \(expected)."
         case .replaceFailed(let detail):
-            return "Tinycast could not be replaced. \(detail)"
+            return "ZLaunch could not be replaced. \(detail)"
         }
     }
 

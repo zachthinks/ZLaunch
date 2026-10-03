@@ -22,6 +22,22 @@ struct ExtensionStoreClient: Sendable {
         return try ExtensionStoreResponse.parseStore(try await get(url))
     }
 
+    func page(query: String, number: Int) async throws -> ExtensionStoreResponse.Page {
+        let browsing = query.isEmpty
+        let url = browsing
+            ? ExtensionStoreResponse.browseURL(page: number)
+            : ExtensionStoreResponse.searchURL(query: query, page: number)
+        guard let url else { throw ExtensionStoreError.malformedResponse }
+        return try ExtensionStoreResponse.parsePage(try await get(url), page: number, browsing: browsing)
+    }
+
+    func curated(_ section: String) async throws -> [ExtensionListing] {
+        guard let url = URL(string: "https://www.raycast.com/api/v1/extensions/\(section)") else {
+            throw ExtensionStoreError.malformedResponse
+        }
+        return try ExtensionStoreResponse.parseStore(try await get(url))
+    }
+
     /// Nil when the store has it but can't serve it, such as a de-listed extension.
     func lookup(handle: String, name: String) async throws -> ExtensionListing? {
         guard let url = ExtensionStoreResponse.lookupURL(handle: handle, name: name) else {

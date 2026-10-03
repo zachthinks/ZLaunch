@@ -31,6 +31,7 @@ enum Theme {
 
     enum Radius {
         static let panel: CGFloat = 26
+        static let classicPanel: CGFloat = 12
         static let row: CGFloat = 10
         /// Emoji tiles are roomier than list rows, so their corners take one larger step.
         static let emojiCell: CGFloat = 12
@@ -364,6 +365,7 @@ enum Theme {
     enum Typography {
         /// One size, two frameworks: `TextTrailingDragHandle` measures what the field renders.
         static let searchFieldSize: CGFloat = 20
+        static let classicSearchFieldSize: CGFloat = 16
         static let searchField = Font.system(size: searchFieldSize, weight: .regular)
         /// `NSFont` is not `Sendable`, hence the isolation; every reader is a view anyway.
         @MainActor static let searchFieldNSFont = NSFont.systemFont(
@@ -412,6 +414,8 @@ enum Theme {
 
         /// The ramp's inverse: the scrim darkens the dark surface and lightens the light one.
         static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
+        static let classicPanelScrim = adaptive(dark: .srgbInk(0, alpha: 0.72), light: .srgbInk(1, alpha: 0.85))
+        static let classicBarSurface = adaptive(dark: .srgbInk(0.10, alpha: 1), light: .srgbInk(0.96, alpha: 1))
         /// Modal separation inside Tinycast: the launcher recedes while its dialog is in front.
         static let dialogDimming = adaptive(
             dark: .srgbInk(0, alpha: 0.34), light: .srgbInk(0, alpha: 0.34))

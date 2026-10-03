@@ -1,7 +1,9 @@
 import AppKit
+import Observation
 
 /// How a command meets the palette: launching, leaving, and the host callbacks it can make.
 @MainActor
+@Observable
 final class ExtensionCoordinator {
     private let extensions: ExtensionManager
     private let palette: PaletteState
@@ -28,6 +30,33 @@ final class ExtensionCoordinator {
     }
 
     // MARK: - Feature presence
+
+    var installedNames: Set<String> { Set(extensions.installed.map(\.manifest.name)) }
+    var extensionsEnabled: Bool { settings.extensionsEnabled }
+
+    func showStore() {
+        paletteCoordinator.togglePalette(mode: .extensionStore)
+        core.extensionStore.search(palette.query, debounce: false)
+    }
+
+    func showStoreDetail(_ listing: ExtensionListing) {
+        core.extensionStore.showDetail(listing)
+        palette.push(mode: .extensionStoreDetail)
+    }
+
+    func installSelectedStoreExtension(_ listing: ExtensionListing) {
+        core.extensionStore.install(listing, coordinator: self)
+    }
+
+    func installStoreExtension(
+        _ listing: ExtensionListing,
+        onProgress: @Sendable @escaping (ExtensionInstaller.Progress) -> Void
+    ) async throws {
+        guard settings.extensionsEnabled else {
+            throw ExtensionStoreError.rejected("Enable extensions before installing from the Store.")
+        }
+        try await extensions.install(listing, onProgress: onProgress)
+    }
 
     /// Applies both switches as they stand — on launch, and after a backup import moves them.
     func applyEnabled() {

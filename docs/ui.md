@@ -6,6 +6,20 @@ with what's already there. This documents **Tinycast as built** — every rule h
 
 Read this before touching any view body, `Theme` value, or the panel chrome.
 
+## ZLaunch launcher styles
+
+Settings → General → Appearance → Launcher style offers **Original Glass**
+(the default described below) and **Raycast Classic**. Classic changes the shared
+palette surface: a darker/lighter scrim, 12-point corners, a 16-point search field,
+solid header/footer surfaces with thin rules and flat footer actions. It keeps the original row
+models, keyboard handling, scrolling and extension renderer. Both styles follow
+the separate System/Light/Dark setting and Interface Size. Existing dark tokens
+remain unchanged; the additional Classic tokens live in `Theme.swift`.
+
+This is a small built-in style choice, not a Raycast theme importer or a separate
+rendering engine. Store appearance and its opaque footer label stay owned by
+`Features/Extensions/`.
+
 ---
 
 ## The look, in one paragraph

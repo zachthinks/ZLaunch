@@ -49,6 +49,7 @@ final class AppCore {
     let supportReminders: SupportReminderStore
     let emojiIndex = EmojiIndex()
     let frequentEmoji = FrequentEmojiStore()
+    let extensionStore = ExtensionStoreSession()
     let pinnedEmoji = PinnedEmojiStore()
     let runningApps = RunningAppsMonitor()
     let palette = PaletteState()
@@ -518,6 +519,7 @@ final class AppCore {
     }
 
     func prepareForTermination() {
+        extensionStore.stop()
         settingsFile?.flush()
         clipboardTextIndexer?.stop()
         // Caps Lock first: its remap is the one teardown that outlives the process.

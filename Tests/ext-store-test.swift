@@ -139,6 +139,47 @@ struct ExtensionStoreTests {
         check(
             "the download is the zip", coffee.downloadURL.absoluteString == "https://example.com/coffee.zip")
         check("the version is read", coffee.commitSHA == "c325a1a")
+        check("command names survive for the detail screen", coffee.commands.map(\.name) == ["caffeinate", "decaffeinate"])
+        check("a missing command title uses its name", coffee.commands.first?.title == "caffeinate")
+        check("optional detail fields can be absent", coffee.categories.isEmpty && coffee.storeURL == nil)
+
+        let detailed = """
+            {"data":[{"id":"detail","name":"notes","title":"Notes","status":"active",
+             "download_url":"https://example.com/notes.zip","categories":["Productivity"],
+             "store_url":"https://www.raycast.com/me/notes","source_url":"https://github.com/me/notes",
+             "owner":{"handle":"team"},"author":{"handle":"me","avatar":"https://example.com/avatar"},
+             "metadata":["https://example.com/screenshot"],"updated_at":1000,
+             "contributors":[{"name":"A Contributor"}],"readme_url":"https://github.com/me/notes/README.md",
+             "commands":[{"name":"create","title":"Create Note","description":"Write a note"}]}],
+             "total_results":11}
+            """
+        let firstPage = try? ExtensionStoreResponse.parsePage(Data(detailed.utf8), page: 1, browsing: false)
+        let lastPage = try? ExtensionStoreResponse.parsePage(Data(detailed.utf8), page: 2, browsing: false)
+        check("the total count enables another search page", firstPage?.hasMore == true)
+        check("the last search page stops pagination", lastPage?.hasMore == false)
+        check("categories survive", firstPage?.listings.first?.categories == ["Productivity"])
+        check("command descriptions survive", firstPage?.listings.first?.commands.first?.summary == "Write a note")
+        check("command titles survive", firstPage?.listings.first?.commands.first?.title == "Create Note")
+        check("store links survive", firstPage?.listings.first?.storeURL?.host == "www.raycast.com")
+        check("source links survive", firstPage?.listings.first?.sourceURL?.host == "github.com")
+        check("detail lookup uses the owner, not the author", firstPage?.listings.first?.ownerHandle == "team")
+        check("screenshots survive", firstPage?.listings.first?.screenshots.count == 1)
+        check("contributors survive", firstPage?.listings.first?.contributors == ["A Contributor"])
+        check("updated dates survive", firstPage?.listings.first?.updatedAt == Date(timeIntervalSince1970: 1000))
+        check("README links survive", firstPage?.listings.first?.readmeURL?.lastPathComponent == "README.md")
+        check("category searches quote multiword categories",
+            ExtensionStoreResponse.scopedQuery("github", category: "Developer Tools") == "category:\"Developer Tools\" github")
+        check("all categories leave ordinary searches alone",
+            ExtensionStoreResponse.scopedQuery("github", category: nil) == "github")
+        let fullPage = "{\"data\":[" + Array(repeating:
+            "{\"id\":\"gone\",\"name\":\"gone\",\"status\":\"kill_listed\"}", count: 25).joined(separator: ",") + "]}"
+        let filteredPage = try? ExtensionStoreResponse.parsePage(Data(fullPage.utf8), page: 1, browsing: true)
+        check("filtered entries do not prematurely end browsing", filteredPage?.hasMore == true)
+        check("de-listed entries stay hidden in browsing", filteredPage?.listings.isEmpty == true)
+        check("a short browse page stops pagination",
+            (try? ExtensionStoreResponse.parsePage(Data(storePayload.utf8), page: 1, browsing: true))?.hasMore == false)
+        check("browse URLs request macOS and the chosen page",
+            ExtensionStoreResponse.browseURL(page: 3)?.absoluteString.contains("platform=macOS&page=3") == true)
 
         check(
             "a truncated body throws",

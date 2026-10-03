@@ -16,6 +16,22 @@ struct ExtensionListing: Identifiable, Hashable, Sendable {
     let downloadURL: URL
     /// What an update check compares: it moves with every version the store publishes.
     let commitSHA: String?
+    var commands: [Command] = []
+    var categories: [String] = []
+    var storeURL: URL?
+    var sourceURL: URL?
+    var readmeURL: URL?
+    var ownerHandle: String = ""
+    var authorAvatarURL: URL?
+    var screenshots: [URL] = []
+    var contributors: [String] = []
+    var updatedAt: Date?
+
+    struct Command: Hashable, Sendable {
+        let name: String
+        let title: String
+        let summary: String
+    }
 
     /// Either side stands in for a missing other, so a one-artwork listing still draws.
     func iconURL(isDark: Bool) -> URL? {

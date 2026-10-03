@@ -76,7 +76,7 @@ struct AboutView: View {
                 .font(.caption)
             }
 
-            Text("A tiny, native macOS launcher.")
+            Text("Your native macOS launcher, built on Tinycast.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -107,7 +107,7 @@ struct AboutView: View {
                 VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
                     SettingsRowTitle(.aboutLinks, "Support")
                         .font(.body.weight(.medium))
-                    Text("Free and open source, funded out of pocket.")
+                    Text("Support Tinycast, the upstream project behind ZLaunch.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -144,22 +144,22 @@ private struct AboutLink: Identifiable {
 
     static let all: [AboutLink] = [
         AboutLink(
-            id: "website", glyph: .symbol("globe"), title: "Website",
+            id: "website", glyph: .symbol("globe"), title: "Upstream Website",
             detail: "tinycast.dev",
             url: URL(string: "https://tinycast.dev/")!),
         AboutLink(
             id: "github", glyph: .brand("BrandGitHub"), title: "GitHub",
-            detail: "github.com/abue-ammar/tinycast",
-            url: URL(string: "https://github.com/abue-ammar/tinycast")!),
+            detail: "github.com/zachthinks/ZLaunch",
+            url: URL(string: "https://github.com/zachthinks/ZLaunch")!),
         AboutLink(
-            id: "discord", glyph: .brand("BrandDiscord"), title: "Discord",
+            id: "discord", glyph: .brand("BrandDiscord"), title: "Upstream Community",
             detail: "Join the Tinycast community",
             url: URL(string: "https://discord.gg/v2Eeb4QQy3")!),
         AboutLink(
-            id: "x", glyph: .brand("BrandX"), title: "X", detail: "@abue_ammar",
+            id: "x", glyph: .brand("BrandX"), title: "Upstream Developer", detail: "@abue_ammar",
             url: URL(string: "https://x.com/abue_ammar")!),
         AboutLink(
-            id: "email", glyph: .symbol("envelope"), title: "Email",
+            id: "email", glyph: .symbol("envelope"), title: "Upstream Email",
             detail: "iabueammar@gmail.com", url: URL(string: "mailto:iabueammar@gmail.com")!)
     ]
 }

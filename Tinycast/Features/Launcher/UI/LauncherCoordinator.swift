@@ -210,6 +210,8 @@ final class LauncherCoordinator {
         case .showNotes:
             dismissPalette()
             notesCoordinator.toggle()
+        case .extensionStore:
+            core.extensionCoordinator.showStore()
         case .createNote:
             dismissPalette()
             notesCoordinator.createNote()

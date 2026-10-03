@@ -147,10 +147,12 @@ private extension MenuPanelCorner {
         at selection: Int, focus: FocusState<String?>.Binding
     )
         -> PaletteHeaderAccessory?
+    var footerLabel: AnyView? { get }
     @ViewBuilder func body(selection: Int, scroll: ScrollIntent) -> AnyView
 }
 
 extension PaletteScreen {
+    var footerLabel: AnyView? { nil }
     func hasPrimaryAction(at selection: Int) -> Bool { true }
     func hasActions(at selection: Int) -> Bool { true }
     var hidesSearchField: Bool { false }

@@ -74,7 +74,7 @@ final class UpdateCoordinator {
             } else if answered {
                 stage = .upToDate
             } else {
-                stage = .failed(.downloadFailed("Tinycast could not reach GitHub."))
+                stage = .failed(.downloadFailed("ZLaunch could not reach GitHub."))
             }
         }
     }

@@ -44,6 +44,8 @@ struct PaletteFilterTests {
         expect(
             resolve(mode: .extensionCommand, accessory: true), .extensionAccessory,
             "a running command's own dropdown answers ⌘P on its own screen")
+        expect(resolve(mode: .extensionStore), .extensionStoreCategory, "Store opens its category picker")
+        expect(resolve(mode: .extensionStoreDetail), .ignored, "Store details have no category picker")
 
         // The regression this guards: a command's dropdown must not let the clipboard's filter
         // open over it, and must not swallow ⌘P on a command that declared none.

@@ -53,7 +53,7 @@ struct SupportWindowView: View {
             VStack(spacing: Theme.Spacing.sm) {
                 Text("Support \(Bundle.main.appDisplayName)")
                     .font(.title2.weight(.semibold))
-                Text("Built with love.")
+                Text("ZLaunch is built on Tinycast. Support its upstream developer.")
                     .font(.callout)
                     .foregroundStyle(Theme.Colors.textSecondary)
             }
@@ -65,7 +65,7 @@ struct SupportWindowView: View {
 
     private var action: some View {
         VStack(spacing: Theme.Spacing.lg) {
-            SupportActionButton(title: "Support \(Bundle.main.appDisplayName)", icon: "heart") {
+            SupportActionButton(title: "Support Tinycast upstream", icon: "heart") {
                 support.openCheckout()
             }
             Text("Secure checkout on Polar.")

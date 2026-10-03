@@ -2,6 +2,25 @@ import Foundation
 
 /// Someone else's endpoint, so every field an install doesn't need is optional.
 enum ExtensionStoreResponse {
+    struct Page: Sendable {
+        let listings: [ExtensionListing]
+        let hasMore: Bool
+    }
+
+    static func browseURL(page: Int) -> URL? {
+        var components = URLComponents(string: "https://www.raycast.com/api/v1/store_listings")
+        components?.queryItems = [
+            URLQueryItem(name: "platform", value: "macOS"),
+            URLQueryItem(name: "page", value: String(page))
+        ]
+        return components?.url
+    }
+
+    static func scopedQuery(_ query: String, category: String?) -> String {
+        guard let category else { return query }
+        return "category:\"\(category)\" \(query)".trimmingCharacters(in: .whitespaces)
+    }
+
     /// The endpoint the store's own site searches with; unofficial, so it can change unannounced.
     static func searchURL(query: String, page: Int) -> URL? {
         var components = URLComponents(string: "https://www.raycast.com/frontend_api/extensions/search")
@@ -24,6 +43,12 @@ enum ExtensionStoreResponse {
 
     private struct StorePayload: Decodable {
         let data: [StoreEntry]
+        let totalResults: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case data
+            case totalResults = "total_results"
+        }
     }
 
     private struct StoreEntry: Decodable {
@@ -38,10 +63,20 @@ enum ExtensionStoreResponse {
         let downloadURL: String?
         let commitSHA: String?
         let status: String?
+        let categories: [String]?
+        let storeURL: String?
+        let sourceURL: String?
+        let readmeURL: String?
+        let owner: Author?
+        let metadata: [String]?
+        let contributors: [Author]?
+        let updatedAt: Double?
+        let platforms: [String]?
 
         struct Author: Decodable {
             let name: String?
             let handle: String?
+            let avatar: String?
         }
         struct Icons: Decodable {
             let light: String?
@@ -49,18 +84,33 @@ enum ExtensionStoreResponse {
         }
         struct Command: Decodable {
             let name: String?
+            let title: String?
+            let description: String?
         }
 
         enum CodingKeys: String, CodingKey {
-            case id, name, title, description, author, icons, commands, status
+            case id, name, title, description, author, icons, commands, status, categories
+            case owner, metadata, contributors, platforms
             case downloadCount = "download_count"
             case downloadURL = "download_url"
             case commitSHA = "commit_sha"
+            case storeURL = "store_url"
+            case sourceURL = "source_url"
+            case readmeURL = "readme_url"
+            case updatedAt = "updated_at"
         }
     }
 
     static func parseStore(_ data: Data) throws -> [ExtensionListing] {
         try JSONDecoder().decode(StorePayload.self, from: data).data.compactMap(listing(from:))
+    }
+
+    static func parsePage(_ data: Data, page: Int, browsing: Bool) throws -> Page {
+        let payload = try JSONDecoder().decode(StorePayload.self, from: data)
+        let pageSize = browsing ? 25 : 10
+        let hasMore = payload.totalResults.map { page * pageSize < $0 }
+            ?? (payload.data.count == pageSize)
+        return Page(listings: payload.data.compactMap(listing(from:)), hasMore: hasMore)
     }
 
     /// A lookup answers with the entry itself, not a page of them.
@@ -72,6 +122,8 @@ enum ExtensionStoreResponse {
     private static func listing(from entry: StoreEntry) -> ExtensionListing? {
         // A de-listed extension is still returned by search; it can't be downloaded any more.
         guard entry.status == nil || entry.status == "active" else { return nil }
+        guard entry.platforms == nil || entry.platforms?.isEmpty == true || entry.platforms?.contains("macOS") == true
+        else { return nil }
         guard let raw = entry.downloadURL, let url = URL(string: raw) else { return nil }
         return ExtensionListing(
             id: entry.id,
@@ -84,7 +136,20 @@ enum ExtensionStoreResponse {
             commandCount: entry.commands?.count ?? 0,
             downloadCount: entry.downloadCount,
             downloadURL: url,
-            commitSHA: entry.commitSHA)
+            commitSHA: entry.commitSHA,
+            commands: (entry.commands ?? []).compactMap { command in
+                guard let name = command.name else { return nil }
+                return .init(name: name, title: command.title ?? name, summary: command.description ?? "")
+            },
+            categories: entry.categories ?? [],
+            storeURL: entry.storeURL.flatMap(URL.init(string:)),
+            sourceURL: entry.sourceURL.flatMap(URL.init(string:)),
+            readmeURL: entry.readmeURL.flatMap(URL.init(string:)),
+            ownerHandle: entry.owner?.handle ?? entry.author?.handle ?? "",
+            authorAvatarURL: entry.author?.avatar.flatMap(URL.init(string:)),
+            screenshots: (entry.metadata ?? []).compactMap(URL.init(string:)),
+            contributors: (entry.contributors ?? []).compactMap { $0.name ?? $0.handle },
+            updatedAt: entry.updatedAt.map(Date.init(timeIntervalSince1970:)))
     }
 }
 

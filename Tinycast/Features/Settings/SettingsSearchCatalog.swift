@@ -137,6 +137,9 @@ enum SettingsSearchCatalog {
             .generalAppearance, "Theme",
             keywords: ["dark", "light", "mode", "appearance"]),
         .init(
+            .generalAppearance, "Launcher style",
+            keywords: ["theme", "raycast", "classic", "glass", "corners", "footer"]),
+        .init(
             .generalAppearance, "Interface size",
             keywords: ["text size", "font size", "scale", "zoom", "bigger", "larger", "legible"]),
         .init(
@@ -505,7 +508,7 @@ enum SettingsSearchCatalog {
             pane: .calendar,
             keywords: ["meetings", "events", "zoom", "join", "schedule"]),
         .init(
-            .calendarCalendar, "Join meetings from Tinycast",
+            .calendarCalendar, "Join meetings from ZLaunch",
             keywords: ["zoom", "meet", "teams", "permission"]),
         .init(
             .calendarCalendar, "Upcoming meetings in launcher",
@@ -559,8 +562,9 @@ enum SettingsSearchCatalog {
             .extensionsExtensions, "Enable extensions",
             keywords: ["raycast", "third party", "javascript"]),
         .init(
-            .extensionsInstall, "Search extensions",
+            .extensionsInstall, "Extension Store",
             keywords: ["store", "browse", "install"]),
+        .init(group: .extensionsCommands, "Store command", keywords: ["store", "alias", "shortcut", "extensions"]),
         .init(
             .extensionsInstall, "Install from GitHub",
             keywords: ["source", "build", "repository", "package manager", "pnpm", "npm", "yarn", "bun"]),
