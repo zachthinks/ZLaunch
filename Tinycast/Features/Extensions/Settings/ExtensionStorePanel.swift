@@ -14,12 +14,13 @@ struct ExtensionStorePanel: View {
     @State private var failures: [String: String] = [:]
     @State private var installed: Set<String> = []
     @State private var searchTask: Task<Void, Never>?
+    @State private var searchGeneration = UUID()
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
             ExtensionSettingsEditorHeader(
-                title: "Search Extensions",
-                subtitle: "The Raycast Store's extensions arrive built, so they install as they are.")
+                title: "Extension Store",
+                subtitle: "Discover Raycast extensions and install them in ZLaunch.")
             // The same borderless field the panes use, rather than a bordered capsule of its own.
             SettingsFilterField(prompt: "Search extensions…", query: $query)
             content
@@ -72,15 +73,29 @@ struct ExtensionStorePanel: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(.tertiary)
-            Text("Search for an extension")
+            Text("Find your next extension")
                 .font(.headline)
             Text(
                 "By name, or by what it does — \u{201C}colour\u{201D}, \u{201C}github\u{201D}, \u{201C}window\u{201D}."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+            HStack(spacing: Theme.Spacing.sm) {
+                discoveryButton("Developer Tools", query: "github")
+                discoveryButton("Productivity", query: "calendar")
+                discoveryButton("Notes", query: "notes")
+                discoveryButton("AI", query: "ai")
+            }
+            Text("Compatibility varies. Some extensions depend on Raycast-only services.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func discoveryButton(_ title: String, query value: String) -> some View {
+        Button(title) { query = value }
+            .buttonStyle(ExtensionSettingsEditorButtonStyle(role: .standard, fillsWidth: false))
     }
 
     private func placeholder(_ text: String) -> some View {
@@ -119,6 +134,8 @@ struct ExtensionStorePanel: View {
     /// Debounced: every keystroke would otherwise be a request to someone else's API.
     private func scheduleSearch(_ value: String) {
         searchTask?.cancel()
+        searchGeneration = UUID()
+        searching = false
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else {
             results = []
@@ -129,15 +146,17 @@ struct ExtensionStorePanel: View {
         searchTask = Task {
             try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
-            await search(trimmed)
+            await search(trimmed, generation: searchGeneration)
         }
     }
 
-    private func search(_ trimmed: String) async {
+    private func search(_ trimmed: String, generation: UUID) async {
         searching = true
         defer {
-            searching = false
-            searched = true
+            if searchGeneration == generation {
+                searching = false
+                searched = true
+            }
         }
         do {
             let found = try await ExtensionStoreClient().search(trimmed)
