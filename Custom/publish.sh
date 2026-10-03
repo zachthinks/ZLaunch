@@ -26,6 +26,6 @@ VERSION="$(node -p 'require("./Custom/release.json").version')"
 git fetch origin custom/main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/custom/main)" ]
 node Custom/verify-config.mjs
-node -e 'const fs=require("fs"); const m=require("./Custom/release.json"); fs.writeFileSync("build/release-notes.md", `ZLaunch ${m.version}, based on Tinycast ${m.upstream_tag}.\n\nSeparate settings and app identity. Source: https://github.com/zachthinks/ZLaunch/tree/${require("child_process").execFileSync("git",["rev-parse","HEAD"]).toString().trim()}\n`);'
+node Custom/release-notes.mjs build/release-notes.md
 gh release create "v$VERSION" dist/ZLaunch-"$VERSION".dmg dist/ZLaunch-"$VERSION".zip dist/SHA256SUMS \
  --repo zachthinks/ZLaunch --target "$(git rev-parse HEAD)" --title "ZLaunch $VERSION" --notes-file build/release-notes.md
