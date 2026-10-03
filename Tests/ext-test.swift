@@ -859,6 +859,12 @@ struct ExtensionTests {
 
     @MainActor
     static func oauthUnitChecks() {
+        let boot = ExtensionBootConfig.current(supportDirectory: FileManager.default.temporaryDirectory)
+        for scheme in ["zlaunch", "zlaunch-dev"] {
+            let data = Data(boot.jsonString(oauthCallbackScheme: scheme).utf8)
+            let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            check("OAuth boot injects \(scheme)", payload?["oauthCallbackScheme"] as? String == scheme)
+        }
         let originalStore = ExtensionOAuthKeychain.store
         ExtensionOAuthKeychain.store = MockTokenStore()
         defer { ExtensionOAuthKeychain.store = originalStore }
@@ -1174,7 +1180,8 @@ struct ExtensionTests {
         // OAuth PKCE and TokenSet runtime tests
         let (oauthRuntime, oauthHost, oauthRecorder) = makeRuntime()
         try? await oauthRuntime.boot(
-            config: .current(supportDirectory: FileManager.default.temporaryDirectory))
+            config: .current(supportDirectory: FileManager.default.temporaryDirectory),
+            oauthCallbackScheme: "zlaunch-dev")
         let oauthCommand = """
             "use strict";
             const { OAuth, showHUD } = require("@raycast/api");

@@ -39,9 +39,10 @@ struct ExtensionBootConfig: Sendable {
             environmentVariables: variables)
     }
 
-    func jsonString() -> String {
+    func jsonString(oauthCallbackScheme: String? = nil) -> String {
         ExtensionRuntime.jsonString(
             from: [
+                "oauthCallbackScheme": oauthCallbackScheme ?? "",
                 "node": [
                     "arch": arch,
                     "release": release,

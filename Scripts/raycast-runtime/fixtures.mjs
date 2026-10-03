@@ -35,7 +35,7 @@ const wait = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms));
 async function run(name, source, mode, verify, options) {
   console.log(`\n▶ ${name}`);
   const harness = createHarness(options);
-  harness.boot(bootConfig());
+  harness.boot(bootConfig(options?.bootConfig));
   const code = compile(source);
   harness.start("s1", code, "/fixtures/cmd.js", "/fixtures", mode, {});
   await wait(options?.settle);
@@ -1214,6 +1214,58 @@ export async function runFixtures() {
     check("TokenSet isExpired calculation works", result?.isExpiredLive === false && result?.isExpiredOld === true);
     check("removeTokens cleans up tokens", result?.afterRemove === undefined || result?.afterRemove === null);
   });
+
+  for (const scheme of ["zlaunch", "zlaunch-dev"]) {
+    await run(`OAuth callbacks stay in ${scheme}`, `
+      import { OAuth } from "@raycast/api";
+      export default async function Command() {
+        const request = { endpoint: "https://provider.example/authorize", clientId: "client" };
+        const web = new OAuth.PKCEClient({ redirectMethod: OAuth.RedirectMethod.Web });
+        const generated = await web.authorizationRequest(request);
+        const results = { state: generated.state, redirects: [], errors: [] };
+        for (const method of [OAuth.RedirectMethod.App, OAuth.RedirectMethod.AppURI]) {
+          const client = new OAuth.PKCEClient({ redirectMethod: method });
+          try { await client.authorizationRequest(request); }
+          catch (error) { results.errors.push(error.message); }
+          const custom = await client.authorizationRequest({
+            ...request, state: "provider-state", extraParameters: { redirect_uri: "${scheme}://oauth" },
+          });
+          results.redirects.push({ uri: custom.redirectURI, state: custom.state });
+        }
+        for (const foreign of ["tinycast", "raycast", "com.raycast", "${scheme === "zlaunch" ? "zlaunch-dev" : "zlaunch"}"]) {
+          try { await web.authorizationRequest({
+            ...request, extraParameters: { redirect_uri: foreign + "://oauth" },
+          }); } catch (error) { results.errors.push(error.message); }
+        }
+        const relay = await web.authorizationRequest({
+          ...request, extraParameters: { redirect_uri: "https://provider.example/relay" },
+        });
+        results.relay = relay.redirectURI;
+        globalThis.__callbackTest = results;
+      }
+    `, "no-view", async (harness) => {
+      const result = harness.call("globalThis.__callbackTest");
+      const state = JSON.parse(Buffer.from(result.state, "base64url").toString());
+      check("web relay targets the injected channel after command start", state.scheme === scheme);
+      check("native callbacks preserve provider registration and state", result.redirects.length === 2
+        && result.redirects.every((value) => value.uri === `${scheme}://oauth` && value.state === "provider-state"));
+      check("Raycast defaults and foreign channels fail before browser authorization", result.errors.length === 6
+        && result.errors.every((value) => value.includes(scheme)));
+      check("explicit HTTPS relays remain usable", result.relay === "https://provider.example/relay");
+    }, { bootConfig: { oauthCallbackScheme: scheme } });
+  }
+
+  await run("OAuth rejects an unconfigured app", `
+    import { OAuth } from "@raycast/api";
+    export default async function Command() {
+      try { await new OAuth.PKCEClient().authorizationRequest({
+        endpoint: "https://provider.example/authorize", clientId: "client",
+      }); } catch (error) { globalThis.__callbackError = error.message; }
+    }
+  `, "no-view", async (harness) => {
+    check("missing scheme cannot fall back to another app", harness.call("globalThis.__callbackError")
+      === "This app has no registered OAuth callback scheme.");
+  }, { bootConfig: { oauthCallbackScheme: "" } });
 
   const storedTokens = new Map([["unstamped", JSON.stringify({ access_token: "ya29.old", expires_in: 3599 })]]);
   await run(

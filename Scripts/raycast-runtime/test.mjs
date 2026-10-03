@@ -402,6 +402,7 @@ async function openSocket(spec) {
 
 export function bootConfig(overrides = {}) {
   return {
+    oauthCallbackScheme: "zlaunch-dev",
     node: {
       arch: "arm64",
       env: { HOME: homedir(), PATH: process.env.PATH },

@@ -2,6 +2,19 @@ import { base64ToBytes, bytesToBase64, utf8Encode } from "../polyfills.js";
 import { hostCall, hostCallSync } from "../host.js";
 import { nestedEnums } from "./enums.generated.js";
 
+let callbackScheme;
+
+export function configureOAuth(scheme) {
+  callbackScheme = typeof scheme === "string" && /^[a-z][a-z0-9+.-]*$/i.test(scheme)
+    ? scheme.toLowerCase()
+    : undefined;
+}
+
+function registeredCallbackScheme() {
+  if (!callbackScheme) throw new Error("This app has no registered OAuth callback scheme.");
+  return callbackScheme;
+}
+
 function generateRandomBytes(length) {
   const base64 = hostCallSync("crypto", "random", [length]);
   return base64ToBytes(base64);
@@ -29,13 +42,12 @@ function generateRandomString(length = 16) {
 }
 
 function generateState(client) {
-  // raycast.com/redirect expects state to be a JSON object (base64url-encoded)
-  // containing providerName and scheme ("tinycast") so it redirects to tinycast://oauth
+  // The web relay uses this scheme to return to the app that started authorization.
   const payload = {
     token: generateRandomString(16),
     providerName: client?.providerName || "",
     providerId: client?.providerId || "",
-    scheme: "tinycast",
+    scheme: registeredCallbackScheme(),
   };
   const json = JSON.stringify(payload);
   const bytes = utf8Encode(json);
@@ -81,13 +93,17 @@ export class PKCEClient {
 
     let redirectURI = options.extraParameters?.redirect_uri;
     if (!redirectURI) {
-      if (this.redirectMethod === nestedEnums.OAuth.RedirectMethod.App) {
-        redirectURI = "raycast://oauth?package_name=Extension";
-      } else if (this.redirectMethod === nestedEnums.OAuth.RedirectMethod.AppURI) {
-        redirectURI = "com.raycast:/oauth?package_name=Extension";
+      if (this.redirectMethod === nestedEnums.OAuth.RedirectMethod.App
+        || this.redirectMethod === nestedEnums.OAuth.RedirectMethod.AppURI) {
+        throw new Error(`This provider must register a ${registeredCallbackScheme()}://oauth callback and supply it as extraParameters.redirect_uri.`);
       } else {
         redirectURI = "https://raycast.com/redirect?packageName=Extension";
       }
+    }
+
+    const redirectScheme = new URL(redirectURI).protocol.slice(0, -1).toLowerCase();
+    if (redirectScheme !== "https" && redirectScheme !== registeredCallbackScheme()) {
+      throw new Error(`OAuth callback must use ${registeredCallbackScheme()} or an HTTPS relay configured to return to this app.`);
     }
 
     const url = new URL(options.endpoint);

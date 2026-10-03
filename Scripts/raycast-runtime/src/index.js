@@ -15,6 +15,7 @@ import { NavigationRoot, setFieldCommandHandler } from "./api/components.js";
 import { Surface } from "./reconciler.js";
 import { raycastApi } from "./api/index.js";
 import { configureSystem, runToastAction } from "./api/system.js";
+import { configureOAuth } from "./api/oauth.js";
 import { WebSocket } from "./websocket.js";
 
 const reactModule = {
@@ -113,6 +114,7 @@ globalThis.__tinycast = {
   boot(configJson) {
     const config = JSON.parse(configJson);
     configureNodeShims(config.node ?? {});
+    configureOAuth(config.oauthCallbackScheme);
     configureSystem(config);
     return "ok";
   },

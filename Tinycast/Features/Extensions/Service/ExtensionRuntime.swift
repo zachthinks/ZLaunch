@@ -64,11 +64,13 @@ final class ExtensionRuntime: @unchecked Sendable {
     }
 
     /// Idempotent, so any command can lazily ensure the engine is up.
-    func boot(config: ExtensionBootConfig) async throws {
+    func boot(config: ExtensionBootConfig, oauthCallbackScheme: String? = nil) async throws {
+        let urlTypes = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]]
+        let scheme = oauthCallbackScheme ?? (urlTypes?.first?["CFBundleURLSchemes"] as? [String])?.first
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
                 do {
-                    try self.bootOnQueue(config: config)
+                    try self.bootOnQueue(config: config, oauthCallbackScheme: scheme)
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -77,7 +79,7 @@ final class ExtensionRuntime: @unchecked Sendable {
         }
     }
 
-    private func bootOnQueue(config: ExtensionBootConfig) throws {
+    private func bootOnQueue(config: ExtensionBootConfig, oauthCallbackScheme: String?) throws {
         guard context == nil else { return }
         guard
             let url = runtimeOverride
@@ -102,7 +104,7 @@ final class ExtensionRuntime: @unchecked Sendable {
             self?.report(level: "error", message: ExtensionRuntime.describe(exception))
         }
 
-        let payload = config.jsonString()
+        let payload = config.jsonString(oauthCallbackScheme: oauthCallbackScheme)
         _ = context.objectForKeyedSubscript("__tinycast")?
             .invokeMethod("boot", withArguments: [payload])
     }
