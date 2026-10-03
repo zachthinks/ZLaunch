@@ -67,6 +67,12 @@ to the exact source commit in this public fork.
 
 ## What happens automatically
 
+The fork stays public and uses only GitHub's standard `ubuntu-latest` and
+`macos-26` hosted runners. Each custom job is disabled automatically if the
+repository becomes private. Custom workflows upload no Actions artifacts and
+create no Actions caches. These rules are checked by `Custom/verify-config.mjs`.
+No local daily worker or LaunchAgent is installed.
+
 Once the custom branch is pushed and made the fork's default branch, GitHub
 checks for new **stable** upstream releases daily. It merges the released commit
 into a candidate branch, keeps your custom changes, increments ZLaunch's own
@@ -99,8 +105,8 @@ commit so we can always identify its base.
 A textual merge conflict stops the sync. Automation records the upstream tag,
 commit and affected files, aborts the merge, and leaves the last working custom
 branch and installed app intact. A failed test or build also prevents release.
-GitHub retains the failure/report in the run; its normal Actions notifications
-apply. This project does not install a separate chat reminder or promise a
+GitHub retains the conflict report in the run log and job summary; its normal
+Actions notifications apply. This project does not install a separate chat reminder or promise a
 notification on every run.
 
 Tell Codex: “Resolve the latest ZLaunch upstream update while preserving my

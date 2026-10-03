@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { verifyWorkflowPolicy } from "./workflow-policy.mjs";
 const text = (p) => readFileSync(p, "utf8");
 const metadata = JSON.parse(text("Custom/release.json"));
 assert.match(metadata.version, /^\d+\.\d+\.\d+$/);
@@ -19,3 +20,8 @@ assert.ok(!signature.includes("SPBUD83MLU"));
 assert.ok(!signature.includes("return running == candidate"));
 assert.match(text("Tinycast/Features/Extensions/Service/ExtensionOAuthKeychain.swift"), /Bundle\.main\.bundleIdentifier/);
 console.log("Custom identity, update feed, trust, and scheme isolation verified.");
+
+verifyWorkflowPolicy(Object.fromEntries(readdirSync(".github/workflows")
+  .filter((name) => /^custom.*\.ya?ml$/.test(name))
+  .map((name) => [name, text(`.github/workflows/${name}`)])));
+console.log("Custom workflows use public-only standard runners without artifacts or caches.");

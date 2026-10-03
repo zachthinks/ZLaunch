@@ -8,6 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
+    if: github.event.repository.private == false
     environment: zlaunch-release
     runs-on: macos-26
     steps:

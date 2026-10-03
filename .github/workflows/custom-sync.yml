@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   sync:
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     outputs:
       candidate: ${{ steps.sync.outputs.candidate }}
@@ -39,16 +40,20 @@ jobs:
             fi
             echo "candidate=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
-      - name: Retain conflict report
+      - name: Record conflict report
         if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: upstream-conflicts
-          path: build/sync-conflicts.txt
-          if-no-files-found: ignore
+        run: |
+          if [ -f build/sync-conflicts.txt ]; then
+            cat build/sync-conflicts.txt
+            {
+              printf '%s\n' '## Upstream merge needs attention' '' '```text'
+              cat build/sync-conflicts.txt
+              printf '%s\n' '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
   checks:
     needs: sync
-    if: needs.sync.outputs.candidate != ''
+    if: github.event.repository.private == false && needs.sync.outputs.candidate != ''
     uses: ./.github/workflows/custom-checks.yml
     with:
       ref: ${{ needs.sync.outputs.candidate }}
