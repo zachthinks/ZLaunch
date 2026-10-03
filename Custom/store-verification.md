@@ -46,3 +46,21 @@ reuses the existing prebuilt installer, consent and update tracking. Provider
 OAuth and Raycast-only service compatibility remain separate limitations.
 The optional Raycast Classic launcher style is a first native styling pass,
 not a claim of pixel-perfect parity. Original Glass remains the default.
+
+## Released and installed — 2026-10-03
+
+- Published ZLaunch 0.1.2 (build 3) from commit
+  `92a3b1cf6d89256d72e4bb4594342d83bd29a351`.
+- Release: https://github.com/zachthinks/ZLaunch/releases/tag/v0.1.2
+- Optimized Release build succeeded with no new compiler warnings.
+- Apple notarization accepted; ticket stapled; Gatekeeper accepted the app.
+- Installed through the existing in-app updater and relaunched successfully.
+- `/Applications/ZLaunch.app` reports 0.1.2 (3); strict deep signature verification passed.
+- About displays ZLaunch 0.1.2 (3) and the correct fork links.
+- Selected Raycast Classic in the regular app; live Store catalog and installed
+  extension markers verified. Detail screenshots and metadata loaded.
+- Escape returned detail → Store → launcher and restored the Store query.
+- Removed the generated Debug/ZLaunch Dev.app. No Dev app remains in
+  `/Applications` or `~/Applications`; saved Dev data was preserved.
+- Publication log: `/tmp/zlaunch-012-publish.log` (local, temporary).
+- Distribution artifacts and checksums: `dist/` (local, ignored).

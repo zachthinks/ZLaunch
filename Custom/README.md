@@ -12,15 +12,15 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.1 (build 2)** app is installed at `/Applications/ZLaunch.app`.
+The regular **ZLaunch 0.1.2 (build 3)** app is installed at `/Applications/ZLaunch.app`.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and
 Accessibility shows Granted in macOS settings.
 
 **ZLaunch Dev** remains a separate development configuration. Its installed copy
-was removed; its saved data is retained. The current Dev build is at
-
+and generated app were removed after the 0.1.2 release; saved Dev data is retained.
+`Custom/build.sh` can recreate it at
 `build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. Regular ZLaunch,
 Dev and Tinycast each have their own settings, extension storage, credentials,
 permissions and link handler. Moving between them requires an explicit native
@@ -122,7 +122,7 @@ a successful build. AI does not run automatically just because a merge failed.
 Publishing currently happens on this Mac after review. The local workflow checks
 the exact custom commit, builds and signs the release, notarizes it with Apple,
 verifies the result, and publishes a DMG and a signature-preserving ZIP to the
-fork's GitHub releases. This path has produced the published 0.1.0 and 0.1.1 releases.
+fork's GitHub releases. This path has produced the published 0.1.0, 0.1.1 and 0.1.2 releases.
 No Homebrew tap, upstream website or Discord announcement is touched.
 
 Public release notes explain ZLaunch changes, include the official upstream
