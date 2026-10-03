@@ -10,6 +10,17 @@ VERSION="$(node -p 'require("./Custom/release.json").version')"
 if gh release view "v$VERSION" --repo zachthinks/ZLaunch >/dev/null 2>&1; then
   echo "Version already published; increase Custom/release.json version." >&2; exit 1
 fi
+TAG_REF="refs/tags/v$VERSION"
+TAG_REFS="$(git ls-remote origin "$TAG_REF" "$TAG_REF^{}")"
+TAG_COMMIT="$(printf '%s\n' "$TAG_REFS" | awk -v tag="$TAG_REF" '
+  $2 == tag { direct = $1 }
+  $2 == tag "^{}" { peeled = $1 }
+  END { print (peeled != "" ? peeled : direct) }
+')"
+if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$(git rev-parse HEAD)" ]; then
+  echo "Remote tag v$VERSION points to another commit; choose an unused version." >&2
+  exit 1
+fi
 export DERIVED="${DERIVED:-$PWD/build/ZLaunchDerivedData}"
 if [ "${CHECKS_VERIFIED:-0}" != 1 ]; then ./Custom/check.sh; fi
 CONFIGURATION=Release ./Custom/build.sh
