@@ -13,6 +13,7 @@ place where future changes happen.
 ## Using it today
 
 The first app is **ZLaunch Dev**, a signed development build in
+`/Applications/ZLaunch Dev.app`. The build copy remains in
 `build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. It has its own
 settings, extension storage, credentials, permissions and link handler. The
 release app will be **ZLaunch**, with its own separate settings too. Moving from
@@ -141,8 +142,8 @@ settings-file syncing and some per-extension/snippet/Shortcut bindings.
 
 The separate local extension migration copies payloads and strictly screened
 non-secret preferences into ZLaunch's own directories. It never copies OAuth
-or Keychain items, executes an extension, or changes the official root. Sign in
-again where necessary. Optional capabilities excluded by native import remain
+or Keychain items, executes an extension, or changes the official root. It also transfers screened AI connection metadata and the saved default model,
+but leaves keys and feature consents behind. Sign in again where necessary. Optional capabilities excluded by native import remain
 opt-in. Check the migration report for omitted preferences; do not assume a
 shortcut counted by import was successfully registered while another app owns it.
 
@@ -152,6 +153,9 @@ backup and extension rollback backup should be retained until you are satisfied.
 
 ## Operator reference
 
+- `Custom/migrate-local-setup.py`: preview or apply a local, backed-up copy of
+  built extensions and screened preferences between distinct bundle domains.
+  Close both apps first. It never copies credentials or feature consents.
 - `Custom/build.sh`: signed Dev build; `CONFIGURATION=Release` selects Release.
 - `Custom/check.sh`: full tests, lint, project regeneration consistency, clean
   unsigned Debug build, and source identity checks.
