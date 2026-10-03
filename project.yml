@@ -11,11 +11,12 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "6.0"
-    DEVELOPMENT_TEAM: ""
+    ZLAUNCH_URL_SCHEME: zlaunch
+    DEVELOPMENT_TEAM: "FVY9AS28CU"
     CODE_SIGN_STYLE: Manual
     # Stable self-signed identity so macOS keeps the Accessibility grant across rebuilds.
     # Create it once — see docs/signing.md.
-    CODE_SIGN_IDENTITY: "Tinycast Self-Signed"
+    CODE_SIGN_IDENTITY: "Developer ID Application: Zachary Linquist (FVY9AS28CU)"
     SWIFT_STRICT_CONCURRENCY: complete
   configs:
     Release:
@@ -55,7 +56,8 @@ targets:
           subpath: Contents/Helpers
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tinycast.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.zachthinks.zlaunch
+        PRODUCT_NAME: ZLaunch
         INFOPLIST_FILE: Tinycast/Info.plist
         CODE_SIGN_ENTITLEMENTS: Tinycast/Tinycast.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: tinycast
@@ -68,8 +70,9 @@ targets:
         # locally-run build gets its own prefs, caches, TCC grants and login item instead of
         # inheriting — and corrupting — the installed app's state.
         Debug:
-          PRODUCT_NAME: Tinycast Dev
-          PRODUCT_BUNDLE_IDENTIFIER: com.tinycast.app.dev
+          PRODUCT_NAME: ZLaunch Dev
+          ZLAUNCH_URL_SCHEME: zlaunch-dev
+          PRODUCT_BUNDLE_IDENTIFIER: com.zachthinks.zlaunch.dev
 
   ClipboardTextHelper:
     type: tool

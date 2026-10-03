@@ -24,12 +24,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Raycast and Tinycast URL Scheme</string>
+			<string>ZLaunch URL Scheme</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>raycast</string>
-				<string>tinycast</string>
-				<string>com.raycast</string>
+				<string>$(ZLAUNCH_URL_SCHEME)</string>
 			</array>
 		</dict>
 	</array>

@@ -24,7 +24,7 @@ struct ExtensionDeepLink: Sendable, Equatable {
 
     static func claims(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }
-        return ["raycast", "tinycast", "com.raycast", "raycastinternal"].contains(scheme)
+        return ["raycast", "tinycast", "com.raycast", "raycastinternal", "zlaunch", "zlaunch-dev"].contains(scheme)
     }
 
     /// Host and first path segment unify `raycast://extensions/…` and `com.raycast:/extensions/…`.

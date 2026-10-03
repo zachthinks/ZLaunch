@@ -9,8 +9,8 @@ enum ReleaseChannel: Sendable {
 
     init(bundleID: String?) {
         switch bundleID {
-        case "com.tinycast.app": self = .stable
-        case "com.tinycast.app.beta": self = .beta
+        case "com.zachthinks.zlaunch": self = .stable
+        case "com.zachthinks.zlaunch.beta": self = .beta
         default: self = .development
         }
     }

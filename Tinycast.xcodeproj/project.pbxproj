@@ -3506,11 +3506,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					0832DCD58DEA01602328CCE7 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = FVY9AS28CU;
 						ProvisioningStyle = Manual;
 					};
 					51DBA6947AFD8275A0DF8DA0 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = FVY9AS28CU;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -3529,8 +3529,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				51DBA6947AFD8275A0DF8DA0 /* Tinycast */,
 				0832DCD58DEA01602328CCE7 /* ClipboardTextHelper */,
+				51DBA6947AFD8275A0DF8DA0 /* Tinycast */,
 			);
 		};
 /* End PBXProject section */
@@ -4338,9 +4338,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tinycast.app.dev;
-				PRODUCT_NAME = "Tinycast Dev";
+				PRODUCT_BUNDLE_IDENTIFIER = com.zachthinks.zlaunch.dev;
+				PRODUCT_NAME = "ZLaunch Dev";
 				SDKROOT = macosx;
+				ZLAUNCH_URL_SCHEME = "zlaunch-dev";
 			};
 			name = Debug;
 		};
@@ -4355,7 +4356,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tinycast.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zachthinks.zlaunch;
+				PRODUCT_NAME = ZLaunch;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -4393,12 +4395,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "Tinycast Self-Signed";
+				CODE_SIGN_IDENTITY = "Developer ID Application: Zachary Linquist (FVY9AS28CU)";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = FVY9AS28CU;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -4426,6 +4428,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				ZLAUNCH_URL_SCHEME = zlaunch;
 			};
 			name = Debug;
 		};
@@ -4478,14 +4481,14 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "Tinycast Self-Signed";
+				CODE_SIGN_IDENTITY = "Developer ID Application: Zachary Linquist (FVY9AS28CU)";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = FVY9AS28CU;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -4509,6 +4512,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				ZLAUNCH_URL_SCHEME = zlaunch;
 			};
 			name = Release;
 		};
