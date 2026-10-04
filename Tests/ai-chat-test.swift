@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import SQLite3
 
@@ -17,6 +18,8 @@ struct AIChatTests {
     }
 
     static func main() async {
+        windowCaptureTargetsOnlyTheRequestedApp()
+        await windowCaptureStagesWithoutSending()
         sessionSummariesAndRequests()
         requestsKeepOnlyBoundedContext()
         attachmentsStayInsideTheTurnBudget()
@@ -1344,6 +1347,57 @@ extension AIChatTests {
         expect(
             store.session(id: chat.session.id)?.messages.map(\.text) == ["Why?", "Second"],
             "the stored transcript holds only the new reply")
+    }
+
+    static func windowCaptureTargetsOnlyTheRequestedApp() {
+        func window(_ id: Int, _ pid: Int, layer: Int = 0, alpha: Double = 1) -> [String: Any] {
+            [kCGWindowNumber as String: NSNumber(value: id), kCGWindowOwnerPID as String: NSNumber(value: pid),
+             kCGWindowLayer as String: NSNumber(value: layer), kCGWindowAlpha as String: NSNumber(value: alpha)]
+        }
+        let windows = [window(1, 99), window(2, 42, layer: 3), window(3, 42, alpha: 0),
+                       window(4, 42), window(5, 42)]
+        let target = AIWindowCaptureService.target(processID: 42, windows: windows)
+        expect(target?.windowID == 4, "capture picks the frontmost visible normal window of the target app")
+        expect(target?.processID == 42, "capture pins the owner as well as the window ID")
+        expect(AIWindowCaptureService.target(processID: 7, windows: windows) == nil,
+               "an app without a window never falls back to another app or the desktop")
+    }
+
+    static func windowCaptureStagesWithoutSending() async {
+        let (store, directory) = temporaryStore("window-capture")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chats = AIChatSurfacesState(history: store)
+        var finished = 0
+        chats.onReplyFinished = { _ in finished += 1 }
+        let original = chats.window
+        original.draft = "What does this mean?"
+        expect(chats.windowCaptureDestination() === original, "capture preserves an unsent draft")
+        original.draft = ""
+        let stalled = StalledProvider()
+        original.send("Earlier question", using: stalled)
+        let destination = chats.windowCaptureDestination()
+        expect(destination !== original, "capture starts fresh after an existing conversation")
+        expect(chats.window === original, "preparing capture leaves the current chat alone on failure")
+        let screenshot = AIImage(data: Data([1, 2, 3]), mimeType: "image/png")
+        expect(destination.attach(ChatAttachment(payload: .image(screenshot), name: "Window", preview: nil)) == nil,
+               "the captured image can be staged")
+        chats.showInWindow(destination)
+        expect(destination.session.messages.isEmpty && !destination.isStreaming,
+               "showing captured context does not send a question")
+        expect(destination.pendingAttachments.count == 1, "the screenshot remains removable before sending")
+        expect(original.isStreaming && chats.holder(of: original.session.id) === original,
+               "opening the captured window chat preserves an existing reply")
+        expect(chats.windowCaptureDestination() === destination, "another capture preserves staged attachments")
+        let provider = ScriptedProvider(rounds: [[.text("Answer"), .finished]])
+        destination.send("Explain this", using: provider)
+        await settle(destination)
+        expect(provider.requests.first?.messages.last?.images == [screenshot],
+               "the screenshot is transmitted with the submitted question")
+        expect(finished == 1, "a captured chat still reports finished replies for naming")
+        destination.draft = "Another question"
+        expect(chats.windowCaptureDestination() === destination, "capture preserves drafts in existing conversations")
+        stalled.finishAll()
+        await settle(original)
     }
 
     /// Naming hangs off this hook, so a state made after it is set must be told too.

@@ -707,3 +707,16 @@ tccutil reset Accessibility com.tinycast.app.dev 2>/dev/null || true
 - Quit and relaunch: everything created above persisted
 - Nothing was written outside `com.tinycast.app.dev/`. Channel isolation is not negotiable — a Dev build
   writing into the stable app's directory is a defect even though the data is disposable
+
+### Ask AI About This Window
+
+- Bind its own shortcut under Settings → AI → Commands; normal AI Chat still opens without capture.
+- Capture an external app with overlapping windows, then from the launcher; only the window
+  that was in front before invocation is attached, with no palette, cursor or other app pixels.
+- Repeat on a secondary Retina display and with a fullscreen window.
+- Deny Screen & System Audio Recording: guidance opens the matching System Settings pane.
+  Grant permission, relaunch if macOS requests it, and retry.
+- A text-only model refuses with guidance to select an image-capable model.
+- A screenshot is removable and sends only with the question; an unsent draft survives capture.
+- Hold the shortcut, close the source window during capture, switch chats, or disable AI while
+  capture is pending: no duplicate, replacement target or late attachment appears.

@@ -15,6 +15,8 @@ final class AIChatCoordinator {
     /// Chats with a title request in flight, so a quick second reply never asks twice.
     @ObservationIgnored private var naming: [UUID: Task<Void, Never>] = [:]
 
+    @ObservationIgnored private var windowCapture: Task<Void, Never>?
+
     init(
         chats: AIChatSurfacesState, settings: AppSettings, appIndex: AppIndex,
         paletteCoordinator: PaletteCoordinator, settingsCoordinator: SettingsCoordinator,
@@ -34,8 +36,9 @@ final class AIChatCoordinator {
     }
 
     func applyEnabled() {
-        appIndex.setCommandsVisible([.aiChat, .quickAI], settings.aiEnabled)
+        appIndex.setCommandsVisible([.aiChat, .quickAI, .askAIAboutWindow], settings.aiEnabled)
         guard settings.aiEnabled else {
+            windowCapture?.cancel()
             for request in naming.values { request.cancel() }
             naming = [:]
             // Before the handle closes: cancelling an open reply saves the conversation it ends.
@@ -75,6 +78,67 @@ final class AIChatCoordinator {
             AIChatSplitViewController(
                 sidebar: AIChatSidebarView().environment(self),
                 detail: AIChatDetailView().environment(self).environment(find))
+        }
+    }
+
+    func askAboutWindow() {
+        guard settings.aiEnabled, windowCapture == nil else { return }
+        let ownWindow = paletteCoordinator.isVisible
+            ? paletteCoordinator.previousOwnWindow : NSApp.keyWindow
+        let target = AIWindowCaptureService.target(
+            app: paletteCoordinator.targetApp, ownWindow: ownWindow)
+        let original = chats.window
+        let generation = original.stagingGeneration
+        let draft = original.draft
+        let attachments = original.pendingAttachments.map(\.id)
+        let destination = chats.windowCaptureDestination()
+        guard capabilities(for: destination).images else {
+            core.showMessage(ChatAttachmentRefusal.imagesUnsupported.message, tone: .neutral)
+            return
+        }
+        guard let target else {
+            core.showMessage("There is no foreground window to capture.", tone: .neutral)
+            return
+        }
+        paletteCoordinator.hidePalette(restoreFocus: false)
+        windowCapture = Task { [weak self] in
+            guard let self else { return }
+            defer { windowCapture = nil }
+            do {
+                let item = try await AIWindowCaptureService.capture(target)
+                try Task.checkCancellation()
+                guard settings.aiEnabled else { return }
+                guard chats.window === original, original.stagingGeneration == generation,
+                    original.draft == draft, original.pendingAttachments.map(\.id) == attachments
+                else {
+                    core.showMessage("The chat changed during capture. Try the shortcut again.", tone: .neutral)
+                    return
+                }
+                guard capabilities(for: destination).images else {
+                    core.showMessage(ChatAttachmentRefusal.imagesUnsupported.message, tone: .neutral)
+                    return
+                }
+                let attachment = ChatAttachment(payload: item.payload, name: item.name, preview: item.preview)
+                if let refusal = destination.attach(attachment) {
+                    core.showMessage(refusal.message, tone: .neutral)
+                    return
+                }
+                chats.showInWindow(destination)
+                showWindow()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                let permission = AIWindowCaptureService.isPermissionFailure(error)
+                let message = permission
+                    ? AIWindowCaptureService.Failure.permission.localizedDescription : error.localizedDescription
+                let openSettings = await core.reportFailure(
+                    title: "Could Not Capture Window", message: message,
+                    symbol: "macwindow", recovery: permission ? "Open System Settings" : nil)
+                if openSettings, permission {
+                    AIWindowCaptureService.openPermissionSettings()
+                }
+            }
         }
     }
 

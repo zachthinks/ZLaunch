@@ -168,6 +168,8 @@ final class LauncherCoordinator {
         case .aiChat:
             dismissPalette()
             core.aiChatCoordinator.showWindow()
+        case .askAIAboutWindow:
+            core.aiChatCoordinator.askAboutWindow()
         case .fixGrammar:
             core.quickActionCoordinator.run(.fixGrammar)
         case .rewrite:

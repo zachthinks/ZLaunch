@@ -62,14 +62,14 @@ final class AIChatSurfacesState {
             guard loaded.open(id: id) else { return false }
             next = loaded
         }
-        show(next)
+        showInWindow(next)
         return true
     }
 
     /// An empty chat is already new; replacing it would only drop what is staged in it.
     func newWindowChat() {
         guard !window.session.messages.isEmpty else { return }
-        show(makeState())
+        showInWindow(makeState())
     }
 
     /// Quick AI's conversation moves over whole, reply and staged files included.
@@ -84,12 +84,21 @@ final class AIChatSurfacesState {
         }
         let moved = quickAI
         quickAI = makeState()
-        show(moved)
+        showInWindow(moved)
         if !draft.isEmpty { window.draft = draft }
         return true
     }
 
-    private func show(_ next: AIChatState) {
+    func windowCaptureDestination() -> AIChatState {
+        if window.session.messages.isEmpty || !window.draft.isEmpty || !window.pendingAttachments.isEmpty {
+            return window
+        }
+        return makeState()
+    }
+
+    func showInWindow(_ next: AIChatState) {
+        guard window !== next else { return }
+        next.onReplyFinished = onReplyFinished
         if window.isStreaming { answeringElsewhere[window.session.id] = window }
         window = next
         answeringElsewhere = answeringElsewhere.filter { $0.value.isStreaming }

@@ -11,10 +11,27 @@ from the launcher asks what you typed, and the answer appears in place. **AI Cha
 saved conversations in a sidebar on the left, the open one on the right, and a composer at the
 bottom with the model picker. ⌘J hands a Quick AI conversation to the window.
 
+## Ask AI About This Window
+
+Assign **Ask AI About This Window** its own global hotkey in Settings → AI → Commands,
+or run it from the launcher. It snapshots the target window's identity before dismissing
+the palette or asking for permission, then captures only that window with ScreenCaptureKit.
+Screen & System Audio Recording permission is requested on invocation; a refusal offers
+System Settings with instructions. No Accessibility permission is needed for capture.
+
+The screenshot opens as a removable image attachment in AI Chat, using the existing image
+size and attachment limits. A chat with an unsent draft or attachments keeps them; otherwise
+an existing conversation gives way to a fresh chat, and any reply in progress continues.
+Nothing is sent to the provider until the user submits a question. Text-only models explain
+that an image-capable model must be selected first; the command never switches providers.
+Repeated shortcuts during capture are ignored. Disabling AI cancels capture, and changing
+chats, drafts or attachments while it is running discards the late result with a notice.
+The normal AI Chat and Quick AI shortcuts retain their behavior.
+
 ## Invariants
 
 - **AI is off out of the box, and off means fully off.** `AppSettings.aiEnabled` is the flag:
-  no `Quick AI` or `AI Chat` command in the launcher, no history database opened or created, no Codex
+  no `Quick AI`, `AI Chat` or `Ask AI About This Window` command in the launcher, no history database opened or created, no Codex
   helper for chat, no stop for it on Tab's ring, the palette leaves `.ai` and the window closes.
   Installed providers may still remain available for Quick Actions, which has its own switch and route. Turning AI off cancels
   every streaming reply and drops both transcripts, but touches neither the saved conversations in

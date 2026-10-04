@@ -70,6 +70,15 @@ Appearance → Launcher style. It gives every launcher screen a quieter surface,
 smaller corners and search type, and a flat footer. **Original Glass** remains
 the default. System/Light/Dark and interface size are independent choices.
 
+## Ask AI About This Window
+
+ZLaunch 0.1.4 adds **Ask AI About This Window** under Settings → AI → Commands.
+Enable AI, select an image-capable model, and assign the command a shortcut.
+Invoke it over another app to open AI Chat with that window's screenshot staged.
+The screenshot stays local until you send your question. macOS may ask for
+Screen & System Audio Recording permission for ZLaunch; grant it in System
+Settings and relaunch if macOS requests it. AI Chat's ordinary shortcut is unchanged.
+
 ## How future customization stays maintainable
 
 User-facing app labels, permission descriptions and status messages identify
