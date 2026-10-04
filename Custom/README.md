@@ -12,14 +12,14 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.3 (build 4)** app is installed at `/Applications/ZLaunch.app`.
+The regular **ZLaunch 0.1.4 (build 5)** app is installed at `/Applications/ZLaunch.app`.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and
 Accessibility shows Granted in macOS settings.
 
 **ZLaunch Dev** remains a separate development configuration. Its installed copy
-and generated app were removed after the 0.1.2 release; saved Dev data is retained.
+and generated app are absent after verification of the 0.1.4 release; saved Dev data is retained.
 `Custom/build.sh` can recreate it at
 `build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`. Regular ZLaunch,
 Dev and Tinycast each have their own settings, extension storage, credentials,
