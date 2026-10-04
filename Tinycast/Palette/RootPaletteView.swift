@@ -741,6 +741,7 @@ struct RootPaletteView: View {
         // Identical metrics in both states, so typing can't move the search bar.
         .frame(height: metrics.size.headerHeight)
         .padding(.top, metrics.size.headerPadding)
+        .padding(.bottom, isCollapsed ? metrics.size.headerPadding : 0)
         .frame(maxWidth: .infinity)
         .background(settings.paletteStyle == .classic ? Theme.Colors.classicBarSurface : .clear)
         .overlay(alignment: .bottom) {

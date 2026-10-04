@@ -12,7 +12,7 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.2 (build 3)** app is installed at `/Applications/ZLaunch.app`.
+The regular **ZLaunch 0.1.3 (build 4)** app is installed at `/Applications/ZLaunch.app`.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and
