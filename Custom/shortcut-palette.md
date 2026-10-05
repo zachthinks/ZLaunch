@@ -14,13 +14,24 @@ Search for **Configure LaunchDeck** in the launcher.
   is assigned by the feature. The current Dev test binding is **⌃⌥⌘K**.
 - **Appearance:** a separate tab contains List, Grid or Floating Tiles, key size,
   Escape behavior and repeated-shortcut behavior. Valid edits save automatically.
-- **Groups:** use **Add Group**, edit its key and name, then **Edit Group Choices**.
-  The back arrow returns to the parent; the sidebar identifies the current group.
-  Groups must contain a choice before the updated menu becomes active.
-- **Actions:** use **Add Action**, then choose what the key should do: open an app,
+- **Submenus:** these are the entries formerly called groups. Expand their arrows in
+  the menu tree to see nested actions without changing screens. Select any item to edit
+  its key and name on the right. Select **Main menu** to add a top-level item.
+- **Adding items:** **Add to:** names the destination. Selecting a submenu adds inside
+  it; selecting an action adds beside it. **Add Actions Here…** and **Add Submenu Here**
+  also add directly to the selected submenu. Submenus must contain an action before saving.
+- **Unfinished edits:** switching items offers Discard Changes or Keep Editing when
+  the current edit is invalid. Discard removes a new action without a destination.
+- **Actions:** use **Add Actions…**, tick several destinations, then add the selection
+  in one step. Selections persist across searches and categories; unused letters are
+  assigned automatically. Cancel creates no placeholder. The picker shows remaining
+  capacity and prevents exceeding 26 items. Available destinations: open an app,
   open a website, run a ZLaunch command, use an app action, or run a shortcut/workflow.
-  Search filters that category; existing icons help identify destinations.
-- **Websites:** enter a complete HTTP(S) address. Invalid schemes and embedded
+  Results are grouped by category, with categories and actions sorted alphabetically.
+  Search matches action names and category names: “Window” includes Window Management
+  and Window Layouts, while “window left” narrows to matching window actions.
+  Existing icons help identify destinations.
+- **Websites:** choose **Add Website…** in the action picker, then enter a complete HTTP(S) address. Invalid schemes and embedded
   credentials are rejected. Websites open through ZLaunch's existing browser
   dispatcher. A new unnamed website choice gets its hostname as its label.
 - **App actions:** select existing extension actions or Quicklinks. Arbitrary
@@ -48,7 +59,8 @@ choice. A type change requires choosing a matching destination.
 panel. Both retain a breadcrumb and Esc/Configure controls.
 
 **Floating Tiles** uses only separate frosted keycaps, without a visible enclosing
-panel, heading, breadcrumb or footer. It sits modestly above screen center.
+panel, heading, breadcrumb or footer. Its top edge uses the launcher’s 18% screen-height
+margin, placing normal one-row tiles around the upper third. Tall menus stay on-screen.
 Esc still works; setup remains accessible via Configure LaunchDeck. A thin edge,
 soft shadow and tinted surface provide separation. Reduce Transparency selects
 solid tile surfaces. The current Dev menu uses Floating Tiles / Medium.

@@ -73,12 +73,11 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         let frame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1000, height: 800)
         let layout = layout(for: frame.size)
         let size = NSSize(width: layout.width, height: layout.height)
-        panel.setFrame(
-            NSRect(x: frame.midX - size.width / 2,
-                   y: min(frame.maxY - size.height,
-                          frame.midY - size.height / 2 + (navigation.configuration.displayMode == .floatingTiles
-                              ? frame.height * 0.06 : 0)),
-                   width: size.width, height: size.height), display: false)
+        let panelFrame = navigation.configuration.displayMode == .floatingTiles
+            ? layout.floatingFrame(in: frame, topMarginFraction: Theme.Size.paletteTopMarginFraction)
+            : NSRect(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2,
+                     width: size.width, height: size.height)
+        panel.setFrame(panelFrame, display: false)
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(panel)
@@ -201,7 +200,8 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         frame.origin.x += (frame.width - width) / 2
         if navigation.configuration.displayMode == .floatingTiles {
             if let screen = panel.screen?.visibleFrame {
-                frame.origin.y = screen.midY - height / 2 + screen.height * 0.06
+                frame.origin.y = layout.floatingFrame(
+                    in: screen, topMarginFraction: Theme.Size.paletteTopMarginFraction).minY
             } else { frame.origin.y += (frame.height - height) / 2 }
         } else {
             frame.origin.y += frame.height - height

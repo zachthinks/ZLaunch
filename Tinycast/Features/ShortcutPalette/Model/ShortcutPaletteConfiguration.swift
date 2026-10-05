@@ -35,14 +35,14 @@ struct ShortcutPaletteConfiguration: Codable, Equatable, Sendable {
 
     private static func validate(_ items: [Item], depth: Int) throws {
         guard depth < 6, !items.isEmpty, items.count <= 26 else {
-            throw Issue(message: "Use 1–26 choices per group and at most six levels.")
+            throw Issue(message: "Use 1–26 choices per submenu and at most six levels.")
         }
         var keys: Set<String> = []
         for item in items {
             guard item.key.utf8.count == 1,
                 let byte = item.key.lowercased().utf8.first, (97...122).contains(byte),
                 keys.insert(item.id).inserted
-            else { throw Issue(message: "Each choice needs a unique letter A–Z within its group.") }
+            else { throw Issue(message: "Each choice needs a unique letter A–Z within its submenu.") }
             guard !item.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 item.label.count <= 80
             else { throw Issue(message: "Choice labels must contain 1–80 characters.") }
@@ -51,7 +51,7 @@ struct ShortcutPaletteConfiguration: Codable, Equatable, Sendable {
                     throw Issue(message: "\(item.label): use children or an action, never both.")
                 }
                 guard !children.isEmpty else {
-                    throw Issue(message: "\(item.label) is empty. Open this group and add an action, or remove the group.")
+                    throw Issue(message: "\(item.label) is empty. Add an action to this submenu, or remove it.")
                 }
                 try validate(children, depth: depth + 1)
             } else {

@@ -10,6 +10,7 @@ struct ShortcutPaletteEditorView: View {
     let closeEditor: () -> Void
     let preview: () -> Void
     @State private var draft = ShortcutPaletteEditing(configuration: .starter)
+    @State private var expanded: Set<[String]> = []
     @State private var selection: String?
     @State private var key = ""
     @State private var label = ""
@@ -18,34 +19,8 @@ struct ShortcutPaletteEditorView: View {
     @State private var website = ""
     @State private var actionType = ActionType.command
 
-    private enum ActionType: String, CaseIterable, Identifiable {
-        case application = "Open an app"
-        case website = "Open a website"
-        case command = "Run a ZLaunch command"
-        case appAction = "Use an app action"
-        case workflow = "Run a shortcut or workflow"
-        var id: Self { self }
-        var searchPrompt: String {
-            switch self {
-            case .application: "Search apps…"
-            case .website: "Website address"
-            case .command: "Search ZLaunch commands…"
-            case .appAction: "Search app actions…"
-            case .workflow: "Search shortcuts and workflows…"
-            }
-        }
-
-        func includes(_ kind: AppEntry.Kind) -> Bool {
-            switch self {
-            case .application: kind == .application
-            case .website: false
-            case .workflow: kind == .appleShortcut || kind == .customCommand
-            case .appAction: kind == .extensionCommand || kind == .quicklink
-            case .command:
-                ![.application, .appleShortcut, .customCommand, .extensionCommand, .quicklink].contains(kind)
-            }
-        }
-    }
+    private typealias ActionType = ShortcutPaletteActionPicker.ActionType
+    @State private var showingActionPicker = false
     @State private var notice: String?
     @State private var validationMessage: String?
     @State private var savedConfiguration: ShortcutPaletteConfiguration?
@@ -108,6 +83,14 @@ struct ShortcutPaletteEditorView: View {
         }
         .padding(24)
         .disabled(!loaded || saving || askingToDiscard)
+        .sheet(isPresented: $showingActionPicker) {
+            ShortcutPaletteActionPicker(actions: actions, destination: additionTitle,
+                capacity: 26 - additionCount, onAdd: addActions, onWebsite: {
+                    showingActionPicker = false
+                    add(group: false)
+                    actionType = .website
+                })
+        }
         .onAppear { registerCloseHandler { requestClose() } }
         .task {
             let result = await Task.detached { Result { try repository.load() } }.value
@@ -116,6 +99,7 @@ struct ShortcutPaletteEditorView: View {
             case .success(let configuration):
                 draft = ShortcutPaletteEditing(configuration: configuration)
                 savedConfiguration = configuration
+                expanded = Set(configuration.items.filter { $0.children != nil }.map { [$0.id] })
             case .failure(let error):
                 validationMessage = "Couldn’t load your menu: \(error.localizedDescription)"
             }
@@ -157,46 +141,67 @@ struct ShortcutPaletteEditorView: View {
         }
     }
 
+    private var additionTitle: String {
+        if let selectedItem, selectedItem.children != nil { return selectedItem.label }
+        return "Main menu" + draft.title.dropFirst(4)
+    }
+
+    private var additionDepth: Int { draft.path.count + (selectedItem?.children == nil ? 0 : 1) }
+    private var additionCount: Int { selectedItem?.children?.count ?? draft.items.count }
+
     private var menuEditor: some View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    if !draft.path.isEmpty {
-                        Button { if apply() { draft.back(); select(nil) } } label: {
-                            Image(systemName: "arrow.left")
-                        }.help("Back to parent group")
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(draft.path.isEmpty ? "Your menu" : draft.title.components(separatedBy: " › ").last ?? "Group")
-                            .font(.headline)
-                        Text(draft.path.isEmpty ? "Start here when LaunchDeck opens" : "Your menu" + draft.title.dropFirst(4))
-                            .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                    }
+                Button { navigate(to: [], selecting: nil) } label: {
+                    Label("Main menu", systemImage: "list.bullet")
+                        .font(.headline).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                List(draft.items, selection: Binding(
-                    get: { selection }, set: { value in if apply() { select(value) } })) { item in
-                    HStack(spacing: 10) {
-                        Text(item.key.uppercased()).font(.body.monospaced().weight(.semibold))
-                            .frame(width: 30, height: 30)
-                            .background(Theme.Colors.windowSurface, in: .rect(cornerRadius: 6))
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(item.label).lineLimit(1)
-                            Text(item.children.map { "Group · \($0.count) choices" } ?? "Action")
-                                .font(.caption).foregroundStyle(.secondary)
+                .buttonStyle(.plain).help("Select the main menu to add a top-level item")
+                Text("Expand submenus to see and edit their actions.")
+                    .font(.caption).foregroundStyle(.secondary)
+                List(selection: Binding(
+                    get: { selection.map { draft.keys + [$0] } },
+                    set: { value in
+                        guard let value, let id = value.last else { return }
+                        navigate(to: Array(value.dropLast()), selecting: id)
+                    })) {
+                    ForEach(draft.rows(expanded: expanded)) { row in
+                        HStack(spacing: 8) {
+                            if row.item.children != nil {
+                                Button {
+                                    if expanded.contains(row.id) { expanded.remove(row.id) } else { expanded.insert(row.id) }
+                                } label: {
+                                    Image(systemName: expanded.contains(row.id) ? "chevron.down" : "chevron.right")
+                                        .font(.caption).frame(width: 16, height: 24)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(expanded.contains(row.id) ? "Collapse" : "Expand") \(row.item.label)")
+                            } else {
+                                Color.clear.frame(width: 16, height: 1)
+                            }
+                            Text(row.item.key.uppercased()).font(.body.monospaced().weight(.semibold))
+                                .frame(width: 28, height: 28)
+                                .background(Theme.Colors.windowSurface, in: .rect(cornerRadius: 6))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(row.item.label).lineLimit(1)
+                                Text(row.item.children.map { "Submenu · \($0.count) items" } ?? "Action")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
                         }
-                        Spacer(minLength: 0)
-                        if item.children != nil {
-                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
-                        }
+                        .padding(.leading, CGFloat(row.depth) * 12)
+                        .padding(.vertical, 4).tag(row.id)
                     }
-                    .padding(.vertical, 4).tag(item.id)
                 }
                 .scrollContentBackground(.hidden)
+                Text("Add to: \(additionTitle)")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 HStack {
-                    Button("Add Group", systemImage: "folder.badge.plus") { add(group: true) }
-                    Button("Add Action", systemImage: "plus") { add(group: false) }
+                    Button("Add Submenu", systemImage: "folder.badge.plus") { add(group: true) }
+                        .disabled(additionDepth >= 5)
+                    Button("Add Actions…", systemImage: "plus") { if apply() { showingActionPicker = true } }
                 }
-                .disabled(draft.nextKey == nil)
+                .disabled(additionCount >= 26)
                 HStack {
                     Button { if apply(), let selection { draft.move(selection, by: -1) } } label: {
                         Image(systemName: "arrow.up")
@@ -208,9 +213,13 @@ struct ShortcutPaletteEditorView: View {
                     Button("Remove", role: .destructive) { removeChoice() }.disabled(selection == nil)
                 }
             }
-            .padding(16).frame(width: 300)
-            .background(Theme.Colors.cardFill, in: .rect(cornerRadius: 12))
+            .padding(16).frame(width: 330)
+            .background(Theme.Colors.controlSurface, in: .rect(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.Colors.border))
             detail
+                .padding(16)
+                .background(Theme.Colors.cardFill, in: .rect(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.Colors.border))
         }
         .frame(maxHeight: .infinity)
     }
@@ -283,10 +292,10 @@ struct ShortcutPaletteEditorView: View {
         if let selectedItem {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(selectedItem.children == nil ? "Set up an action" : "Set up a group")
+                    Text(selectedItem.children == nil ? "Edit action" : "Edit submenu")
                         .font(.title3.weight(.semibold))
                     Text(selectedItem.children == nil ? "Choose what happens when you press this key."
-                         : "A group opens another set of keys.")
+                         : "Press this key in LaunchDeck to open the actions inside this submenu.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 HStack {
@@ -301,12 +310,16 @@ struct ShortcutPaletteEditorView: View {
                 }
                 .textFieldStyle(.roundedBorder)
                 if selectedItem.children != nil {
-                    Text("\(selectedItem.children?.count ?? 0) choices in this group")
+                    Text("\(selectedItem.children?.count ?? 0) items in this submenu")
                         .foregroundStyle(.secondary)
-                    Button("Edit Group Choices", systemImage: "arrow.right") {
-                        guard apply() else { return }
-                        draft.enter(key.lowercased()); select(nil)
+                    Text("Use the arrow beside this submenu to expand its items in the menu tree. Select an item to edit it here.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Add Actions Here…", systemImage: "plus") { if apply() { showingActionPicker = true } }
+                        Button("Add Submenu Here", systemImage: "folder.badge.plus") { add(group: true) }
+                            .disabled(draft.path.count >= 4)
                     }
+                    .disabled((selectedItem.children?.count ?? 0) >= 26)
                     Spacer()
                 } else {
                     Picker("What should this key do?", selection: Binding(get: { actionType }, set: { type in
@@ -324,21 +337,41 @@ struct ShortcutPaletteEditorView: View {
                             .font(.caption).foregroundStyle(.secondary)
                         Spacer()
                     } else {
-                        TextField(actionType.searchPrompt, text: $search).textFieldStyle(.roundedBorder)
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                            TextField(actionType.searchPrompt, text: $search).textFieldStyle(.plain)
+                                .accessibilityLabel("Search actions or categories")
+                            if !search.isEmpty {
+                                Button { search = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                }
+                                .buttonStyle(.plain).help("Clear search")
+                                .accessibilityLabel("Clear search")
+                            }
+                        }
+                        .padding(10)
+                        .background(Theme.Colors.controlSurface, in: .rect(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.Colors.border))
                         if filteredActions.isEmpty {
                             Text(emptyActionMessage).font(.callout).foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         } else {
-                            List(filteredActions, selection: $action) { entry in
-                                HStack(spacing: 10) {
-                                    AppIconView(app: entry, pointSize: 24)
-                                        .frame(width: 24, height: 24).accessibilityHidden(true)
-                                    VStack(alignment: .leading) {
-                                        Text(entry.name)
-                                        Text(entry.kind.descriptor.label).font(.caption).foregroundStyle(.secondary)
+                            List(selection: $action) {
+                                ForEach(actionSections, id: \.kind) { section in
+                                    SwiftUI.Section(section.kind.descriptor.sectionTitle) {
+                                        ForEach(section.entries) { entry in
+                                            HStack(spacing: 10) {
+                                                AppIconView(app: entry, pointSize: 24)
+                                                    .frame(width: 24, height: 24).accessibilityHidden(true)
+                                                VStack(alignment: .leading) {
+                                                    Text(entry.name)
+                                                    Text(entry.kindLabel).font(.caption).foregroundStyle(.secondary)
+                                                }
+                                            }
+                                            .tag(entry.id)
+                                        }
                                     }
                                 }
-                                .tag(entry.id)
                             }
                         }
                         Text(actions.first(where: { $0.id == action }).map { "Selected action: \($0.name)" }
@@ -361,8 +394,8 @@ struct ShortcutPaletteEditorView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(draft.items.isEmpty ? "Add your first action" : "Make it yours").font(.title3.weight(.semibold))
                 Text(draft.items.isEmpty
-                     ? "Use Add Action to choose an app, website, or command for this group."
-                     : "Select a key on the left to customize it. Add actions to launch things, or groups to organize more keys.")
+                     ? "Use Add Action to choose an app, website, or command for this submenu."
+                     : "Select a key on the left to customize it. Add actions to launch things, or submenus to organize more keys.")
                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if let validationMessage { validation(validationMessage) }
             }
@@ -370,10 +403,10 @@ struct ShortcutPaletteEditorView: View {
         }
     }
 
-    private var filteredActions: [AppEntry] {
-        actions.filter { actionType.includes($0.kind)
-            && (search.isEmpty || $0.name.localizedCaseInsensitiveContains(search)) }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    private var filteredActions: [AppEntry] { actionSections.flatMap(\.entries) }
+
+    private var actionSections: [(kind: AppEntry.Kind, entries: [AppEntry])] {
+        ShortcutPaletteActionPicker.sections(actions: actions, type: actionType, search: search)
     }
 
     private var emptyActionMessage: String {
@@ -405,15 +438,57 @@ struct ShortcutPaletteEditorView: View {
         search = ""
     }
 
+    private func navigate(to parent: [String], selecting id: String?) {
+        guard parent != draft.keys || id != selection else { return }
+        if apply() {
+            draft.navigate(to: parent)
+            select(id)
+            return
+        }
+        askingToDiscard = true
+        Task {
+            let message = "Discard unfinished edits to this choice and switch items? "
+                + "A new action without a destination will be removed."
+            let discard = await confirmDiscard(message)
+            askingToDiscard = false
+            guard discard else { return }
+            if let selectedItem, selectedItem.children == nil, selectedItem.action?.isEmpty != false {
+                draft.remove(selectedItem.id)
+            }
+            draft.navigate(to: parent)
+            select(id)
+        }
+    }
+
+    private func addActions(_ entries: [AppEntry]) throws {
+        var updated = draft
+        if let selectedItem, selectedItem.children != nil { updated.enter(selectedItem.id) }
+        let added = try updated.appendActions(entries.map { (label: $0.name, action: $0.id) })
+        expanded.insert(updated.keys)
+        draft = updated
+        select(added.first)
+        showingActionPicker = false
+    }
+
     private func add(group: Bool) {
         guard apply() else { return }
+        if let selectedItem, selectedItem.children != nil {
+            expanded.insert(draft.keys + [selectedItem.id])
+            draft.enter(selectedItem.id)
+            select(nil)
+        }
+        guard !group || draft.path.count < 5 else {
+            validationMessage = "Submenus support up to six menu levels. Add an action here instead."
+            return
+        }
         guard let next = draft.nextKey else { return }
         let item = ShortcutPaletteConfiguration.Item(
-            key: next, label: group ? "New Group" : "New Action",
+            key: next, label: group ? "New Submenu" : "New Action",
             action: group ? nil : "", children: group ? [] : nil)
         do {
             try draft.update(item, replacing: nil)
             select(item.id)
+            if group { expanded.insert(draft.keys + [item.id]) }
             if !group { actionType = .application }
         } catch { notice = error.localizedDescription }
     }

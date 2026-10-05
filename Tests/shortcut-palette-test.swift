@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 @main
@@ -20,6 +21,15 @@ struct ShortcutPaletteTests {
                 }
             }
         }
+        let floatingLayout = ShortcutPaletteLayout(mode: .floatingTiles, size: .medium,
+            itemCount: 4, isRoot: true, availableSize: CGSize(width: 1440, height: 900))
+        let screen = CGRect(x: -1440, y: 200, width: 1440, height: 900)
+        let positioned = floatingLayout.floatingFrame(in: screen, topMarginFraction: 0.18)
+        assert(positioned.midX == screen.midX)
+        assert(abs(screen.maxY - positioned.maxY - screen.height * 0.18) < 0.001)
+        let tall = ShortcutPaletteLayout(mode: .floatingTiles, size: .large,
+            itemCount: 26, isRoot: false, availableSize: screen.size)
+        assert(screen.contains(tall.floatingFrame(in: screen, topMarginFraction: 0.18)))
         let wrapped = ShortcutPaletteLayout(mode: .floatingTiles, size: .large,
             itemCount: 20, isRoot: true, availableSize: CGSize(width: 640, height: 480))
         assert(wrapped.needsScrolling && wrapped.columns == 2)
@@ -89,6 +99,42 @@ struct ShortcutPaletteTests {
         editing.remove("t")
         editing.back()
         assert(editing.configuration == config)
+        let collapsedRows = editing.rows(expanded: [])
+        assert(collapsedRows.count == config.items.count)
+        let expandedRows = editing.rows(expanded: [["d"], ["d", "l"], ["c"]])
+        assert(expandedRows.contains { $0.id == ["d", "l", "c"] && $0.depth == 2 })
+        assert(expandedRows.contains { $0.id == ["c", "h"] && $0.parent == ["c"] })
+        assert(Set(expandedRows.map(\.id)).count == expandedRows.count)
+        editing.navigate(to: ["d", "l"])
+        assert(editing.keys == ["d", "l"] && editing.items.first?.id == "c")
+        editing.navigate(to: ["missing"])
+        assert(editing.keys == ["d", "l"])
+        editing.navigate(to: ["c", "c"])
+        assert(editing.keys == ["d", "l"])
+        editing.navigate(to: [])
+        editing.move("d", by: 1)
+        editing.navigate(to: ["d", "l"])
+        assert(editing.keys == ["d", "l"])
+        editing.navigate(to: [])
+        editing.move("d", by: -1)
+        assert(editing.configuration == config)
+        var batch = ShortcutPaletteEditing(configuration: config)
+        batch.navigate(to: ["c"])
+        let batchKeys = try batch.appendActions([("Left Half", "window:left"), ("Maximize", "window:maximize")])
+        assert(batchKeys == ["a", "b"])
+        assert(batch.items.suffix(2).map(\.label) == ["Left Half", "Maximize"])
+        assert(batch.configuration.items[0] == config.items[0])
+        let beforeOverflow = batch.configuration
+        do {
+            _ = try batch.appendActions(Array(repeating: ("Extra", "command:extra"), count: 26))
+            fatalError("Oversized batch accepted")
+        } catch {}
+        assert(batch.configuration == beforeOverflow)
+        do {
+            _ = try batch.appendActions([("Valid", "command:valid"), ("Invalid", "")])
+            fatalError("Invalid batch accepted")
+        } catch {}
+        assert(batch.configuration == beforeOverflow)
         assert(config.displayMode == nil)
         var closeAll = config
         closeAll.displayMode = .grid

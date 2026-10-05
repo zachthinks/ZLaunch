@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 struct ShortcutPaletteLayout {
@@ -8,6 +9,13 @@ struct ShortcutPaletteLayout {
     let tileEdge: CGFloat
     let needsScrolling: Bool
     static let gap: CGFloat = 16
+
+    func floatingFrame(in screen: CGRect, topMarginFraction: CGFloat) -> CGRect {
+        let x = screen.midX - width / 2
+        let top = screen.maxY - screen.height * topMarginFraction
+        let y = max(screen.minY + 16, top - height)
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
 
     init(mode: ShortcutPaletteConfiguration.DisplayMode?, size: ShortcutPaletteConfiguration.TileSize?,
          itemCount: Int, isRoot: Bool, availableSize: CGSize) {

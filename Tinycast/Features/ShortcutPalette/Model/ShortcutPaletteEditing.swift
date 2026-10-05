@@ -24,8 +24,67 @@ struct ShortcutPaletteEditing {
         return titles.joined(separator: " › ")
     }
 
+    struct Row: Identifiable {
+        let id: [String]
+        let item: ShortcutPaletteConfiguration.Item
+        var parent: [String] { Array(id.dropLast()) }
+        var depth: Int { id.count - 1 }
+    }
+
+    var keys: [String] {
+        var result: [String] = []
+        var items = configuration.items
+        for index in path {
+            guard items.indices.contains(index) else { return result }
+            result.append(items[index].id)
+            items = items[index].children ?? []
+        }
+        return result
+    }
+
+    func rows(expanded: Set<[String]>) -> [Row] {
+        func flatten(_ items: [ShortcutPaletteConfiguration.Item], parent: [String]) -> [Row] {
+            items.flatMap { item in
+                let id = parent + [item.id]
+                let row = Row(id: id, item: item)
+                guard let children = item.children, expanded.contains(id) else { return [row] }
+                return [row] + flatten(children, parent: id)
+            }
+        }
+        return flatten(configuration.items, parent: [])
+    }
+
+    mutating func navigate(to keys: [String]) {
+        var nextPath: [Int] = []
+        var items = configuration.items
+        for key in keys {
+            guard let index = items.firstIndex(where: { $0.id == key }),
+                let children = items[index].children else { return }
+            nextPath.append(index)
+            items = children
+        }
+        path = nextPath
+    }
+
     var nextKey: String? {
         "abcdefghijklmnopqrstuvwxyz".map(String.init).first { key in !items.contains { $0.id == key } }
+    }
+
+    mutating func appendActions(_ actions: [(label: String, action: String)]) throws -> [String] {
+        var updated = self
+        var added: [String] = []
+        for action in actions {
+            guard let key = updated.nextKey else {
+                throw ShortcutPaletteConfiguration.Issue(message: "A menu can contain at most 26 items.")
+            }
+            guard !action.action.isEmpty else {
+                throw ShortcutPaletteConfiguration.Issue(message: "Choose a destination for every action.")
+            }
+            try updated.update(.init(key: key, label: action.label, action: action.action), replacing: nil)
+            added.append(key)
+        }
+        self = updated
+        return added
     }
 
     mutating func enter(_ id: String) {

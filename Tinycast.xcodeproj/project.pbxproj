@@ -463,6 +463,7 @@
 		97D71FF4C0D582828C6EC7F5 /* UpdateFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B475B5929CC0478EFAC7D8 /* UpdateFailure.swift */; };
 		97EB36833C6785F22D2AAA15 /* WindowSwitchSweep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1A3A9CEDBEBC132FC4A552 /* WindowSwitchSweep.swift */; };
 		97F6E58046553BDCEF5AD447 /* ExtensionOAuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7DEB147E5D718E00D67755 /* ExtensionOAuthSession.swift */; };
+		983C6CF2868294FCB74D42A7 /* ShortcutPaletteActionPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF7183384B72413F4D5864C /* ShortcutPaletteActionPicker.swift */; };
 		9969E6858C4FDC5CCCDEB5D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C45190564C9D9F1722E83943 /* Assets.xcassets */; };
 		99DE042F9012822660B94FB0 /* NoteBlockLayoutFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F10908DDD321EF695BA31B /* NoteBlockLayoutFragment.swift */; };
 		9A0964A7D0E14D77F4997BBE /* CustomWindowSizeEditorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0805655B4808B5B407C7BE7A /* CustomWindowSizeEditorPanel.swift */; };
@@ -1579,6 +1580,7 @@
 		FBFE3C41897391C14DB5A55C /* ShellCommandRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommandRunner.swift; sourceTree = "<group>"; };
 		FC2B77DA46386E7E459406E4 /* NotesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesStore.swift; sourceTree = "<group>"; };
 		FC5458F77141FFCA909AFA4C /* RoomPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPickerScreen.swift; sourceTree = "<group>"; };
+		FCF7183384B72413F4D5864C /* ShortcutPaletteActionPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutPaletteActionPicker.swift; sourceTree = "<group>"; };
 		FE31A7F41EDA33E7E574F62D /* CustomWindowSizeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWindowSizeStore.swift; sourceTree = "<group>"; };
 		FE41DC04958D7C2FF8C47F62 /* CustomCommandCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCommandCoordinator.swift; sourceTree = "<group>"; };
 		FE72CE02F853ACE956627347 /* SystemAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAction.swift; sourceTree = "<group>"; };
@@ -1729,6 +1731,7 @@
 		1222C4987384FF7D06B56724 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				FCF7183384B72413F4D5864C /* ShortcutPaletteActionPicker.swift */,
 				172953BB88C3C36A38EA91C3 /* ShortcutPaletteCoordinator.swift */,
 				2F4DB581160CD8520497C13B /* ShortcutPaletteEditorView.swift */,
 				C46B4CD8D94B5E6D849F9C56 /* ShortcutPalettePanel.swift */,
@@ -3609,8 +3612,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0832DCD58DEA01602328CCE7 /* ClipboardTextHelper */,
 				51DBA6947AFD8275A0DF8DA0 /* Tinycast */,
+				0832DCD58DEA01602328CCE7 /* ClipboardTextHelper */,
 			);
 		};
 /* End PBXProject section */
@@ -4287,6 +4290,7 @@
 				23F808ECC9100FFCBE5DA0F7 /* SettingsWindowChrome.swift in Sources */,
 				4109B5CF37DCA4BCDAE46412 /* ShellCommandRunner.swift in Sources */,
 				3891DA96CC148D13893F4494 /* ShortcutCaptureSession.swift in Sources */,
+				983C6CF2868294FCB74D42A7 /* ShortcutPaletteActionPicker.swift in Sources */,
 				EC0309914ABC1252B90A1603 /* ShortcutPaletteConfiguration.swift in Sources */,
 				7325BBE51704999A460C5ABD /* ShortcutPaletteCoordinator.swift in Sources */,
 				7C087E6C8E472ADA4938A112 /* ShortcutPaletteEditing.swift in Sources */,
