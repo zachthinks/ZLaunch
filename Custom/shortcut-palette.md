@@ -14,14 +14,16 @@ Search for **Configure LaunchDeck** in the launcher.
   is assigned by the feature. The current Dev test binding is **⌃⌥⌘K**.
 - **Appearance:** a separate tab contains List, Grid or Floating Tiles, key size,
   Escape behavior and repeated-shortcut behavior. Valid edits save automatically.
-- **Submenus:** these are the entries formerly called groups. Expand their arrows in
-  the menu tree to see nested actions without changing screens. Select any item to edit
-  its key and name on the right. Select **Main menu** to add a top-level item.
-- **Adding items:** **Add to:** names the destination. Selecting a submenu adds inside
-  it; selecting an action adds beside it. **Add Actions Here…** and **Add Submenu Here**
-  also add directly to the selected submenu. Submenus must contain an action before saving.
-- **Unfinished edits:** switching items offers Discard Changes or Keep Editing when
-  the current edit is invalid. Discard removes a new action without a destination.
+- **Inline menu editor:** every row shows its key, editable name, current action or
+  submenu count, reorder arrows, and Remove. There is no separate action-detail screen.
+- **Submenus:** expand the arrow to reveal editable children directly underneath.
+  Collapsing a submenu preserves unfinished edits. Duplicate keys are checked only
+  against siblings and show an inline message; invalid edits never replace the saved menu.
+- **Adding items:** the buttons at the top add to the main menu. Buttons inside an
+  expanded submenu add directly to that submenu, with an “Inside” destination label.
+- **Changing actions:** click the row’s action selector to expand the searchable,
+  categorized picker inline. Selecting a destination closes it. Cancel leaves the
+  current action unchanged. Websites use an address field and Use Website button.
 - **Actions:** use **Add Actions…**, tick several destinations, then add the selection
   in one step. Selections persist across searches and categories; unused letters are
   assigned automatically. Cancel creates no placeholder. The picker shows remaining

@@ -135,6 +135,30 @@ struct ShortcutPaletteTests {
             fatalError("Invalid batch accepted")
         } catch {}
         assert(batch.configuration == beforeOverflow)
+        var inline = ShortcutPaletteMenuDraft(configuration: config)
+        assert(inline.configuration == config)
+        let developer = inline.nodes[0].id
+        let child = inline.nodes[0].children![0].id
+        inline.edit(child) { $0.key = "l" }
+        assert(inline.issue(for: child) != nil)
+        do { try inline.configuration.validate(); fatalError("Duplicate inline key saved") } catch {}
+        inline.edit(child) { $0.key = "x"; $0.label = "Renamed" }
+        assert(inline.node(child)?.label == "Renamed" && inline.issue(for: child) == nil)
+        inline.move(child, by: 1)
+        assert(inline.node(developer)?.children?.last?.id == child)
+        inline.edit(developer) { $0.key = "z" }
+        assert(inline.node(child)?.key == "x")
+        let addedInline = try inline.append([("One", "command:one"), ("Two", "command:two")], to: developer)
+        assert(addedInline.count == 2 && inline.node(developer)?.children?.count == 4)
+        inline.remove(addedInline[0])
+        assert(inline.node(addedInline[0]) == nil)
+        let beforeInlineOverflow = inline
+        do {
+            _ = try inline.append(Array(repeating: ("Overflow", Optional("command:test")), count: 26), to: developer)
+            fatalError("Oversized inline batch accepted")
+        } catch {}
+        assert(inline == beforeInlineOverflow)
+        try inline.configuration.validate()
         assert(config.displayMode == nil)
         var closeAll = config
         closeAll.displayMode = .grid
