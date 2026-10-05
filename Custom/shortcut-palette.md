@@ -184,3 +184,19 @@ the production UI selection/cancel path was exercised without inserting test dat
 The user's Left Half and Right Half actions were saved before installation. The
 previous app, menu, and local release receipt are retained under the ignored
 `build/launchdeck-production-receipt/` directory. No new GitHub binary release was published.
+
+## Inline editor production verification
+
+Local production version 0.1.5 build 9, source `0dd32a7`, replaces the separate
+action editor with one collapsible menu. Row identities are transient UUIDs so
+renaming keys, reordering siblings, and editing descendants do not redirect edits.
+The saved JSON format and existing menu contents are unchanged.
+
+`Custom/check.sh` passed all 85 harnesses, lint, model purity, configuration checks,
+and Debug compilation. The final validation-status correction passed Debug/Release
+builds and lint. Apple accepted notarization and the installed app passed Gatekeeper.
+Production UI verification covered nested expansion, editable key/name fields,
+inline action search and reselection, duplicate-key messages, rejection of invalid
+autosaves, and immediate clearing of the warning after restoring the original key.
+The menu file remained byte-identical to the pre-install backup. Build 7 rollback
+and the release receipt are in ignored `build/launchdeck-inline-receipt/`.
