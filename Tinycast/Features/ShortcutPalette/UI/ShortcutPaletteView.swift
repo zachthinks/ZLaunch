@@ -13,6 +13,7 @@ struct ShortcutPaletteView: View {
         Group {
             if isFloating { floatingBody } else { panelBody }
         }
+        .id(coordinator.navigation.configuration.displayMode ?? .list)
     }
 
     private var panelBody: some View {

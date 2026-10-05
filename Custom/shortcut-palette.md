@@ -13,7 +13,8 @@ Search for **Configure LaunchDeck** in the launcher.
   immediately; existing ZLaunch shortcut conflicts are rejected. No default chord
   is assigned by the feature. The current Dev test binding is **⌃⌥⌘K**.
 - **Appearance:** a separate tab contains List, Grid, Floating Tiles or Liquid Glass, key size,
-  Escape behavior and repeated-shortcut behavior. Valid edits save automatically.
+  Escape behavior and repeated-shortcut behavior. Display and key-size choices save
+  immediately; other valid edits save automatically.
 - **Menu editor:** select Main menu or a submenu in the compact left navigation tree.
   The right pane shows only that menu’s immediate children in Key, Name and Action
   columns. Edit keys and names directly; row options contain Move Up, Move Down and Remove.
@@ -49,7 +50,9 @@ Search for **Configure LaunchDeck** in the launcher.
   This close protection applies to the setup window; force termination is not recovery.
 - **Remove:** confirms before removing the selected choice and any nested contents.
   Reorder arrows move choices within the current group.
-- **Try LaunchDeck:** saves a valid pending edit and opens the current menu. Escape
+- **Try LaunchDeck:** saves a valid pending edit and opens that exact saved configuration.
+  Display changes recreate the presentation; opening waits for configuration loading
+  before showing the panel, so the previous layout never appears first. Escape
   returns to setup. An invalid edit stays visible with guidance instead of running.
 
 Keys use one or two printable ASCII characters: A–Z, 0–9 and keyboard punctuation

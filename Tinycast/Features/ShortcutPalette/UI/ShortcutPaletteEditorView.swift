@@ -8,7 +8,7 @@ struct ShortcutPaletteEditorView: View {
     let confirmRemoval: (String) async -> Bool
     let registerCloseHandler: (@escaping () -> Bool) -> Void
     let closeEditor: () -> Void
-    let preview: () -> Void
+    let preview: (ShortcutPaletteConfiguration) -> Void
     @State private var draft = ShortcutPaletteMenuDraft(configuration: .starter)
     @State private var expanded: Set<UUID> = []
     @State private var selectedMenu: UUID?
@@ -155,7 +155,7 @@ struct ShortcutPaletteEditorView: View {
                         Text("Display").frame(width: 90, alignment: .leading)
                         Picker("Display", selection: Binding(
                         get: { draft.appearance.displayMode ?? .list },
-                        set: { draft.appearance.displayMode = $0 })) {
+                        set: { draft.appearance.displayMode = $0; save() })) {
                         Text("List").tag(ShortcutPaletteConfiguration.DisplayMode.list)
                         Text("Grid").tag(ShortcutPaletteConfiguration.DisplayMode.grid)
                         Text("Floating Tiles").tag(ShortcutPaletteConfiguration.DisplayMode.floatingTiles)
@@ -167,7 +167,7 @@ struct ShortcutPaletteEditorView: View {
                         Text("Key size").frame(width: 90, alignment: .leading)
                         Picker("Key size", selection: Binding(
                             get: { draft.appearance.tileSize ?? .medium },
-                            set: { draft.appearance.tileSize = $0 })) {
+                            set: { draft.appearance.tileSize = $0; save() })) {
                             Text("Small").tag(ShortcutPaletteConfiguration.TileSize.small)
                             Text("Medium").tag(ShortcutPaletteConfiguration.TileSize.medium)
                             Text("Large").tag(ShortcutPaletteConfiguration.TileSize.large)
@@ -243,7 +243,7 @@ struct ShortcutPaletteEditorView: View {
             closeEditor()
         } else if previewAfterSave {
             previewAfterSave = false
-            preview()
+            if let savedConfiguration { preview(savedConfiguration) }
         }
     }
 

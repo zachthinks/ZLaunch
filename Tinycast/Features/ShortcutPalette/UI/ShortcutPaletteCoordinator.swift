@@ -62,10 +62,33 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
             }
             return
         }
+        if loadTask != nil {
+            close(restoringFocus: true)
+            return
+        }
         beforeShow()
-        navigation = ShortcutPaletteNavigation(configuration: navigation.configuration)
-        message = "Loading shortcuts…"
-        isReady = false
+        loadTask = Task { [weak self, repository] in
+            let result = await Task.detached { Result { try repository.load() } }.value
+            guard !Task.isCancelled, let self else { return }
+            loadTask = nil
+            switch result {
+            case .success(let configuration): present(configuration)
+            case .failure(let error):
+                reportFailure("Couldn’t load shortcuts: \(error.localizedDescription) Open Configure to repair the menu.")
+            }
+        }
+    }
+
+    private func preview(_ configuration: ShortcutPaletteConfiguration) {
+        close(restoringFocus: false)
+        beforeShow()
+        present(configuration)
+    }
+
+    private func present(_ configuration: ShortcutPaletteConfiguration) {
+        navigation = ShortcutPaletteNavigation(configuration: configuration)
+        message = nil
+        isReady = true
         isVisible = true
         let panel = ensurePanel()
         updatePanelSurface()
@@ -73,11 +96,12 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         let frame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1000, height: 800)
         let layout = layout(for: frame.size)
         let size = NSSize(width: layout.width, height: layout.height)
-        let panelFrame = navigation.configuration.displayMode?.isFloating == true
+        let panelFrame = configuration.displayMode?.isFloating == true
             ? layout.floatingFrame(in: frame, topMarginFraction: Theme.Size.paletteTopMarginFraction)
             : NSRect(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2,
                      width: size.width, height: size.height)
         panel.setFrame(panelFrame, display: false)
+        panel.contentView?.layoutSubtreeIfNeeded()
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(panel)
@@ -88,20 +112,6 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
             panel.makeKeyAndOrderFront(nil)
             panel.makeFirstResponder(panel)
             activationTask = nil
-        }
-        loadTask = Task { [weak self, repository] in
-            let result = await Task.detached { Result { try repository.load() } }.value
-            guard !Task.isCancelled, let self, isVisible else { return }
-            switch result {
-            case .success(let configuration):
-                navigation = ShortcutPaletteNavigation(configuration: configuration)
-                message = nil
-                isReady = true
-                resizePanel()
-            case .failure(let error):
-                message = "Couldn’t load shortcuts: \(error.localizedDescription) Open Configure to repair the menu."
-            }
-            loadTask = nil
         }
     }
 
@@ -159,7 +169,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
     }
 
     func close(restoringFocus: Bool) {
-        guard isVisible else { return }
+        guard isVisible || loadTask != nil else { return }
         isVisible = false
         isReady = false
         loadTask?.cancel()
@@ -178,7 +188,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
                 confirmRemoval: confirmRemoval,
                 registerCloseHandler: { [weak editorWindow] in editorWindow?.onCloseRequested = $0 },
                 closeEditor: { [weak editorWindow] in editorWindow?.close() },
-                preview: { [weak self] in self?.toggle() })
+                preview: { [weak self] in self?.preview($0) })
                 .shortcutRecorderPopoverHost()
                 .environment(hotKeys)
         }
