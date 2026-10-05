@@ -28,6 +28,6 @@
       "sha256": "ad3078852eb9f03c3d7abc773b3a6f429bf95213ad6e0b3bb33edcadc752837d"
     }
   ],
-  "verification": "Visually inspected both returned images; PNG dimensions and alpha metadata checked. Not packaged or installed; small-size app rendering not yet verified.",
-  "approval": "Concept 02 selected; refined pair not yet reviewed by user."
+  "verification": "Both PNG masters inspected; 32px packaged icons checked. All macOS sizes generated; production and Debug bundle icon names verified. Notarized production build 14 installed; new icon visible in About. Dev app not installed.",
+  "approval": "User approved refined pair and explicitly requested installation."
 }

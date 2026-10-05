@@ -12,14 +12,15 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.5 (local build 13)** app is installed at `/Applications/ZLaunch.app`.
-Build 13 adds native macOS clear Liquid Glass tiles to LaunchDeck, enabled in the regular app.
+The regular **ZLaunch 0.1.5 (local build 14)** app is installed at `/Applications/ZLaunch.app`.
+Build 14 adds the approved Launch Key app icon. It retains native macOS clear
+Liquid Glass tiles in LaunchDeck.
 It retains compact submenu navigation with only the selected menu’s children
 in an editable Key/Name/Action table. Row options contain reorder/remove, and batch
 addition targets the selected submenu. Keys support letters, digits, punctuation
 and two-character sequences, with same-submenu prefix conflicts rejected.
 It retains batch additions, category search, stronger contrast, and higher floating placement. The public 0.1.5 release
-remains build 6; build 13 was installed locally after Apple notarization.
+remains build 6; build 14 was installed locally after Apple notarization.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and
@@ -265,3 +266,10 @@ selection history live in `Custom/Design/LaunchKey/`. `python3 Custom/build-icon
 packages them into the two app icon sets in `Custom/Assets.xcassets/`. `project.yml`
 selects ZLaunchIcon for production and ZLaunchDevIcon for Debug. Upstream's
 `Tinycast/tinycast.icon` and its asset catalog remain untouched.
+
+The icon was installed in local production 0.1.5 build 14 from source `2d47c5d`.
+All 85 harnesses, lint, Debug and Release builds passed; Apple notarization and
+Gatekeeper accepted it. The installed About screen visibly shows the new icon.
+The saved menu was unchanged, including its Liquid Glass selection. The Dev icon
+was verified in the compiled Debug bundle; no additional Dev app was installed.
+Rollback and verification records are in ignored `build/zlaunch-icon-receipt/`.
