@@ -229,3 +229,17 @@ Production UI checks covered navigation, action reselection, duplicate-key rejec
 and recovery, row options, and batch destinations Window (23 available keys) and
 AI (22). The saved menu stayed byte-identical. Rollback apps and the receipt are in
 ignored `build/launchdeck-split-receipt/`. No new GitHub binary release was published.
+
+## Character and sequence production verification
+
+Local production 0.1.5 build 12, source `e3a858e`, supports printable ASCII keys and
+two-character sequences. Shared prefixes filter matching choices; complete-key
+prefix conflicts are explained and rejected. The full gate passed 85 harnesses;
+final sequence changes passed the shortcut harness, lint, and Debug/Release builds
+without new source warnings. Apple notarization and Gatekeeper passed.
+
+Installed UI verification covered `T` filtering `TL`/`TR`, shifted `+`, invalid
+second-key cancellation, Escape clearing partial input, and prefix conflicts
+preserving saved data. The pending corner keys `9`, `3`, `7`, `1` were restored and
+saved; comparison confirmed no other menu changes. Rollback and evidence remain
+in ignored `build/launchdeck-keys-receipt/`. No new GitHub binary release was published.
