@@ -275,3 +275,17 @@ The generated Dev app was removed, with saved Dev data retained. The official
 Tinycast executable is unchanged. Build 12 is retained as a signature-preserving
 rollback ZIP in `build/glass-release-receipt/`, alongside the local release receipt.
 No new public binary release was published.
+
+## Display switching correction
+
+Local production build 15 applies a display selection before showing LaunchDeck.
+Display and key-size choices save immediately. Preview receives the exact saved
+configuration; ordinary opening waits for loading, and mode changes recreate the
+view hierarchy. This removes the prior save delay and presentation of stale state.
+
+Signed, notarized build 15 was installed and Gatekeeper accepted it. Floating Tiles
+→ Liquid Glass → Grid → List was verified with an open/close between every choice
+in both Dev and the installed regular app. Liquid Glass was restored afterward,
+with the saved menu otherwise unchanged. All 85 harnesses, lint, identity/project
+checks and Debug/Release builds passed. The temporary Dev app was removed.
+The build 14 rollback ZIP and receipt remain in `build/display-switch-receipt/`.
