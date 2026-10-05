@@ -647,6 +647,7 @@
 		D39C8F6535F028FF79A19AE4 /* WindowLayoutEntryPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F27259003BDECA2054FC67 /* WindowLayoutEntryPicker.swift */; };
 		D3C7265B00695CE274ED5A23 /* ExtensionRefreshIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996CF61F3B13A573B8D5A11F /* ExtensionRefreshIndicator.swift */; };
 		D3F07F4AEBEAA489EDCD0763 /* FileSearchList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463FE27F894A8777C8ACCF1D /* FileSearchList.swift */; };
+		D41832464C3ED16A0DFC2222 /* ShortcutPaletteMenuEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4153B260637A9E41DD261274 /* ShortcutPaletteMenuEditor.swift */; };
 		D4A45373662D6658706E4DA4 /* ClipboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27773F8955543E8A24CC0D28 /* ClipboardSettingsView.swift */; };
 		D4AC94686EEEF4B792B58593 /* CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0AA95CA13E86370661D01C /* CalendarSettingsView.swift */; };
 		D4F49C93A33488D226BA8664 /* QuickActionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56D6EE5144AEF889C95B3758 /* QuickActionCoordinator.swift */; };
@@ -1018,6 +1019,7 @@
 		402099B7ADB6B3C53451EFCB /* LeadCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadCard.swift; sourceTree = "<group>"; };
 		405FA57AB432D93972635CCD /* MarkdownMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownMath.swift; sourceTree = "<group>"; };
 		410684C9DEB3754962C20C9C /* ExtensionStoreClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionStoreClient.swift; sourceTree = "<group>"; };
+		4153B260637A9E41DD261274 /* ShortcutPaletteMenuEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutPaletteMenuEditor.swift; sourceTree = "<group>"; };
 		418527DD2F2370A1B82A13B7 /* PaletteDropGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteDropGuideView.swift; sourceTree = "<group>"; };
 		418DA899A1546F3B4AC44777 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		41E419A4DA5AB5B3A87B80F2 /* SnippetsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetsListView.swift; sourceTree = "<group>"; };
@@ -1739,6 +1741,7 @@
 				172953BB88C3C36A38EA91C3 /* ShortcutPaletteCoordinator.swift */,
 				3F61AE7707531F1A2C5D5B00 /* ShortcutPaletteDestinationPicker.swift */,
 				2F4DB581160CD8520497C13B /* ShortcutPaletteEditorView.swift */,
+				4153B260637A9E41DD261274 /* ShortcutPaletteMenuEditor.swift */,
 				C46B4CD8D94B5E6D849F9C56 /* ShortcutPalettePanel.swift */,
 				A825A9E28D7D0BCDCF9A51E0 /* ShortcutPaletteView.swift */,
 			);
@@ -4305,6 +4308,7 @@
 				64BC718A24C9529DD3F42D66 /* ShortcutPaletteFocus.swift in Sources */,
 				4BDE97362D4486479ECC50C0 /* ShortcutPaletteLayout.swift in Sources */,
 				CF129C375F5E7B5308F34B79 /* ShortcutPaletteMenuDraft.swift in Sources */,
+				D41832464C3ED16A0DFC2222 /* ShortcutPaletteMenuEditor.swift in Sources */,
 				6F0F85E207B269BB3BD9DE1D /* ShortcutPaletteNavigation.swift in Sources */,
 				7CBDC30F0CEC974660002BCC /* ShortcutPalettePanel.swift in Sources */,
 				78C571C640E55D802EC7F2A2 /* ShortcutPaletteRepository.swift in Sources */,

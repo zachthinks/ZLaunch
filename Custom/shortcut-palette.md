@@ -14,13 +14,15 @@ Search for **Configure LaunchDeck** in the launcher.
   is assigned by the feature. The current Dev test binding is **⌃⌥⌘K**.
 - **Appearance:** a separate tab contains List, Grid or Floating Tiles, key size,
   Escape behavior and repeated-shortcut behavior. Valid edits save automatically.
-- **Inline menu editor:** every row shows its key, editable name, current action or
-  submenu count, reorder arrows, and Remove. There is no separate action-detail screen.
-- **Submenus:** expand the arrow to reveal editable children directly underneath.
-  Collapsing a submenu preserves unfinished edits. Duplicate keys are checked only
-  against siblings and show an inline message; invalid edits never replace the saved menu.
-- **Adding items:** the buttons at the top add to the main menu. Buttons inside an
-  expanded submenu add directly to that submenu, with an “Inside” destination label.
+- **Menu editor:** select Main menu or a submenu in the compact left navigation tree.
+  The right pane shows only that menu’s immediate children in Key, Name and Action
+  columns. Edit keys and names directly; row options contain Move Up, Move Down and Remove.
+- **Submenus:** expand arrows in the navigation tree to reveal nested submenus.
+  Open a submenu from its row or select it in the tree. The breadcrumb identifies
+  its location. Switching menus preserves unfinished edits; duplicate keys are
+  checked against siblings, and invalid edits never replace the saved menu.
+- **Adding items:** one toolbar adds actions or submenus to the selected menu.
+  A new submenu is selected immediately so its contents can be added there.
 - **Changing actions:** click the row’s action selector to expand the searchable,
   categorized picker inline. Selecting a destination closes it. Cancel leaves the
   current action unchanged. Websites use an address field and Use Website button.

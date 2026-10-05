@@ -11,6 +11,7 @@ struct ShortcutPaletteEditorView: View {
     let preview: () -> Void
     @State private var draft = ShortcutPaletteMenuDraft(configuration: .starter)
     @State private var expanded: Set<UUID> = []
+    @State private var selectedMenu: UUID?
     @State private var choosingAction: UUID?
     @State private var additionParent: UUID?
     @State private var showingActionPicker = false
@@ -90,122 +91,9 @@ struct ShortcutPaletteEditorView: View {
     }
 
     private var menuEditor: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Your menu").font(.title3.bold())
-                    Text("Edit keys and names here. Expand a submenu or choose an action to change it.")
-                        .font(.callout).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Add Submenu", systemImage: "folder.badge.plus") { addSubmenu(to: nil) }
-                    .disabled(draft.nodes.count >= 26)
-                Button("Add Actions…", systemImage: "plus") { openBatch(in: nil) }
-                    .disabled(draft.nodes.count >= 26)
-            }
-            HStack {
-                Text("Key").frame(width: 60)
-                Text("Name").frame(maxWidth: .infinity, alignment: .leading)
-                Text("Action / Submenu").frame(maxWidth: .infinity, alignment: .leading)
-                Color.clear.frame(width: 92, height: 1)
-            }
-            .font(.caption).foregroundStyle(.secondary).padding(.leading, 32)
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(draft.rows(expanded: expanded)) { row in
-                        VStack(alignment: .leading, spacing: 10) {
-                            editorRow(row)
-                            if let issue = draft.issue(for: row.id) { validation(issue) }
-                            if choosingAction == row.id, row.node.children == nil {
-                                ShortcutPaletteDestinationPicker(actions: actions, current: row.node.action ?? "") { action in
-                                    draft.edit(row.id) {
-                                        $0.action = action
-                                        if $0.label == "New Website",
-                                            let host = ShortcutPaletteConfiguration.websiteURL(for: action)?.host {
-                                            $0.label = host
-                                        }
-                                    }
-                                    choosingAction = nil
-                                } onCancel: { choosingAction = nil }
-                                .id(row.id)
-                            }
-                            if let children = row.node.children, expanded.contains(row.id) {
-                                HStack {
-                                    Button("Add Actions…", systemImage: "plus") { openBatch(in: row.id) }
-                                    Button("Add Submenu", systemImage: "folder.badge.plus") { addSubmenu(to: row.id) }
-                                        .disabled(row.depth >= 4)
-                                    Text("Inside \(row.node.label)").font(.caption).foregroundStyle(.secondary)
-                                }
-                                .disabled(children.count >= 26)
-                            }
-                        }
-                        .padding(12)
-                        .background(row.node.children == nil ? Theme.Colors.cardFill : Theme.Colors.controlSurface,
-                                    in: .rect(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.Colors.border))
-                        .padding(.leading, CGFloat(row.depth) * 20)
-                    }
-                }
-            }
-            if let validationMessage { validation(validationMessage) }
-        }
-        .padding(16)
-        .background(Theme.Colors.cardFill, in: .rect(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.Colors.border))
-    }
-
-    private func editorRow(_ row: ShortcutPaletteMenuDraft.Row) -> some View {
-        HStack(spacing: 8) {
-            if row.node.children != nil {
-                Button {
-                    if expanded.contains(row.id) { expanded.remove(row.id) } else { expanded.insert(row.id) }
-                } label: {
-                    Image(systemName: expanded.contains(row.id) ? "chevron.down" : "chevron.right")
-                        .frame(width: 16)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(expanded.contains(row.id) ? "Collapse" : "Expand") \(row.node.label)")
-            } else { Color.clear.frame(width: 16, height: 1) }
-            TextField("A–Z", text: Binding(
-                get: { draft.node(row.id)?.key ?? "" }, set: { value in draft.edit(row.id) { $0.key = value } }))
-                .frame(width: 48).accessibilityLabel("Key for \(row.node.label)")
-            TextField("Name", text: Binding(
-                get: { draft.node(row.id)?.label ?? "" }, set: { value in draft.edit(row.id) { $0.label = value } }))
-                .frame(minWidth: 100, maxWidth: .infinity).accessibilityLabel("Name for \(row.node.label)")
-            if let children = row.node.children {
-                Text("Submenu · \(children.count) items")
-                    .foregroundStyle(.secondary).frame(minWidth: 130, maxWidth: .infinity, alignment: .leading)
-            } else {
-                Button { choosingAction = choosingAction == row.id ? nil : row.id } label: {
-                    HStack {
-                        Text(actionName(row.node.action)).lineLimit(1)
-                        Spacer(minLength: 4)
-                        Image(systemName: "chevron.up.chevron.down").font(.caption)
-                    }
-                }
-                .frame(minWidth: 130, maxWidth: .infinity)
-                .accessibilityLabel("Change action for \(row.node.label): \(actionName(row.node.action))")
-            }
-            HStack(spacing: 4) {
-                Button { draft.move(row.id, by: -1) } label: { Image(systemName: "arrow.up") }
-                    .disabled(row.position == 0).help("Move up").accessibilityLabel("Move \(row.node.label) up")
-                Button { draft.move(row.id, by: 1) } label: { Image(systemName: "arrow.down") }
-                    .disabled(row.position == row.count - 1).help("Move down").accessibilityLabel("Move \(row.node.label) down")
-                Button(role: .destructive) { remove(row.id) } label: { Image(systemName: "trash") }
-                    .help("Remove").accessibilityLabel("Remove \(row.node.label)")
-            }
-            .buttonStyle(.borderless).frame(width: 92)
-        }
-        .textFieldStyle(.roundedBorder)
-    }
-
-    private func actionName(_ action: String?) -> String {
-        guard let action, !action.isEmpty else { return "Choose action…" }
-        if action.hasPrefix("website:") {
-            let address = String(action.dropFirst(8))
-            return address.isEmpty ? "Enter website…" : address
-        }
-        return actions.first { $0.id == action }?.name ?? "Unavailable: \(action)"
+        ShortcutPaletteMenuEditor(draft: $draft, expanded: $expanded, selectedMenu: $selectedMenu,
+            choosingAction: $choosingAction, actions: actions, validationMessage: validationMessage,
+            onAddActions: openBatch, onAddSubmenu: addSubmenu, onRemove: remove)
     }
 
     private func openBatch(in parent: UUID?) {
@@ -217,6 +105,8 @@ struct ShortcutPaletteEditorView: View {
         do {
             let ids = try draft.append([("New Submenu", nil)], to: parent)
             expanded.formUnion(ids)
+            selectedMenu = ids.first
+            choosingAction = nil
             if let parent { expanded.insert(parent) }
         } catch { validationMessage = error.localizedDescription }
     }
@@ -228,7 +118,12 @@ struct ShortcutPaletteEditorView: View {
             let suffix = node.children == nil ? "" : " and every item inside it"
             let confirmed = await confirmRemoval("Remove “\(node.label)”\(suffix)? This change saves immediately.")
             askingToDiscard = false
-            if confirmed { draft.remove(id); expanded.remove(id) }
+            if confirmed {
+                draft.remove(id)
+                expanded.remove(id)
+                if let selectedMenu, draft.node(selectedMenu) == nil { self.selectedMenu = nil }
+                if let choosingAction, draft.node(choosingAction) == nil { self.choosingAction = nil }
+            }
         }
     }
     private var header: some View {
