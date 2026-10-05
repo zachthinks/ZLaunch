@@ -12,11 +12,12 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.5 (local build 9)** app is installed at `/Applications/ZLaunch.app`.
-Build 9 provides a single inline LaunchDeck editor with collapsible submenus,
-editable keys and names, inline action selection, and row reorder/remove controls.
+The regular **ZLaunch 0.1.5 (local build 11)** app is installed at `/Applications/ZLaunch.app`.
+Build 11 provides compact submenu navigation with only the selected menu’s children
+in an editable Key/Name/Action table. Row options contain reorder/remove, and batch
+addition targets the selected submenu.
 It retains batch additions, category search, stronger contrast, and higher floating placement. The public 0.1.5 release
-remains build 6; build 9 was installed locally after Apple notarization.
+remains build 6; build 11 was installed locally after Apple notarization.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and

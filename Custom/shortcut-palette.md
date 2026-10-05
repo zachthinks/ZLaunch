@@ -202,3 +202,19 @@ inline action search and reselection, duplicate-key messages, rejection of inval
 autosaves, and immediate clearing of the warning after restoring the original key.
 The menu file remained byte-identical to the pre-install backup. Build 7 rollback
 and the release receipt are in ignored `build/launchdeck-inline-receipt/`.
+
+## Focused menu editor production verification
+
+Local production version 0.1.5 build 11, source `cef5e4e`, replaces the full nested
+form with compact submenu navigation and immediate-child editing. Action search
+opens on demand; row options hold reorder/remove. Batch presentation carries its
+selected parent in an identifiable request, fixing an observed stale main-menu
+destination on first presentation.
+
+The full Custom/check.sh gate passed all 85 harnesses, lint, model purity and Debug
+build. The final presentation fix passed lint and Debug/Release builds without new
+source warnings. Apple notarization and installed Gatekeeper assessment passed.
+Production UI checks covered navigation, action reselection, duplicate-key rejection
+and recovery, row options, and batch destinations Window (23 available keys) and
+AI (22). The saved menu stayed byte-identical. Rollback apps and the receipt are in
+ignored `build/launchdeck-split-receipt/`. No new GitHub binary release was published.
