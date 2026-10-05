@@ -12,7 +12,10 @@ place where future changes happen.
 
 ## Using it today
 
-The regular **ZLaunch 0.1.5 (build 6)** app is installed at `/Applications/ZLaunch.app`.
+The regular **ZLaunch 0.1.5 (local build 7)** app is installed at `/Applications/ZLaunch.app`.
+Build 7 adds the nested LaunchDeck editor, batch action picker, category search,
+stronger setup contrast, and higher floating placement. The public 0.1.5 release
+remains build 6; build 7 was installed locally after Apple notarization.
 It is signed with Developer ID and notarized by Apple. Its own setup has been
 imported: 59 settings, one shortcut, one favorite, 186 clipboard entries, one
 note and eight learning records. Its 28 migrated extensions are enabled, and

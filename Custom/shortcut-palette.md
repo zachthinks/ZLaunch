@@ -161,3 +161,24 @@ the original paste target for the next palette presentation. Existing launcher
 command dispatch still opens them. Actual LaunchDeck → C → E displayed the picker,
 retained its target caption, and returned results for “rocket”; no paste was sent.
 Other actions retain the guarded focus restoration path.
+
+## Local production build 7 verification
+
+The nested editor and batch picker were installed in `/Applications/ZLaunch.app`
+as version 0.1.5 build 7 from source `cfdc2a4`. Apple notarization and Gatekeeper
+accepted the build. All 85 harnesses, lint, model purity, and Debug/Release builds
+passed. Tree tests cover nested identities and navigation after reordering; batch
+tests cover unused keys, target isolation, and atomic rejection of overflow or
+invalid actions. Placement tests cover upper-screen alignment and tall menus.
+
+Production UI checks confirmed the expanded Window submenu, editing its Left Half
+action without changing screens, Window Management results for “Window”, combined
+“window left” search, and two checkbox selections retained across searches. Cancel
+left the saved menu byte-identical; no duplicate test actions were added. Actual
+floating frame (944 × 240 at x=1208, y=366 in screen coordinates) matched the launcher’s
+18% top margin on the main display. Batch committing is covered by the model harness;
+the production UI selection/cancel path was exercised without inserting test data.
+
+The user's Left Half and Right Half actions were saved before installation. The
+previous app, menu, and local release receipt are retained under the ignored
+`build/launchdeck-production-receipt/` directory. No new GitHub binary release was published.
