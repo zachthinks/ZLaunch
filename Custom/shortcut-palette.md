@@ -257,3 +257,18 @@ second-key cancellation, Escape clearing partial input, and prefix conflicts
 preserving saved data. The pending corner keys `9`, `3`, `7`, `1` were restored and
 saved; comparison confirmed no other menu changes. Rollback and evidence remain
 in ignored `build/launchdeck-keys-receipt/`. No new GitHub binary release was published.
+
+## Liquid Glass production installation
+
+ZLaunch 0.1.5 local build 13 was installed at `/Applications/ZLaunch.app` from
+source `5601232`, signed with Developer ID and notarized by Apple. Gatekeeper
+accepted the installed app. The regular menu now selects Liquid Glass; its other
+configuration is unchanged. Preview, submenu navigation and Escape back were checked
+in the installed regular app. All 85 harnesses, lint, custom configuration/project
+checks and Debug/Release builds passed. The Debug gate was rerun successfully after
+a concurrent Release build temporarily locked its build database.
+
+The generated Dev app was removed, with saved Dev data retained. The official
+Tinycast executable is unchanged. Build 12 is retained as a signature-preserving
+rollback ZIP in `build/glass-release-receipt/`, alongside the local release receipt.
+No new public binary release was published.
