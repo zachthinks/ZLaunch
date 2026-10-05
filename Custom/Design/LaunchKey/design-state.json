@@ -1,0 +1,33 @@
+{
+  "selected_parent": {
+    "id": "concepts-v1-02",
+    "artifact": "concepts-v1.png",
+    "evidence": "User selected 2, then approved refinement with ok."
+  },
+  "method": "built-in image_gen",
+  "locked": [
+    "Launch Key concept",
+    "charcoal rounded square",
+    "centered tactile keycap",
+    "bold dark engraved Z",
+    "frontal orientation"
+  ],
+  "revisions": [
+    {
+      "id": "production-v2",
+      "parent": "concepts-v1-02",
+      "artifact": "zlaunch-v2.png",
+      "request": "Refine selected ivory/blue production icon with crisp edges and readable Z.",
+      "sha256": "1d57bcbfaf58d7936965e16aca77af1536d871ac4b5f6b9ae2369617fb350b6f"
+    },
+    {
+      "id": "dev-v2",
+      "parent": "production-v2",
+      "artifact": "zlaunch-dev-v2.png",
+      "request": "Keep geometry; change ivory/blue to amber and add DEV badge.",
+      "sha256": "ad3078852eb9f03c3d7abc773b3a6f429bf95213ad6e0b3bb33edcadc752837d"
+    }
+  ],
+  "verification": "Visually inspected both returned images; PNG dimensions and alpha metadata checked. Not packaged or installed; small-size app rendering not yet verified.",
+  "approval": "Concept 02 selected; refined pair not yet reviewed by user."
+}
