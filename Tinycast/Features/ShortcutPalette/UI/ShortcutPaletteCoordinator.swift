@@ -73,7 +73,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         let frame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1000, height: 800)
         let layout = layout(for: frame.size)
         let size = NSSize(width: layout.width, height: layout.height)
-        let panelFrame = navigation.configuration.displayMode == .floatingTiles
+        let panelFrame = navigation.configuration.displayMode?.isFloating == true
             ? layout.floatingFrame(in: frame, topMarginFraction: Theme.Size.paletteTopMarginFraction)
             : NSRect(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2,
                      width: size.width, height: size.height)
@@ -207,7 +207,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         var frame = panel.frame
         let width = layout.width
         frame.origin.x += (frame.width - width) / 2
-        if navigation.configuration.displayMode == .floatingTiles {
+        if navigation.configuration.displayMode?.isFloating == true {
             if let screen = panel.screen?.visibleFrame {
                 frame.origin.y = layout.floatingFrame(
                     in: screen, topMarginFraction: Theme.Size.paletteTopMarginFraction).minY
@@ -224,7 +224,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
     }
 
     private func updatePanelSurface() {
-        let floating = navigation.configuration.displayMode == .floatingTiles
+        let floating = navigation.configuration.displayMode?.isFloating == true
         panel?.isOpaque = !floating
         panel?.backgroundColor = floating ? .clear : .windowBackgroundColor
         panel?.hasShadow = !floating

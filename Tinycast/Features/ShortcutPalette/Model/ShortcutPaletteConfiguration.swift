@@ -10,7 +10,11 @@ struct ShortcutPaletteConfiguration: Codable, Equatable, Sendable {
         var id: String { key.lowercased() }
     }
 
-    enum DisplayMode: String, Codable, CaseIterable, Sendable { case list, grid, floatingTiles }
+    enum DisplayMode: String, Codable, CaseIterable, Sendable {
+        case list, grid, floatingTiles, liquidGlass
+
+        var isFloating: Bool { self == .floatingTiles || self == .liquidGlass }
+    }
 
     enum TileSize: String, Codable, CaseIterable, Sendable { case small, medium, large }
 

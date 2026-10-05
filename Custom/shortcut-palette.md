@@ -12,7 +12,7 @@ Search for **Configure LaunchDeck** in the launcher.
 - **Global shortcut:** choose **Change…**, then record a chord. Changes save
   immediately; existing ZLaunch shortcut conflicts are rejected. No default chord
   is assigned by the feature. The current Dev test binding is **⌃⌥⌘K**.
-- **Appearance:** a separate tab contains List, Grid or Floating Tiles, key size,
+- **Appearance:** a separate tab contains List, Grid, Floating Tiles or Liquid Glass, key size,
   Escape behavior and repeated-shortcut behavior. Valid edits save automatically.
 - **Menu editor:** select Main menu or a submenu in the compact left navigation tree.
   The right pane shows only that menu’s immediate children in Key, Name and Action
@@ -80,6 +80,12 @@ Esc still works; setup remains accessible via Configure LaunchDeck. A thin edge,
 soft shadow and tinted surface provide separation. Reduce Transparency selects
 solid tile surfaces. The current Dev menu uses Floating Tiles / Medium.
 
+**Liquid Glass** uses the same floating layout with broader continuous corners,
+smaller rounded lettering and stronger labels. Each tile uses an untinted AppKit
+`NSGlassEffectView` with the clear system style, using the same AppKit glass API as
+the launcher. There is no painted fill or extra shadow over the glass. The system
+draws the material and edge; Reduce Transparency uses solid surfaces. Select it in Configure LaunchDeck → Appearance → Display.
+
 Small/Medium/Large tiles are 128/160/192 points. Floating menus use one horizontal
 row when possible, then balanced rows; incomplete rows are centered. Grid uses
 up to four columns. Layout is bounded by the usable display and scrolls when
@@ -116,6 +122,14 @@ save a repaired starter draft. Save validation precedes atomic writes.
 Build using `./Custom/build.sh`. Dev output is
 `build/ZLaunchDerivedData/Build/Products/Debug/ZLaunch Dev.app`, separate from
 installed ZLaunch and official Tinycast. No release installation is performed.
+
+## Liquid Glass verification
+
+The Debug build and all 85 harnesses pass, including a saved-menu round trip for
+Liquid Glass. Lint passes with existing warnings. In the Dev app, the new display
+option, autosave, four-tile preview, submenu navigation and Escape return were
+checked. Window captures show the rounded surfaces but do not prove refraction
+over desktop content. Light appearance and Reduce Transparency remain manual checks.
 
 ## Verification
 

@@ -27,7 +27,7 @@ struct ShortcutPaletteLayout {
         case .medium: 160
         case .large: 192
         }
-        let padding: CGFloat = mode == .floatingTiles ? 80 : 48
+        let padding: CGFloat = mode?.isFloating == true ? 80 : 48
         tileEdge = min(desiredEdge, max(1, usableWidth - padding))
         if mode == nil || mode == .list {
             width = min(580, usableWidth)
@@ -39,7 +39,7 @@ struct ShortcutPaletteLayout {
             return
         }
         let maximumColumns = max(1, Int((usableWidth - padding + Self.gap) / (tileEdge + Self.gap)))
-        if mode == .floatingTiles {
+        if mode?.isFloating == true {
             let requiredRows = (count + maximumColumns - 1) / maximumColumns
             columns = min(maximumColumns, (count + requiredRows - 1) / requiredRows)
         } else {
@@ -47,7 +47,7 @@ struct ShortcutPaletteLayout {
         }
         rows = (count + columns - 1) / columns
         width = min(usableWidth, max(320, padding + CGFloat(columns) * tileEdge + CGFloat(columns - 1) * Self.gap))
-        let chrome: CGFloat = mode == .floatingTiles ? 80 : (isRoot ? 168 : 192)
+        let chrome: CGFloat = mode?.isFloating == true ? 80 : (isRoot ? 168 : 192)
         let desiredHeight = chrome + (showsMessage ? 60 : 0) + CGFloat(rows) * tileEdge + CGFloat(rows - 1) * Self.gap
         height = min(usableHeight, desiredHeight)
         needsScrolling = height < desiredHeight

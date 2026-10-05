@@ -288,6 +288,12 @@ struct ShortcutPaletteTests {
         try repository.save(floating)
         let floatingReloaded = try repository.load()
         assert(floatingReloaded.displayMode == .floatingTiles && floatingReloaded.tileSize == .large)
+        floating.displayMode = .liquidGlass
+        let glassDraft = ShortcutPaletteMenuDraft(configuration: floating)
+        try repository.save(glassDraft.configuration)
+        let glassReloaded = try repository.load()
+        assert(glassReloaded == floating)
+        assert(glassReloaded.displayMode?.isFloating == true)
         try repository.save(closeAll)
         let afterInvalidSave = try repository.load()
         assert(afterInvalidSave == closeAll)

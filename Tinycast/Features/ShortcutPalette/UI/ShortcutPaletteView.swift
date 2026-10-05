@@ -4,7 +4,10 @@ struct ShortcutPaletteView: View {
     @Environment(ShortcutPaletteCoordinator.self) private var coordinator
 
     @State private var hoveredKey: String?
-    private var isFloating: Bool { coordinator.navigation.configuration.displayMode == .floatingTiles }
+    private var isFloating: Bool { coordinator.navigation.configuration.displayMode?.isFloating == true }
+
+    private var isGlass: Bool { coordinator.navigation.configuration.displayMode == .liquidGlass }
+    private var tileRadius: CGFloat { isGlass ? coordinator.presentationLayout.tileEdge * 0.23 : Theme.Radius.row }
 
     var body: some View {
         Group {
@@ -57,10 +60,12 @@ struct ShortcutPaletteView: View {
 
     private var floatingBody: some View {
         VStack(spacing: 8) {
-            ScrollView { tiles(coordinator.presentationLayout).padding(24) }
+            ScrollView {
+                tiles(coordinator.presentationLayout).padding(24)
+            }
             if let message = coordinator.message {
                 Text(message).font(.callout)
-                    .padding(10).modifier(FloatingShortcutSurface(radius: 8))
+                    .padding(10).modifier(FloatingShortcutSurface(radius: 8, glass: isGlass))
             }
         }
         .padding(16)
@@ -80,10 +85,50 @@ struct ShortcutPaletteView: View {
         }
     }
 
+    private func glassTile(_ item: ShortcutPaletteConfiguration.Item) -> some View {
+        VStack(spacing: 10) {
+            Spacer(minLength: 0)
+            Text(item.key.uppercased())
+                .font(.system(size: coordinator.presentationLayout.tileEdge * 0.32,
+                              weight: .regular, design: .rounded))
+                .lineLimit(1).minimumScaleFactor(0.45)
+            HStack(spacing: 5) {
+                if let app = coordinator.application(for: item) {
+                    AppIconView(app: app, pointSize: 16)
+                        .frame(width: 16, height: 16).accessibilityHidden(true)
+                }
+                Text(item.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .multilineTextAlignment(.center).lineLimit(2)
+            }
+            .frame(height: 34, alignment: .top)
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topTrailing) {
+            if item.children != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary).padding(18)
+            }
+        }
+        .modifier(FloatingShortcutSurface(radius: tileRadius, glass: true))
+        .overlay {
+            if hoveredKey == item.id {
+                RoundedRectangle(cornerRadius: tileRadius)
+                    .fill(Theme.Colors.cardFill).allowsHitTesting(false)
+            }
+        }
+        .contentShape(.rect(cornerRadius: tileRadius))
+    }
+
     private func choice(_ item: ShortcutPaletteConfiguration.Item, tiled: Bool) -> some View {
         Button { coordinator.choose(item.key) } label: {
             Group {
-                if tiled {
+                if tiled && isGlass {
+                    glassTile(item)
+                } else if tiled {
                     VStack(spacing: 6) {
                         Text(item.key.uppercased())
                             .font(.system(size: coordinator.presentationLayout.tileEdge * 0.42,
@@ -107,14 +152,14 @@ struct ShortcutPaletteView: View {
                     .background {
                         if !isFloating { Theme.Colors.cardFill }
                     }
-                    .modifier(FloatingShortcutSurface(radius: 10, enabled: isFloating))
+                    .modifier(FloatingShortcutSurface(radius: tileRadius, enabled: isFloating))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: tileRadius)
                             .strokeBorder(hoveredKey == item.id ? Color.primary.opacity(0.45)
                                 : (isFloating ? Color.primary.opacity(0.22) : Theme.Colors.cardStroke),
                                           lineWidth: 1)
                     }
-                    .clipShape(.rect(cornerRadius: 10))
+                    .clipShape(.rect(cornerRadius: tileRadius))
                     .overlay(alignment: .topTrailing) {
                         if item.children != nil {
                             Image(systemName: "square.on.square")
@@ -157,9 +202,14 @@ private struct FloatingShortcutSurface: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var radius: CGFloat
     var enabled = true
+    var glass = false
 
     func body(content: Content) -> some View {
-        if enabled {
+        if enabled && glass && !reduceTransparency {
+            content.background {
+                ShortcutGlassBackdrop(radius: radius).allowsHitTesting(false)
+            }
+        } else if enabled {
             content
                 .background {
                     if reduceTransparency {
@@ -171,5 +221,19 @@ private struct FloatingShortcutSurface: ViewModifier {
                 }
                 .clipShape(.rect(cornerRadius: radius))
         } else { content }
+    }
+}
+
+private struct ShortcutGlassBackdrop: NSViewRepresentable {
+    var radius: CGFloat
+
+    func makeNSView(context: Context) -> NSGlassEffectView {
+        NSGlassEffectView()
+    }
+
+    func updateNSView(_ view: NSGlassEffectView, context: Context) {
+        view.style = .clear
+        view.cornerRadius = radius
+        view.tintColor = nil
     }
 }

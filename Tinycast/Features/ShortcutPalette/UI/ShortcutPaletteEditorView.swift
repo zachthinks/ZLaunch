@@ -159,7 +159,8 @@ struct ShortcutPaletteEditorView: View {
                         Text("List").tag(ShortcutPaletteConfiguration.DisplayMode.list)
                         Text("Grid").tag(ShortcutPaletteConfiguration.DisplayMode.grid)
                         Text("Floating Tiles").tag(ShortcutPaletteConfiguration.DisplayMode.floatingTiles)
-                        }.pickerStyle(.segmented).labelsHidden().frame(width: 300)
+                        Text("Liquid Glass").tag(ShortcutPaletteConfiguration.DisplayMode.liquidGlass)
+                        }.pickerStyle(.segmented).labelsHidden().frame(width: 400)
                     }
                     Text(displayDescription).foregroundStyle(.secondary)
                     HStack(spacing: 20) {
@@ -201,6 +202,7 @@ struct ShortcutPaletteEditorView: View {
         case .list: "A compact text menu with a key beside each choice."
         case .grid: "Square keys arranged together in a single window."
         case .floatingTiles: "Individual keys float over your desktop, with only the current choices visible."
+        case .liquidGlass: "Rounded keys float over your desktop on native macOS Liquid Glass."
         }
     }
 
