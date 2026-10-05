@@ -20,6 +20,7 @@ final class AppWindowController: NSObject, NSWindowDelegate {
     private let activation: ActivationPolicy
     private let closesOnEscape: Bool
     private var window: NSWindow?
+    var onCloseRequested: (() -> Bool)?
     /// Rebuilt with the window, so a chrome's state never outlives the window it decorated.
     private var chrome: WindowChrome?
 
@@ -94,7 +95,10 @@ final class AppWindowController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
 
+    func windowShouldClose(_ sender: NSWindow) -> Bool { onCloseRequested?() ?? true }
+
     func windowWillClose(_ notification: Notification) {
+        onCloseRequested = nil
         guard let window else { return }
         self.window = nil
         self.chrome = nil

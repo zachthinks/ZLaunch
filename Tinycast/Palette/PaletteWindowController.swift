@@ -6,6 +6,7 @@ import SwiftUI
 final class PaletteWindowController: NSObject, NSWindowDelegate {
     private unowned let core: AppCore
     private var panel: PalettePanel?
+    private var preserveFocusOnNextShow = false
     private(set) var previousApp: NSRunningApplication?
     /// Our key window at summon time, so hiding hands focus back to Settings, not a stale app.
     private(set) weak var previousOwnWindow: NSWindow?
@@ -58,17 +59,36 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         InjectionTarget.behindPalette(ownWindow: previousOwnWindow, app: previousApp)
     }
 
+    func capturePreviousFocus() {
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        previousApp = frontmost?.processIdentifier == NSRunningApplication.current.processIdentifier
+            ? nil : frontmost
+        previousOwnWindow = NSApp.keyWindow
+    }
+
+    func restorePreviousFocus() {
+        if let own = previousOwnWindow, own.isVisible {
+            own.makeKeyAndOrderFront(nil)
+        } else {
+            previousApp?.activate()
+        }
+    }
+
+    func preserveFocusForNextShow() { preserveFocusOnNextShow = true }
+
     func show() {
         Signposts.interval("PaletteWindowController.show") {
             isPoppedToRoot = false
             // Summoned over one of our own windows: there is no external paste or focus target.
-            let frontmost = NSWorkspace.shared.frontmostApplication
-            let ownPID = NSRunningApplication.current.processIdentifier
-            previousApp = frontmost?.processIdentifier == ownPID ? nil : frontmost
-            // Recorded even when another app is frontmost: our panels take key without activating.
-            let key = NSApp.keyWindow
-            // A mode switch re-shows the palette while it holds key; keep what it recorded then.
-            if key !== panel { previousOwnWindow = key }
+            if preserveFocusOnNextShow {
+                preserveFocusOnNextShow = false
+            } else {
+                let frontmost = NSWorkspace.shared.frontmostApplication
+                let ownPID = NSRunningApplication.current.processIdentifier
+                previousApp = frontmost?.processIdentifier == ownPID ? nil : frontmost
+                let key = NSApp.keyWindow
+                if key !== panel { previousOwnWindow = key }
+            }
             // Once per summon, and from `previousApp`, so the label names the paste target.
             core.palette.pasteTarget = PasteTarget(app: previousApp)
             let panel = ensurePanel()
@@ -167,13 +187,7 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         FilePreviewThumbnail.purgePreviews()
         IconCache.purgeFitted()
         schedulePopToRoot()
-        guard restoreFocus else { return }
-        // Our own window first: it is still open, and activating another app would bury it.
-        if let own = previousOwnWindow, own.isVisible {
-            own.makeKeyAndOrderFront(nil)
-        } else {
-            previousApp?.activate()
-        }
+        if restoreFocus { restorePreviousFocus() }
     }
 
     /// Pop to Root Search: reset now, or after the delay unless a reopen consumes it.

@@ -79,6 +79,15 @@ The screenshot stays local until you send your question. macOS may ask for
 Screen & System Audio Recording permission for ZLaunch; grant it in System
 Settings and relaunch if macOS requests it. AI Chat's ordinary shortcut is unchanged.
 
+## LaunchDeck
+
+ZLaunch 0.1.5 adds LaunchDeck: a global shortcut opens a menu, then letter keys
+navigate groups and run existing apps, websites, commands, or workflows. Search
+for **Configure LaunchDeck** to arrange the menu. Valid edits autosave; unfinished
+edits are protected when closing setup. Menu and Appearance have separate tabs.
+List, Grid, and Floating Tiles offer different presentations of the same keys.
+See [LaunchDeck](shortcut-palette.md) for behavior and verification details.
+
 ## How future customization stays maintainable
 
 User-facing app labels, permission descriptions and status messages identify

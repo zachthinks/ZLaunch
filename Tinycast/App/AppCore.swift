@@ -256,6 +256,42 @@ final class AppCore {
             saveSelection: { UserDefaults.standard.set($0?.rawValue, forKey: noteSelectionKey) })
     }
 
+    @ObservationIgnored private(set) lazy var shortcutPaletteCoordinator = ShortcutPaletteCoordinator(
+        repository: ShortcutPaletteRepository(
+            directory: AppPaths.applicationSupport().appending(path: "ShortcutPalette")),
+        hotKeys: hotKeys, activation: activationPolicy,
+        entries: { [unowned self] in appIndex.apps.filter { self.visibility.isVisible($0) } },
+        launch: { [unowned self] in launcherCoordinator.launch($0) },
+        beforeShow: { [unowned self] in
+            if windowController.isVisible {
+                paletteCoordinator.hidePalette(restoreFocus: false)
+            } else {
+                windowController.capturePreviousFocus()
+            }
+        },
+        restoreFocus: { [unowned self] in windowController.restorePreviousFocus() },
+        prepareExecution: { [unowned self] entry in
+            if entry.kind == .command,
+                let command = CommandCatalog.command(for: entry),
+                command == .searchEmoji || command == .clipboardHistory {
+                windowController.preserveFocusForNextShow()
+                return true
+            }
+            return await ShortcutPaletteFocus.restore(
+                app: windowController.previousApp, window: windowController.previousOwnWindow)
+        },
+        confirmDiscard: { [unowned self] message in
+            await choose(title: "Discard unfinished changes?", message: message, symbol: "keyboard",
+                options: [DialogAction(title: "Discard Changes", role: .destructive),
+                          DialogAction(title: "Keep Editing", role: .cancel)], defaultIndex: 1) == 0
+        },
+        confirmRemoval: { [unowned self] message in
+            await choose(title: "Remove this choice?", message: message, symbol: "trash",
+                options: [DialogAction(title: "Remove", role: .destructive),
+                          DialogAction(title: "Keep Choice", role: .cancel)], defaultIndex: 1) == 0
+        },
+        reportFailure: { [unowned self] in showMessage($0, tone: .danger) })
+
     func start() {
         Signposts.interval("AppCore.start") {
             // Shorten AppKit's ~2–3s tooltip delay; registration domain, so a user default wins.
@@ -805,7 +841,7 @@ final class AppCore {
             isUninstalling: uninstall.isTrashing,
             isRecordingHotKey: hotKeys.recordingAction != nil,
             isShowingDialog: isShowingDialog,
-            isPaletteVisible: paletteCoordinator.isVisible)
+            isPaletteVisible: paletteCoordinator.isVisible || shortcutPaletteCoordinator.isVisible)
     }
 
     /// Whether a window may take focus without interrupting something the user started.
