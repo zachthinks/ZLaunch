@@ -256,12 +256,3 @@ The official remote is `upstream` and its push URL is disabled locally. Your
 remote is `origin`. Custom work stays on `custom/main`; the upstream main branch
 and tags are retained as reference history. Keep new features and maintenance
 changes in distinct commits rather than rewriting upstream history.
-
-## Custom app icons
-
-ZLaunch uses the approved Launch Key artwork: ivory keycap with blue underglow.
-Debug builds use an amber keycap and DEV badge. Original masters, prompts and
-selection history live in `Custom/Design/LaunchKey/`. `python3 Custom/build-icons.py`
-packages them into the two app icon sets in `Custom/Assets.xcassets/`. `project.yml`
-selects ZLaunchIcon for production and ZLaunchDevIcon for Debug. Upstream's
-`Tinycast/tinycast.icon` and its asset catalog remain untouched.
