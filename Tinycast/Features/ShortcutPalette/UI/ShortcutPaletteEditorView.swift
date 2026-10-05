@@ -13,8 +13,11 @@ struct ShortcutPaletteEditorView: View {
     @State private var expanded: Set<UUID> = []
     @State private var selectedMenu: UUID?
     @State private var choosingAction: UUID?
-    @State private var additionParent: UUID?
-    @State private var showingActionPicker = false
+    @State private var additionRequest: AdditionRequest?
+    private struct AdditionRequest: Identifiable {
+        let id = UUID()
+        let parent: UUID?
+    }
     @State private var savedConfiguration: ShortcutPaletteConfiguration?
     @State private var validationMessage: String?
     @State private var section = Section.menu
@@ -27,8 +30,6 @@ struct ShortcutPaletteEditorView: View {
     private enum Section: String, CaseIterable { case menu = "Menu", appearance = "Appearance" }
 
     private var hasChanges: Bool { savedConfiguration.map { $0 != draft.configuration } ?? false }
-    private var additionTitle: String { additionParent.flatMap { draft.node($0)?.label } ?? "Main menu" }
-    private var additionCount: Int { additionParent.flatMap { draft.node($0)?.children?.count } ?? draft.nodes.count }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -47,18 +48,21 @@ struct ShortcutPaletteEditorView: View {
         }
         .padding(24)
         .disabled(!loaded || saving || askingToDiscard)
-        .sheet(isPresented: $showingActionPicker) {
-            ShortcutPaletteActionPicker(actions: actions, destination: additionTitle,
-                capacity: 26 - additionCount, onAdd: { entries in
-                    _ = try draft.append(entries.map { (label: $0.name, action: Optional($0.id)) }, to: additionParent)
-                    if let additionParent { expanded.insert(additionParent) }
-                    showingActionPicker = false
+        .sheet(item: $additionRequest) { request in
+            let parent = request.parent
+            let title = parent.flatMap { draft.node($0)?.label } ?? "Main menu"
+            let count = parent.flatMap { draft.node($0)?.children?.count } ?? draft.nodes.count
+            ShortcutPaletteActionPicker(actions: actions, destination: title,
+                capacity: 26 - count, onAdd: { entries in
+                    _ = try draft.append(entries.map { (label: $0.name, action: Optional($0.id)) }, to: parent)
+                    if let parent { expanded.insert(parent) }
+                    additionRequest = nil
                 }, onWebsite: {
                     do {
-                        let ids = try draft.append([("New Website", "website:")], to: additionParent)
-                        if let additionParent { expanded.insert(additionParent) }
+                        let ids = try draft.append([("New Website", "website:")], to: parent)
+                        if let parent { expanded.insert(parent) }
                         choosingAction = ids.first
-                        showingActionPicker = false
+                        additionRequest = nil
                     } catch { validationMessage = error.localizedDescription }
                 })
         }
@@ -97,8 +101,7 @@ struct ShortcutPaletteEditorView: View {
     }
 
     private func openBatch(in parent: UUID?) {
-        additionParent = parent
-        showingActionPicker = true
+        additionRequest = AdditionRequest(parent: parent)
     }
 
     private func addSubmenu(to parent: UUID?) {
