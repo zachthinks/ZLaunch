@@ -87,9 +87,10 @@ struct ShortcutPaletteMenuDraft: Equatable {
         }
         var added: [UUID] = []
         for item in items {
-            guard let key = "abcdefghijklmnopqrstuvwxyz".map(String.init).first(where: { candidate in
-                !siblings.contains { $0.key.lowercased() == candidate }
-            }) else { throw ShortcutPaletteConfiguration.Issue(message: "A menu can contain at most 26 items.") }
+            guard siblings.count < ShortcutPaletteConfiguration.maximumItems,
+                let key = ShortcutPaletteConfiguration.nextKey(among: siblings.map(\.key)) else {
+                throw ShortcutPaletteConfiguration.Issue(message: "This menu has no available shortcut keys.")
+            }
             let node = Node(.init(key: key, label: item.label, action: item.action,
                                   children: item.action == nil ? [] : nil))
             siblings.append(node)
@@ -103,13 +104,8 @@ struct ShortcutPaletteMenuDraft: Equatable {
         func find(_ nodes: [Node]) -> String? {
             for node in nodes {
                 if node.id == id {
-                    let key = node.key.lowercased()
-                    guard key.utf8.count == 1, let byte = key.utf8.first, (97...122).contains(byte) else {
-                        return "Use one letter A–Z."
-                    }
-                    if nodes.contains(where: { $0.id != id && $0.key.lowercased() == key }) {
-                        return "This key is already used in this submenu."
-                    }
+                    if let issue = ShortcutPaletteConfiguration.keyIssue(
+                        node.key, among: nodes.filter { $0.id != id }.map(\.key)) { return issue }
                     if node.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || node.label.count > 80 {
                         return "Enter a name of 1–80 characters."
                     }

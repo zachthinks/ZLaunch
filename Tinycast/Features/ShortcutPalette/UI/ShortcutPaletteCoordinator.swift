@@ -110,13 +110,22 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
         handle(navigation.select(key))
     }
 
+    func choose(_ key: String) {
+        guard isReady else { return }
+        handle(navigation.choose(key))
+    }
+
     func escape() { handle(navigation.escape()) }
 
     private func handle(_ result: ShortcutPaletteNavigation.Result) {
         switch result {
         case .ignored: break
         case .navigated:
-            message = nil
+            message = navigation.pendingKey.isEmpty ? nil
+                : "\(navigation.pendingKey.uppercased()) … Type the next key. Escape or Delete clears it."
+            resizePanel()
+        case .unmatched:
+            message = "No matching sequence. Try again."
             resizePanel()
         case .close: close(restoringFocus: true)
         case .action(let id):
@@ -187,7 +196,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
             mode: navigation.configuration.displayMode, size: navigation.configuration.tileSize,
             itemCount: navigation.items.count, isRoot: navigation.isRoot,
             availableSize: size ?? panel?.screen?.visibleFrame.size ?? NSScreen.main?.visibleFrame.size
-                ?? CGSize(width: 1000, height: 800))
+                ?? CGSize(width: 1000, height: 800), showsMessage: message != nil)
     }
 
     private func resizePanel() {
@@ -243,6 +252,7 @@ final class ShortcutPaletteCoordinator: NSObject, NSWindowDelegate {
             let modifiers = event.modifierFlags.intersection([.command, .control, .option])
             guard modifiers.isEmpty else { return }
             if event.keyCode == 53 { escape(); return }
+            if event.keyCode == 51 || event.keyCode == 117 { handle(navigation.clearPending()); return }
             if let key = event.charactersIgnoringModifiers { select(key) }
         }
         let hosting = NSHostingView(rootView: ShortcutPaletteView().environment(self))

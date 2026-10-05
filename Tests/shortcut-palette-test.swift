@@ -4,7 +4,7 @@ import Foundation
 @main
 struct ShortcutPaletteTests {
     static func main() throws {
-        for count in [1, 4, 8, 12, 20, 26] {
+        for count in [1, 4, 8, 12, 20, 26, 68] {
             for mode in ShortcutPaletteConfiguration.DisplayMode.allCases {
                 for size in ShortcutPaletteConfiguration.TileSize.allCases {
                     for screen in [CGSize(width: 1440, height: 900), CGSize(width: 640, height: 480)] {
@@ -42,6 +42,76 @@ struct ShortcutPaletteTests {
                 fatalError("Invalid website accepted")
             } catch {}
         }
+        assert(ShortcutPaletteConfiguration.maximumItems == 68)
+        for byte in 33...126 {
+            let key = String(UnicodeScalar(byte)!)
+            let printable = ShortcutPaletteConfiguration(items: [.init(key: key, label: "Key", action: "test")])
+            try printable.validate()
+            var input = ShortcutPaletteNavigation(configuration: printable)
+            assert(input.select(key) == .action("test"))
+        }
+        for reserved in [" ", "\t", "\n", "\u{1B}", "\u{7F}", "\u{F700}", "é", "😀"] {
+            assert(ShortcutPaletteConfiguration.keyIssue(reserved, among: []) != nil)
+        }
+        assert(ShortcutPaletteConfiguration.keyIssue("+", among: ["="]) == nil)
+        assert(ShortcutPaletteConfiguration.keyIssue("A", among: ["a"]) != nil)
+        let allKeys = ShortcutPaletteConfiguration.availableKeys.map(String.init)
+        var fullMenu = ShortcutPaletteMenuDraft(configuration: .init(items: []))
+        _ = try fullMenu.append(allKeys.map { ($0, Optional("test")) }, to: nil)
+        try fullMenu.configuration.validate()
+        assert(fullMenu.nodes.map(\.key) == allKeys)
+        let sequences = ShortcutPaletteConfiguration(items: [
+            .init(key: "tl", label: "Top Left", action: "left"),
+            .init(key: "tr", label: "Top Right", action: "right"),
+            .init(key: "+", label: "Plus", action: "plus"),
+            .init(key: "++", label: "Conflict", action: "conflict")
+        ])
+        do { try sequences.validate(); fatalError("Prefix conflict accepted") } catch {}
+        assert(ShortcutPaletteConfiguration.keyIssue("T", among: ["tl"]) != nil)
+        assert(ShortcutPaletteConfiguration.keyIssue("tl", among: ["T"]) != nil)
+        assert(ShortcutPaletteConfiguration.keyIssue("tl", among: ["tr"]) == nil)
+        var sequenceConfig = sequences
+        sequenceConfig.items.removeLast()
+        try sequenceConfig.validate()
+        var sequenceNav = ShortcutPaletteNavigation(configuration: sequenceConfig)
+        assert(sequenceNav.select("T") == .navigated && sequenceNav.pendingKey == "t")
+        assert(sequenceNav.items.map(\.key) == ["tl", "tr"])
+        assert(sequenceNav.select("l", isRepeat: true) == .ignored && sequenceNav.pendingKey == "t")
+        assert(sequenceNav.select("L") == .action("left") && sequenceNav.pendingKey.isEmpty)
+        assert(sequenceNav.select("t") == .navigated)
+        assert(sequenceNav.select("+") == .unmatched && sequenceNav.pendingKey.isEmpty)
+        assert(sequenceNav.select("+") == .action("plus"))
+        assert(sequenceNav.select("t") == .navigated)
+        assert(sequenceNav.escape() == .navigated && sequenceNav.isRoot)
+        assert(sequenceNav.select("t") == .navigated)
+        assert(sequenceNav.clearPending() == .navigated)
+        assert(sequenceNav.choose("tr") == .action("right"))
+        assert(sequenceNav.select("t") == .navigated)
+        assert(sequenceNav.choose("tl") == .action("left"))
+        var sequenceDraft = ShortcutPaletteMenuDraft(configuration: sequenceConfig)
+        let sequenceID = sequenceDraft.nodes[0].id
+        sequenceDraft.edit(sequenceID) { $0.key = "t" }
+        assert(sequenceDraft.issue(for: sequenceID)?.contains("starts with the other") == true)
+        sequenceDraft.edit(sequenceID) { $0.key = "tl" }
+        assert(sequenceDraft.issue(for: sequenceID) == nil)
+        sequenceConfig.escapeClosesAll = true
+        var clearFirst = ShortcutPaletteNavigation(configuration: sequenceConfig)
+        assert(clearFirst.select("t") == .navigated)
+        assert(clearFirst.escape() == .navigated)
+        assert(clearFirst.escape() == .close)
+        let symbolSequence = ShortcutPaletteConfiguration(items: [.init(key: "+=", label: "Symbols", action: "symbols")])
+        try symbolSequence.validate()
+        var symbolNav = ShortcutPaletteNavigation(configuration: symbolSequence)
+        assert(symbolNav.select("+") == .navigated)
+        assert(symbolNav.select("=") == .action("symbols"))
+        let nestedSequences = ShortcutPaletteConfiguration(items: [
+            .init(key: "t", label: "Top", children: sequenceConfig.items)
+        ])
+        try nestedSequences.validate()
+        var nestedNav = ShortcutPaletteNavigation(configuration: nestedSequences)
+        assert(nestedNav.select("t") == .navigated)
+        assert(nestedNav.select("t") == .navigated)
+        assert(nestedNav.select("r") == .action("right"))
         let config = ShortcutPaletteConfiguration.starter
         try config.validate()
         var nav = ShortcutPaletteNavigation(configuration: config)
@@ -62,7 +132,7 @@ struct ShortcutPaletteTests {
         let badJSON = [
             #"{"items":[]}"#,
             #"{"items":[{"key":"a","label":"A","action":"one"},{"key":"A","label":"B","action":"two"}]}"#,
-            #"{"items":[{"key":"ab","label":"A","action":"one"}]}"#,
+            #"{"items":[{"key":"abc","label":"A","action":"one"}]}"#,
             #"{"items":[{"key":"é","label":"A","action":"one"}]}"#,
             #"{"items":[{"key":"a","label":" ","action":"one"}]}"#,
             #"{"items":[{"key":"a","label":"A"}]}"#,
@@ -126,7 +196,8 @@ struct ShortcutPaletteTests {
         assert(batch.configuration.items[0] == config.items[0])
         let beforeOverflow = batch.configuration
         do {
-            _ = try batch.appendActions(Array(repeating: ("Extra", "command:extra"), count: 26))
+            _ = try batch.appendActions(Array(repeating: ("Extra", "command:extra"),
+                                              count: ShortcutPaletteConfiguration.maximumItems))
             fatalError("Oversized batch accepted")
         } catch {}
         assert(batch.configuration == beforeOverflow)
@@ -154,7 +225,8 @@ struct ShortcutPaletteTests {
         assert(inline.node(addedInline[0]) == nil)
         let beforeInlineOverflow = inline
         do {
-            _ = try inline.append(Array(repeating: ("Overflow", Optional("command:test")), count: 26), to: developer)
+            _ = try inline.append(Array(repeating: ("Overflow", Optional("command:test")),
+                                        count: ShortcutPaletteConfiguration.maximumItems), to: developer)
             fatalError("Oversized inline batch accepted")
         } catch {}
         assert(inline == beforeInlineOverflow)

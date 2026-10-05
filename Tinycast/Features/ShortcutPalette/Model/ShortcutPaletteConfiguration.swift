@@ -20,6 +20,33 @@ struct ShortcutPaletteConfiguration: Codable, Equatable, Sendable {
     var escapeClosesAll: Bool?
     var repeatTriggerResets: Bool?
 
+    static let availableKeys = Array("abcdefghijklmnopqrstuvwxyz0123456789")
+        + (33...126).compactMap { UnicodeScalar($0).map(Character.init) }
+            .filter { !$0.isLetter && !$0.isNumber }
+    static let maximumItems = availableKeys.count
+
+    static func keyIssue(_ key: String, among otherKeys: [String]) -> String? {
+        guard (1...2).contains(key.utf8.count), key.utf8.allSatisfy({ (33...126).contains($0) }) else {
+            return "Use 1–2 characters: A–Z, 0–9, or keyboard punctuation. No spaces or special keys."
+        }
+        let normalized = key.lowercased()
+        if otherKeys.contains(where: { $0.lowercased() == normalized }) {
+            return "This key is already used in this submenu."
+        }
+        if let conflict = otherKeys.first(where: {
+            let other = $0.lowercased()
+            return !other.isEmpty && (other.hasPrefix(normalized) || normalized.hasPrefix(other))
+        }) {
+            return "“\(key.uppercased())” conflicts with “\(conflict.uppercased())” in this submenu. "
+                + "One shortcut starts with the other, so LaunchDeck would run it before you finish typing."
+        }
+        return nil
+    }
+
+    static func nextKey(among keys: [String]) -> String? {
+        availableKeys.map(String.init).first { keyIssue($0, among: keys) == nil }
+    }
+
     static func websiteURL(for action: String) -> URL? {
         guard action.hasPrefix("website:"),
             let parts = URLComponents(string: String(action.dropFirst("website:".count))),
@@ -34,15 +61,12 @@ struct ShortcutPaletteConfiguration: Codable, Equatable, Sendable {
     }
 
     private static func validate(_ items: [Item], depth: Int) throws {
-        guard depth < 6, !items.isEmpty, items.count <= 26 else {
-            throw Issue(message: "Use 1–26 choices per submenu and at most six levels.")
+        guard depth < 6, !items.isEmpty, items.count <= maximumItems else {
+            throw Issue(message: "Use 1–\(maximumItems) choices per submenu and at most six levels.")
         }
-        var keys: Set<String> = []
-        for item in items {
-            guard item.key.utf8.count == 1,
-                let byte = item.key.lowercased().utf8.first, (97...122).contains(byte),
-                keys.insert(item.id).inserted
-            else { throw Issue(message: "Each choice needs a unique letter A–Z within its submenu.") }
+        for (index, item) in items.enumerated() {
+            let others = items.enumerated().filter { $0.offset != index }.map { $0.element.key }
+            if let issue = keyIssue(item.key, among: others) { throw Issue(message: "\(item.label): \(issue)") }
             guard !item.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 item.label.count <= 80
             else { throw Issue(message: "Choice labels must contain 1–80 characters.") }

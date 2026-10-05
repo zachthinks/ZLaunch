@@ -1,7 +1,7 @@
 # LaunchDeck
 
 LaunchDeck is ZLaunch's hierarchical keyboard menu. Open it with one global
-shortcut, press a letter to enter a group, then another letter to run an action.
+shortcut, type a shortcut to enter a submenu, then another to run an action.
 Only the current level's choices appear. Existing command IDs and saved menu
 paths are retained from the initial Shortcut Palette implementation.
 
@@ -27,9 +27,9 @@ Search for **Configure LaunchDeck** in the launcher.
   categorized picker inline. Selecting a destination closes it. Cancel leaves the
   current action unchanged. Websites use an address field and Use Website button.
 - **Actions:** use **Add Actions…**, tick several destinations, then add the selection
-  in one step. Selections persist across searches and categories; unused letters are
+  in one step. Selections persist across searches and categories; unused keys are
   assigned automatically. Cancel creates no placeholder. The picker shows remaining
-  capacity and prevents exceeding 26 items. Available destinations: open an app,
+  capacity and prevents exceeding 68 items. Available destinations: open an app,
   open a website, run a ZLaunch command, use an app action, or run a shortcut/workflow.
   Results are grouped by category, with categories and actions sorted alphabetically.
   Search matches action names and category names: “Window” includes Window Management
@@ -52,8 +52,19 @@ Search for **Configure LaunchDeck** in the launcher.
 - **Try LaunchDeck:** saves a valid pending edit and opens the current menu. Escape
   returns to setup. An invalid edit stays visible with guidance instead of running.
 
-Keys are case-insensitive A–Z and unique within each group. Menus support up to
-26 choices per level and six levels, with labels of 1–80 characters. Unavailable
+Keys use one or two printable ASCII characters: A–Z, 0–9 and keyboard punctuation
+including shifted symbols such as `+`, `?` and `!`. Letters are case-insensitive;
+`+` and `=` are distinct. Whitespace, control/function keys, Unicode text composition
+and modifier chords are not shortcut characters. Escape and Delete remain reserved.
+
+Two-character shortcuts are typed in order with no timing deadline. `TL` and `TR`
+can share a submenu: `T` filters the choices and shows a next-key hint. Escape or
+Delete clears the partial sequence; an incorrect second character clears it and
+runs nothing. Clicking a choice executes its full shortcut directly. A complete key
+cannot prefix another key in the same submenu (`T` with `TL`, or `+` with `++`):
+validation explains the ambiguity and preserves the last saved menu. Keys in other
+submenus do not conflict. Menus support up to
+68 choices per level and six levels, with labels of 1–80 characters. Unavailable
 saved actions are preserved and fail visibly rather than dispatching another
 choice. A type change requires choosing a matching destination.
 

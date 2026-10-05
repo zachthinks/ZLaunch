@@ -67,7 +67,8 @@ struct ShortcutPaletteEditing {
     }
 
     var nextKey: String? {
-        "abcdefghijklmnopqrstuvwxyz".map(String.init).first { key in !items.contains { $0.id == key } }
+        items.count < ShortcutPaletteConfiguration.maximumItems
+            ? ShortcutPaletteConfiguration.nextKey(among: items.map(\.key)) : nil
     }
 
     mutating func appendActions(_ actions: [(label: String, action: String)]) throws -> [String] {
@@ -75,7 +76,7 @@ struct ShortcutPaletteEditing {
         var added: [String] = []
         for action in actions {
             guard let key = updated.nextKey else {
-                throw ShortcutPaletteConfiguration.Issue(message: "A menu can contain at most 26 items.")
+                throw ShortcutPaletteConfiguration.Issue(message: "This menu has no available shortcut keys.")
             }
             guard !action.action.isEmpty else {
                 throw ShortcutPaletteConfiguration.Issue(message: "Choose a destination for every action.")
@@ -95,9 +96,10 @@ struct ShortcutPaletteEditing {
     mutating func back() { if !path.isEmpty { path.removeLast() } }
 
     mutating func update(_ item: ShortcutPaletteConfiguration.Item, replacing id: String?) throws {
-        guard item.key.utf8.count == 1, let byte = item.key.lowercased().utf8.first,
-            (97...122).contains(byte), !items.contains(where: { $0.id == item.id && $0.id != id })
-        else { throw ShortcutPaletteConfiguration.Issue(message: "Choose an unused letter A–Z in this group.") }
+        if let issue = ShortcutPaletteConfiguration.keyIssue(item.key,
+            among: items.filter { $0.id != id }.map(\.key)) {
+            throw ShortcutPaletteConfiguration.Issue(message: issue)
+        }
         guard !item.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
             item.label.count <= 80
         else { throw ShortcutPaletteConfiguration.Issue(message: "Enter a label of 1–80 characters.") }

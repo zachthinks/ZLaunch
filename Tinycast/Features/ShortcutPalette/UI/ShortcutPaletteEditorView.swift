@@ -53,7 +53,7 @@ struct ShortcutPaletteEditorView: View {
             let title = parent.flatMap { draft.node($0)?.label } ?? "Main menu"
             let count = parent.flatMap { draft.node($0)?.children?.count } ?? draft.nodes.count
             ShortcutPaletteActionPicker(actions: actions, destination: title,
-                capacity: 26 - count, onAdd: { entries in
+                capacity: ShortcutPaletteConfiguration.maximumItems - count, onAdd: { entries in
                     _ = try draft.append(entries.map { (label: $0.name, action: Optional($0.id)) }, to: parent)
                     if let parent { expanded.insert(parent) }
                     additionRequest = nil
@@ -198,7 +198,7 @@ struct ShortcutPaletteEditorView: View {
 
     private var displayDescription: String {
         switch draft.appearance.displayMode ?? .list {
-        case .list: "A compact text menu with a letter beside each choice."
+        case .list: "A compact text menu with a key beside each choice."
         case .grid: "Square keys arranged together in a single window."
         case .floatingTiles: "Individual keys float over your desktop, with only the current choices visible."
         }

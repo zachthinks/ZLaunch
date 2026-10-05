@@ -40,8 +40,9 @@ struct ShortcutPaletteView: View {
             }
             Divider()
             HStack {
-                Button(coordinator.navigation.isRoot || coordinator.navigation.configuration.escapeClosesAll == true
-                       ? "Esc  Close" : "Esc  Back") { coordinator.escape() }
+                Button(!coordinator.navigation.pendingKey.isEmpty ? "Esc  Clear"
+                       : (coordinator.navigation.isRoot || coordinator.navigation.configuration.escapeClosesAll == true
+                          ? "Esc  Close" : "Esc  Back")) { coordinator.escape() }
                 Spacer()
                 Button("Configure…") { coordinator.editConfiguration() }
             }
@@ -80,14 +81,14 @@ struct ShortcutPaletteView: View {
     }
 
     private func choice(_ item: ShortcutPaletteConfiguration.Item, tiled: Bool) -> some View {
-        Button { coordinator.select(item.key) } label: {
+        Button { coordinator.choose(item.key) } label: {
             Group {
                 if tiled {
                     VStack(spacing: 6) {
                         Text(item.key.uppercased())
                             .font(.system(size: coordinator.presentationLayout.tileEdge * 0.42,
                                           weight: .medium, design: .monospaced))
-                            .lineLimit(1)
+                            .lineLimit(1).minimumScaleFactor(0.45)
                         HStack(alignment: .top, spacing: 5) {
                             if let app = coordinator.application(for: item) {
                                 AppIconView(app: app, pointSize: 16)
@@ -128,7 +129,7 @@ struct ShortcutPaletteView: View {
                     HStack(spacing: 16) {
                         Text(item.key.uppercased())
                             .font(.system(.body, design: .monospaced).bold())
-                            .frame(width: 30, height: 30)
+                            .frame(width: 44, height: 30)
                             .background(Theme.Colors.cardFill)
                             .clipShape(.rect(cornerRadius: 4))
                         Text(item.label).font(.body.weight(.medium)).lineLimit(2)

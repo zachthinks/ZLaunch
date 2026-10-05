@@ -69,7 +69,7 @@ struct ShortcutPaletteActionPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Add actions to \(destination)").font(.title2.bold())
-            Text("Choose several actions, then add them together. Unused letter keys are assigned automatically.")
+            Text("Choose several actions, then add them together. Unused keys are assigned automatically.")
                 .foregroundStyle(.secondary)
             Picker("Browse", selection: $type) {
                 ForEach(ActionType.allCases.filter { $0 != .website }) { type in

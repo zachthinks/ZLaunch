@@ -88,14 +88,14 @@ struct ShortcutPaletteMenuEditor: View {
                         Text((["Main menu"] + menuPath.map(\.label)).joined(separator: " › "))
                             .font(.caption).foregroundStyle(.secondary)
                     }
-                    Text("\(children.count) items · Edit keys and names below.")
+                    Text("\(children.count) items · Keys: 1–2 characters, such as 9, +, TL or TR.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button("Add Submenu", systemImage: "folder.badge.plus") { onAddSubmenu(selectedMenu) }
-                    .disabled(children.count >= 26 || depth >= 4)
+                    .disabled(children.count >= ShortcutPaletteConfiguration.maximumItems || depth >= 4)
                 Button("Add Actions…", systemImage: "plus") { onAddActions(selectedMenu) }
-                    .disabled(children.count >= 26)
+                    .disabled(children.count >= ShortcutPaletteConfiguration.maximumItems)
             }
             HStack(spacing: 12) {
                 Text("Key").frame(width: 48, alignment: .leading)
@@ -135,7 +135,7 @@ struct ShortcutPaletteMenuEditor: View {
 
     private func itemRow(_ node: ShortcutPaletteMenuDraft.Node, index: Int) -> some View {
         HStack(spacing: 12) {
-            TextField("A–Z", text: Binding(
+            TextField("Key", text: Binding(
                 get: { draft.node(node.id)?.key ?? "" }, set: { value in draft.edit(node.id) { $0.key = value } }))
                 .frame(width: 48).accessibilityLabel("Key for \(node.label)")
             TextField("Name", text: Binding(
