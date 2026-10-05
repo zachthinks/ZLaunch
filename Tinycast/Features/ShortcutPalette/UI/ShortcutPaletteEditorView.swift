@@ -75,7 +75,8 @@ struct ShortcutPaletteEditorView: View {
             loaded = true
         }
         .task(id: draft) {
-            guard loaded, hasChanges, !saving, !askingToDiscard else { return }
+            guard loaded, savedConfiguration != nil, !saving, !askingToDiscard else { return }
+            guard hasChanges else { validationMessage = nil; return }
             do { try await Task.sleep(for: .milliseconds(650)) } catch { return }
             guard !Task.isCancelled else { return }
             save()
