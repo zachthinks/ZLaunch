@@ -425,6 +425,8 @@ enum Theme {
 
         /// The ramp's inverse: the scrim darkens the dark surface and lightens the light one.
         static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
+        static let launchDeckGlassScrim = adaptive(
+            dark: .srgbInk(0, alpha: 0.64), light: .srgbInk(0.82, alpha: 0.85))
         static let classicPanelScrim = adaptive(dark: .srgbInk(0, alpha: 0.72), light: .srgbInk(1, alpha: 0.85))
         static let classicBarSurface = adaptive(dark: .srgbInk(0.10, alpha: 1), light: .srgbInk(0.96, alpha: 1))
         /// Modal separation inside Tinycast: the launcher recedes while its dialog is in front.

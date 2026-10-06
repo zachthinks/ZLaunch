@@ -206,10 +206,27 @@ private struct FloatingShortcutSurface: ViewModifier {
     var glass = false
 
     func body(content: Content) -> some View {
-        if enabled && glass && !reduceTransparency {
-            content.background {
-                ShortcutGlassBackdrop(radius: radius).allowsHitTesting(false)
-            }
+        if enabled && glass {
+            content
+                .background {
+                    if reduceTransparency {
+                        Theme.Colors.windowSurface.clipShape(.rect(cornerRadius: radius))
+                    } else {
+                        ShortcutGlassBackdrop(radius: radius)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: radius)
+                                    .fill(Theme.Colors.launchDeckGlassScrim)
+                            }
+                            .allowsHitTesting(false)
+                    }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: radius)
+                        .strokeBorder(Theme.Colors.border, lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+                .shadow(color: .black.opacity(0.22), radius: 10, x: 0, y: 5)
+                .shadow(color: .black.opacity(0.12), radius: 1, x: 0, y: 1)
         } else if enabled {
             content
                 .background {

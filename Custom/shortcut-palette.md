@@ -86,8 +86,10 @@ solid tile surfaces. The current Dev menu uses Floating Tiles / Medium.
 **Liquid Glass** uses the same floating layout with broader continuous corners,
 smaller rounded lettering and stronger labels. Each tile uses an untinted AppKit
 `NSGlassEffectView` with the clear system style, using the same AppKit glass API as
-the launcher. There is no painted fill or extra shadow over the glass. The system
-draws the material and edge; Reduce Transparency uses solid surfaces. Select it in Configure LaunchDeck → Appearance → Display.
+the launcher. An appearance-aware neutral scrim, one-point edge and soft shadow keep the tiles
+visible over white, light and dark backgrounds while retaining the system material beneath.
+Reduce Transparency uses solid surfaces with the same reinforced edge. Select it in
+Configure LaunchDeck → Appearance → Display.
 
 Small/Medium/Large tiles are 128/160/192 points. Floating menus use one horizontal
 row when possible, then balanced rows; incomplete rows are centered. Grid uses
