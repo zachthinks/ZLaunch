@@ -13,3 +13,4 @@ if rg -l 'import (AppKit|SwiftUI|Cocoa)' Tinycast/Features/*/Model/; then
   echo "Model layer imports UI frameworks" >&2; exit 1
 fi
 UNSIGNED=1 ./Custom/build.sh
+node Custom/verify-bundle.mjs "${DERIVED:-$PWD/build/ZLaunchDerivedData}/Build/Products/Debug/ZLaunch Dev.app" Debug

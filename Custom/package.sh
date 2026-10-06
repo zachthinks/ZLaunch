@@ -5,9 +5,10 @@ VERSION="$(node -p 'require("./Custom/release.json").version')"
 APP="${1:-$PWD/build/ZLaunchDerivedData/Build/Products/Release/ZLaunch.app}"
 [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")" = com.zachthinks.zlaunch ]
 [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" = "$VERSION" ]
+node Custom/verify-bundle.mjs "$APP" Release
 ./Scripts/verify-signature.sh "$APP"
 codesign -v -R '=anchor apple generic and certificate leaf[subject.OU] = "FVY9AS28CU" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists' "$APP"
-for BIN in "$APP/Contents/MacOS/ZLaunch" "$APP/Contents/Helpers/ClipboardTextHelper"; do
+for BIN in "$APP/Contents/MacOS/ZLaunch" "$APP/Contents/Helpers/ClipboardTextHelper" "$APP/Contents/Helpers/ZLaunch Dictation.app/Contents/MacOS/ZLaunch Dictation"; do
   [ "$(lipo -archs "$BIN")" = arm64 ]
 done
 mkdir -p dist

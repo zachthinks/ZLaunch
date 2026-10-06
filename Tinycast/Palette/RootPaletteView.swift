@@ -385,7 +385,7 @@ struct RootPaletteView: View {
 
     /// Split from `body` for the same reason `keyHandlers` is: one chain cannot carry them all.
     @ViewBuilder
-    private func stateObservers(_ content: some View) -> some View {
+    private func queryObservers(_ content: some View) -> some View {
         emojiObservers(content)
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) {
@@ -460,9 +460,20 @@ struct RootPaletteView: View {
                 if menuOpen { closeMenus() }
                 land()
             }
+    }
+
+    @ViewBuilder
+    private func stateObservers(_ content: some View) -> some View {
+        queryObservers(content)
             // ⌘. arrives as a token rather than a key press. See `PaletteState.pinChordToken`.
             .onChange(of: vm.pinChordToken) { performShortcut(.pin) }
             .onChange(of: vm.escapeToken) { _ = handleEscape() }
+            .onChange(of: vm.queryRewriteToken) {
+                if menuOpen { closeMenus() }
+                searchFocused = true
+                // Next turn, past the refocus that selects all, so typing extends the answer.
+                Task { @MainActor in (hostWindow as? PalettePanel)?.moveFieldEditorCaretToEnd() }
+            }
             // ⌘1…⌘0 arrives as a slot index from AppKit keyCode matching.
             .onChange(of: vm.favoriteSlotToken) {
                 if let index = vm.favoriteSlotIndex { performShortcut(.favoriteSlot(index)) }
@@ -902,11 +913,12 @@ struct RootPaletteView: View {
         HStack(spacing: 0) {
             appMenuButton
                 .modifier(ExtensionToastSlot(extensions: extensions, showing: vm.mode == .extensionCommand))
-            Spacer()
             if showActionGroup {
                 actionGroup(
                     pillLabel: pillLabel, formPrimaryShortcut: formPrimaryShortcut,
-                    showActions: showActions)
+                    showActions: showActions
+                )
+                .fixedSize()
             }
         }
         .padding(.horizontal, metrics.spacing.md)
@@ -1169,6 +1181,11 @@ struct RootPaletteView: View {
             let screen = screen
             let selection = selection(in: screen)
             if modifiers.contains([.command, .control]), screen.tertiary(at: selection) { return true }
+            if modifiers.contains([.command, .shift]),
+                screen.perform(.copyCalculation, at: selection)
+            {
+                return true
+            }
             if modifiers.contains(.command) { return screen.secondary(at: selection) }
             if modifiers.contains(.option) {
                 return screen.pasteKeepingWindowOpen(at: selection)
