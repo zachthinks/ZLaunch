@@ -24,24 +24,27 @@ export function previousReleaseDetails(release) {
   const marker = release.body.match(/<!-- zlaunch:base (\{[^\n]*\}) -->/);
   let base = {};
   if (marker) base = JSON.parse(marker[1]);
-  const upstreamTag = base.upstream_tag ?? release.body.match(/based on Tinycast (v\d+\.\d+\.\d+)/i)?.[1];
+  const upstreamTag = base.upstream_tag ?? release.body.match(/based on Tinycast (v\d+\.\d+\.\d+(?:-beta\.\d+)?)/i)?.[1];
   const sourceCommit = base.source_commit ?? release.body.match(/github\.com\/[^/]+\/[^/]+\/tree\/([a-f0-9]{40})\b/)?.[1];
   return { tag: release.tagName, upstreamTag, sourceCommit };
 }
 
 export function renderReleaseNotes({ metadata, commit, upstream, previous = null, changes = [] }) {
-  if (!/^\d+\.\d+\.\d+$/.test(metadata.version) || !/^v\d+\.\d+\.\d+$/.test(metadata.upstream_tag)
+  if (!/^\d+\.\d+\.\d+$/.test(metadata.version) || !/^v\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(metadata.upstream_tag)
       || !/^[a-f0-9]{40}$/.test(metadata.upstream_commit) || !/^[a-f0-9]{40}$/.test(commit)
       || !/^[\w.-]+\/[\w.-]+$/.test(metadata.repository)) throw new Error("Invalid release provenance.");
   const upstreamURL = `https://github.com/${upstreamRepository}/releases/tag/${metadata.upstream_tag}`;
-  if (upstream.tagName !== metadata.upstream_tag || upstream.url !== upstreamURL || upstream.isDraft || upstream.isPrerelease)
-    throw new Error("The official release does not match the stable upstream base.");
+  const prerelease = metadata.upstream_prerelease === true;
+  if (prerelease !== /-beta\.\d+$/.test(metadata.upstream_tag)
+      || upstream.tagName !== metadata.upstream_tag || upstream.url !== upstreamURL || upstream.isDraft
+      || upstream.isPrerelease !== prerelease)
+    throw new Error("The official release does not match the explicitly selected upstream channel.");
   const summary = upstreamSummary(upstream.body);
   if (!summary) throw new Error("The official release has no usable release notes.");
   const sameBase = previous?.upstreamTag === metadata.upstream_tag;
   const sections = [
     `# ZLaunch ${metadata.version}`,
-    `Based on Tinycast ${metadata.upstream_tag}. [Official upstream release](${upstreamURL}).`,
+    `Based on Tinycast ${metadata.upstream_tag}${prerelease ? " (upstream beta)" : ""}. [Official upstream release](${upstreamURL}).`,
     "## ZLaunch changes",
     !previous ? firstReleaseChanges.map(x => `- ${x}`).join("\n")
       : changes.length ? changes.map(x => `- ${x}`).join("\n")
@@ -71,6 +74,8 @@ function main(output) {
   const commit = command("git", ["rev-parse", "HEAD"]);
   const upstream = JSON.parse(command("gh", ["release", "view", metadata.upstream_tag, "--repo", upstreamRepository,
     "--json", "body,name,url,tagName,isDraft,isPrerelease"]));
+  const upstreamCommit = command("gh", ["api", `repos/${upstreamRepository}/commits/${metadata.upstream_tag}`, "--jq", ".sha"]);
+  if (upstreamCommit !== metadata.upstream_commit) throw new Error("Upstream tag does not match the pinned source commit.");
   const releases = JSON.parse(command("gh", ["release", "list", "--repo", metadata.repository,
     "--limit", "100", "--json", "tagName,isDraft,isPrerelease"]));
   const prior = releases.find(x => /^v\d+\.\d+\.\d+$/.test(x.tagName) && !x.isDraft && !x.isPrerelease && x.tagName !== `v${metadata.version}`);

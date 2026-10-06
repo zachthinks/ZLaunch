@@ -7,7 +7,7 @@ const run=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ig
 function setup(conflict){
  const d=root+'/'+(conflict?'conflict':'clean'); mkdirSync(d);
  run(d,'init','-b','main'); run(d,'config','user.name','Test'); run(d,'config','user.email','test@example.invalid');
- mkdirSync(d+'/Custom');writeFileSync(d+'/Custom/release.json',JSON.stringify({version:'0.1.0',upstream_tag:'v0.11.12'}));writeFileSync(d+'/.gitignore','build/\norigin.git/\n');writeFileSync(d+'/shared.txt','base\n');run(d,'add','.');run(d,'commit','-m','base');const base=run(d,'rev-parse','HEAD');
+ mkdirSync(d+'/Custom');writeFileSync(d+'/Custom/release.json',JSON.stringify({version:'0.1.0',upstream_tag:'v0.11.12-beta.1',upstream_prerelease:true}));writeFileSync(d+'/.gitignore','build/\norigin.git/\n');writeFileSync(d+'/shared.txt','base\n');run(d,'add','.');run(d,'commit','-m','base');const base=run(d,'rev-parse','HEAD');
  writeFileSync(d+'/shared.txt','upstream\n');run(d,'add','.');run(d,'commit','-m','upstream');run(d,'tag','v0.11.13');
  run(d,'switch','-c','custom/main',base);writeFileSync(d+(conflict?'/shared.txt':'/custom.txt'),'custom\n');run(d,'add','.');run(d,'commit','-m','custom');const original=run(d,'rev-parse','HEAD');
  run(d,'remote','add','upstream',d);run(d,'init','--bare',d+'/origin.git');run(d,'remote','add','origin',d+'/origin.git');
@@ -15,7 +15,13 @@ function setup(conflict){
  const go=()=>spawnSync('node',[script],{cwd:d,env:{...process.env,PATH:bins+':'+process.env.PATH},encoding:'utf8'});
  let out=go();
  if(conflict){assert.notEqual(out.status,0);assert.equal(run(d,'branch','--show-current'),'custom/main');assert.equal(run(d,'rev-parse','HEAD'),start);assert.equal(run(d,'status','--porcelain'),'');assert.match(readFileSync(d+'/build/sync-conflicts.txt','utf8'),/shared.txt/);assert.notEqual(go().status,0);}
- else{assert.equal(out.status,0,out.stderr);assert.equal(JSON.parse(readFileSync(d+'/Custom/release.json')).version,'0.1.1');run(d,'push','origin','HEAD');run(d,'switch','custom/main');out=go();assert.equal(out.status,0,out.stderr);assert.match(out.stdout,/Resume/);}
+ else{assert.equal(out.status,0,out.stderr);assert.equal(JSON.parse(readFileSync(d+'/Custom/release.json')).version,'0.1.1');assert.equal(JSON.parse(readFileSync(d+'/Custom/release.json')).upstream_prerelease,false);run(d,'push','origin','HEAD');run(d,'switch','custom/main');out=go();assert.equal(out.status,0,out.stderr);assert.match(out.stdout,/Resume/);
+ run(d,'switch','custom/main');run(d,'merge','--ff-only','sync/upstream-0.11.13');
+ const beta=JSON.parse(readFileSync(d+'/Custom/release.json'));beta.upstream_tag='v0.11.14-beta.1';beta.upstream_prerelease=true;
+ writeFileSync(d+'/Custom/release.json',JSON.stringify(beta));run(d,'add','Custom/release.json');run(d,'commit','-m','newer beta base');
+ const betaHead=run(d,'rev-parse','HEAD');out=go();assert.equal(out.status,0,out.stderr);assert.match(out.stdout,/Already contains stable/);
+ assert.equal(run(d,'rev-parse','HEAD'),betaHead);assert.equal(JSON.parse(readFileSync(d+'/Custom/release.json')).upstream_tag,'v0.11.14-beta.1');
+ }
  console.log(conflict?'Conflict cleanup and retry passed':'Clean merge, version bump, and remote-candidate resume passed');
 }
 try{setup(false);setup(true);}finally{rmSync(root,{recursive:true,force:true});}

@@ -14,6 +14,9 @@ const tag = latest.tag_name;
 git("fetch", "upstream", `refs/tags/${tag}:refs/remotes/upstream/releases/${tag}`);
 const sha = git("rev-parse", `refs/remotes/upstream/releases/${tag}^{commit}`);
 if (!/^([a-f0-9]{40})$/.test(sha)) throw new Error("Invalid upstream commit.");
+if (spawnSync("git", ["merge-base", "--is-ancestor", sha, "HEAD"]).status === 0) {
+ console.log(`Already contains stable upstream ${tag}; keep the newer recorded base.`); process.exit(0);
+}
 const branch = `sync/upstream-${tag.slice(1)}`;
 if (git("ls-remote", "--heads", "origin", branch)) {
  git("fetch", "origin", branch);
@@ -43,7 +46,7 @@ if (merge.status !== 0) {
  throw new Error(`Merge stopped. Your custom branch is intact. Conflicts: ${conflicts}`);
 }
 const next = JSON.parse(readFileSync("Custom/release.json", "utf8"));
-next.upstream_tag = tag; next.upstream_commit = sha;
+next.upstream_tag = tag; next.upstream_commit = sha; next.upstream_prerelease = false;
 const parts = next.version.split(".").map(Number); parts[2]++; next.version = parts.join(".");
 writeFileSync("Custom/release.json", JSON.stringify(next, null, 2) + "\n");
 git("add", "Custom/release.json");

@@ -32,3 +32,14 @@ assert.throws(() => renderReleaseNotes({ metadata, commit: sha, upstream: { ...u
 assert.deepEqual(previousReleaseDetails({ tagName: "v0.1.0", body: `ZLaunch 0.1.0, based on Tinycast v0.11.12.\nSource: https://github.com/owner/launcher/tree/${old}` }), { tag: "v0.1.0", upstreamTag: "v0.11.12", sourceCommit: old });
 assert.equal(renderReleaseNotes({ metadata, commit: sha, upstream }), initial, "Offline fixture rendering must be deterministic.");
 console.log("Release notes cover provenance, complete upstream fixes, installer removal, same-base patches, and offline determinism.");
+
+const betaMetadata = { ...metadata, upstream_tag: "v0.11.14-beta.112", upstream_prerelease: true };
+const betaUpstream = { ...upstream, tagName: betaMetadata.upstream_tag, isPrerelease: true,
+  url: `https://github.com/abue-ammar/tinycast/releases/tag/${betaMetadata.upstream_tag}` };
+const beta = renderReleaseNotes({ metadata: betaMetadata, commit: sha, upstream: betaUpstream, previous });
+assert.match(beta, /v0\.11\.14-beta\.112 \(upstream beta\)/);
+assert.equal(previousReleaseDetails({ tagName: "v0.1.6", body: beta }).upstreamTag, betaMetadata.upstream_tag);
+assert.throws(() => renderReleaseNotes({ metadata: { ...betaMetadata, upstream_prerelease: false }, commit: sha, upstream: betaUpstream }));
+assert.throws(() => renderReleaseNotes({ metadata: betaMetadata, commit: sha, upstream: { ...betaUpstream, isPrerelease: false } }));
+assert.throws(() => renderReleaseNotes({ metadata: { ...metadata, upstream_prerelease: true }, commit: sha, upstream }));
+console.log("Explicit beta provenance is preserved; unapproved or mismatched upstream channels are rejected.");

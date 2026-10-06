@@ -1,7 +1,8 @@
 {
-  "version": "0.1.5",
-  "upstream_tag": "v0.11.12",
-  "upstream_commit": "fa1c2bb2849dd826abc43b9343abad835607bdcf",
+  "version": "0.1.6",
+  "upstream_tag": "v0.11.14-beta.112",
+  "upstream_commit": "c048b316c4802d57ca5558df15238c12cd04f883",
   "repository": "zachthinks/ZLaunch",
-  "team": "FVY9AS28CU"
+  "team": "FVY9AS28CU",
+  "upstream_prerelease": true
 }

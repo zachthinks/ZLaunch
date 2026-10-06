@@ -34,14 +34,23 @@ The existing picker focus handoff and protected setup close callback remain pres
 - Lint passes with pre-existing warnings; comparison against both parent snapshots found no new
   integration-only SwiftLint warnings. Xcode emits its standard no-AppIntents metadata warning.
 
-Interactive checks remain required: physical Hyper–Space dispatch, focus restoration, real Store
-browsing, screenshot capture permission/UI, and microphone capture/model transcription. This session
-has no supported Mac UI control tool. No installed app, permissions, model downloads, or user
-configuration were changed for this candidate.
+## Interactive QA follow-up
 
-## Before a release
+A separate native UI QA session verified nested navigation, invalid keys, Escape back, Settings,
+Emoji focus, calculator command-Return, and Store search/details/back. The user confirmed physical
+shortcut/root-close/focus checks. Screenshot capture passed using signed Dev build 16 after the
+approved Screen Recording grant and reopen: a harmless System Settings window was staged, no message
+was sent, and removing the attachment disabled Send. Dictation runtime/model download testing was
+explicitly waived because the user uses Spokenly; its runtime behavior remains untested.
 
-The release metadata still describes the last published upstream base, v0.11.12. This candidate
-integrates a pinned main commit beyond that release. Before publishing, assign a new ZLaunch version
-and record truthful upstream provenance/release notes; do not reuse the existing 0.1.5 release tag.
-Run interactive smoke checks and the custom signing/package checks before installation or publication.
+Glass tile contrast was strengthened in commit 1d723784 with a neutral adaptive scrim, edge and shadow.
+Its signed Dev build 17 awaits final visual QA over white/light/dark backgrounds. Production remains
+unchanged until that release gate is cleared.
+
+## Release preparation
+
+Release metadata now targets ZLaunch 0.1.6 with the exact upstream tag v0.11.14-beta.112 and commit
+c048b316. The beta channel is explicit; release-note generation rejects mismatched channel metadata
+and checks the tag resolves to the pinned commit. Automatic upstream sync still selects stable releases
+and clears the beta flag for a newer stable base. If the latest stable commit is already an ancestor,
+sync leaves the newer beta provenance intact. No existing ZLaunch release tag is reused.
