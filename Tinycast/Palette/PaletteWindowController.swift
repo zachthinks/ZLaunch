@@ -114,10 +114,17 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             // Non-activating, so summoning never raises our own aux windows behind it.
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
+            let focusToken = core.palette.focusToken
             Task { @MainActor [weak self, weak panel] in
                 await Task.yield()
-                guard let self, let panel, panel.isVisible else { return }
+                guard let self, let panel, panel.isVisible,
+                    core.palette.focusToken == focusToken, !core.palette.menuOpen
+                else { return }
                 panel.makeKeyAndOrderFront(nil)
+                guard panel.isKeyWindow, !core.palette.isEditingField,
+                    core.palette.pendingArgumentEntryID == nil
+                else { return }
+                core.palette.focusToken = UUID()
             }
         }
     }
