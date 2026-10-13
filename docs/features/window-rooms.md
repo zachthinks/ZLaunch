@@ -149,6 +149,17 @@ window is a notice — and steps nothing back, since hiding everything around an
 leave an empty desk. Switching the feature off unhides the apps rooms hid first and waits for them
 to come back before returning parked windows.
 
+## Terminal ownership in ZLaunch
+
+Terminal is special: an exact window number and the app's launch date identify a room's terminal.
+Titles and arbitrary available terminals cannot replace it. Missing terminals are created individually
+through Terminal automation and their new identities are saved, so re-entering does not create more.
+Other Terminal windows stay in place, are never parked, and Terminal is not hidden when outside a room.
+Old saved terminals without a session identity create room-owned replacements on first entry. Capture
+or Choose Windows can record current windows explicitly. Automation failures include permission guidance.
+Rooms retain their single-display tiling behavior; multi-monitor and native Space destinations belong
+to Window Layouts' entry inspector.
+
 ## Wiring
 
 - **`AppEntry.Kind.windowRoom`**, entries `window-room:<uuid>`, published by `AppIndex.setWindowRooms`

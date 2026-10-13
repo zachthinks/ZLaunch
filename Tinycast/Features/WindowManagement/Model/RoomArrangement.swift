@@ -69,7 +69,7 @@ enum RoomArrangement {
         var learned = ordered.map { window in
             RoomWindow(
                 bundleID: window.bundleID, appName: window.appName, title: window.title,
-                windowID: window.windowID,
+                windowID: window.windowID, terminalSession: window.terminalSession,
                 unitFrame: RoomWindow.unitFrame(of: window.frame, in: visible))
         }
         if reading.kind == .custom, let cells = reading.cells, cells.count == learned.count {

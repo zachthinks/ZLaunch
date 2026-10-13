@@ -34,6 +34,8 @@ enum RoomRunner {
     }
 
     struct Outcome: Sendable {
+        var restoredRoom: Room?
+        var openFailures: [String] = []
         var placed = 0
         var parked = 0
         /// The apps this pass hid, so only they come back later, never one hidden by hand.
@@ -46,16 +48,35 @@ enum RoomRunner {
 
     static func enter(_ room: Room, context: Context) async -> Outcome {
         guard Permissions.ensureAccessibility() else { return Outcome(isBlockedOnPermission: true) }
+        var room = room
+        var openFailures: [String] = []
         let apps = appsInOrder(of: room)
         let launched = launchMissing(apps)
         let unhidden = unhide(apps)
         await wait(for: unhideDeadline, every: unhidePoll) { unhidden.allSatisfy { !$0.isHidden } }
 
         var snapshot = RoomWindowSweep.snapshot()
+        let matched = RoomWindowMatcher.assign(room.windows, to: snapshot.windows)
+        for index in room.windows.indices
+        where room.windows[index].bundleID == "com.apple.Terminal" && matched[index] == nil {
+            guard !Task.isCancelled else { break }
+            do {
+                room.windows[index].windowID = try await TerminalWindowService.create()
+                room.windows[index].terminalSession = NSRunningApplication.runningApplications(
+                    withBundleIdentifier: "com.apple.Terminal").first?.launchDate
+            } catch {
+                openFailures.append(error.localizedDescription)
+                break
+            }
+        }
+        snapshot = RoomWindowSweep.snapshot()
         guard var plan = makePlan(room, in: snapshot, context: context) else { return Outcome() }
         let late = launched.union(unhidden.compactMap(\.bundleIdentifier))
+            .union(apps.contains("com.apple.Terminal") ? ["com.apple.Terminal"] : [])
         if !late.isEmpty {
-            await wait(for: launched.isEmpty ? unhideDeadline : launchDeadline, every: launchPoll) {
+            let deadline = late.contains("com.apple.Terminal") || !launched.isEmpty
+                ? launchDeadline : unhideDeadline
+            await wait(for: deadline, every: launchPoll) {
                 guard plan.missing.contains(where: { late.contains(room.windows[$0].bundleID) })
                 else { return true }
                 snapshot = RoomWindowSweep.snapshot()
@@ -65,7 +86,9 @@ enum RoomRunner {
         }
         let missing = plan.missing.map { room.windows[$0].appName }
         // With nothing to show, stepping everything back would leave an empty desk.
-        guard !Task.isCancelled, !plan.placements.isEmpty else { return Outcome(missing: missing) }
+        guard !Task.isCancelled, !plan.placements.isEmpty else {
+            return Outcome(restoredRoom: room, openFailures: openFailures, missing: missing)
+        }
 
         place(plan.placements, in: snapshot)
         for _ in 0..<relayoutPasses {
@@ -77,7 +100,9 @@ enum RoomRunner {
             place(plan.placements, in: snapshot)
         }
 
-        var outcome = Outcome(placed: plan.placements.count, missing: missing)
+        var outcome = Outcome(
+            restoredRoom: room, openFailures: openFailures,
+            placed: plan.placements.count, missing: missing)
         outcome.parked = park(plan, in: snapshot, ledger: context.ledger)
         returnWindowsOfHiddenApps(plan, in: snapshot, ledger: context.ledger)
         await raise(plan, in: snapshot)
@@ -135,7 +160,8 @@ enum RoomRunner {
     private static func launchMissing(_ bundleIDs: [String]) -> Set<String> {
         var launched = Set<String>()
         for bundleID in bundleIDs
-        where NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
+        where bundleID != "com.apple.Terminal"
+            && NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
             guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
             else { continue }
             AppLauncher.launch(url)
@@ -326,7 +352,8 @@ enum RoomRunner {
     private static func hideApps(keeping keeps: Set<String>) -> Set<pid_t> {
         var hidden = Set<pid_t>()
         for app in WindowInventory.candidates()
-        where !app.isHidden && !keeps.contains(app.bundleIdentifier ?? "") {
+        where !app.isHidden && app.bundleIdentifier != "com.apple.Terminal"
+            && !keeps.contains(app.bundleIdentifier ?? "") {
             if !app.hide() {
                 AXWindowAccess.setHidden(
                     true, application: AXWindowAccess.application(for: app.processIdentifier))

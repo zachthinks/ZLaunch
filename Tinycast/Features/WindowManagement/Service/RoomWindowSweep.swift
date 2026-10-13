@@ -53,7 +53,7 @@ enum RoomWindowSweep {
                         title: AXWindowAccess.string(window, kAXTitleAttribute) ?? "",
                         windowID: windowID, frame: frame, isMinimized: minimized,
                         isAppHidden: app.isHidden, frontRank: windowID.flatMap { ranks[$0] } ?? .max,
-                        appURL: app.bundleURL))
+                        appURL: app.bundleURL, terminalSession: app.launchDate))
                 elements[handle] = WindowInventory.Element(
                     bundleID: bundleID, app: app, application: application, window: window)
             }

@@ -52,13 +52,20 @@ final class WindowLayoutCoordinator {
 
     /// The one funnel for a palette row, a global shortcut and the pane's Apply alike.
     func runWindowLayout(id: UUID) {
-        guard settings.windowManagementEnabled, let layout = store.layout(id: id) else { return }
+        guard settings.windowManagementEnabled, store.layout(id: id) != nil else { return }
         // Never restoreFocus: an opened app activates itself, and handing focus back races that.
         if paletteCoordinator.isVisible { paletteCoordinator.hidePalette(restoreFocus: false) }
         let gap = CGFloat(settings.windowGap)
-        run?.cancel()
+        let previous = run
         run = Task { [weak self] in
+            await previous?.value
+            guard !Task.isCancelled, let layout = self?.store.layout(id: id) else { return }
             let outcome = await WindowLayoutRunner.run(layout, gap: gap)
+            if let restored = outcome.restoredLayout, self?.store.layout(id: id) == layout {
+                do { try self?.store.update(restored) } catch {
+                    self?.core.showMessage(error.localizedDescription, tone: .danger)
+                }
+            }
             await self?.report(outcome, for: layout)
         }
     }
@@ -154,6 +161,8 @@ final class WindowLayoutCoordinator {
     /// What went wrong, or nil when everything the layout asked for happened.
     private func detail(for outcome: WindowLayoutRunner.Outcome) -> String? {
         var parts: [String] = []
+        if outcome.fallbackCount > 0 { parts.append("\(outcome.fallbackCount) windows used fallback") }
+        parts.append(contentsOf: Set(outcome.spaceFailures).sorted())
         if let skipped = WindowLayoutPlan(placements: [], skipped: outcome.skipped).skippedSummary {
             parts.append(skipped)
         }
@@ -163,7 +172,7 @@ final class WindowLayoutCoordinator {
         }
         let failed = outcome.openFailures.count
         if failed > 0 {
-            parts.append(failed == 1 ? "1 app couldn't open" : "\(failed) apps couldn't open")
+            parts.append(contentsOf: Set(outcome.openFailures).sorted())
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }

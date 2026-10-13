@@ -34,13 +34,16 @@ enum WindowInventory {
                 for: app.processIdentifier, timeout: sweepTimeout)
             for window in AXWindowAccess.windows(in: application) {
                 AXUIElementSetMessagingTimeout(window, sweepTimeout)
-                guard let frame = eligibleFrame(window, positionableOnly: positionableOnly)
+                guard let frame = eligibleFrame(
+                    window, positionableOnly: positionableOnly,
+                    allowsMinimized: bundleID == "com.apple.Terminal" && !positionableOnly)
                 else { continue }
                 let handle = windows.count
                 windows.append(
                     WindowLayoutWindow(
                         handle: handle, bundleID: bundleID, frame: frame,
-                        title: AXWindowAccess.string(window, kAXTitleAttribute) ?? ""))
+                        title: AXWindowAccess.string(window, kAXTitleAttribute) ?? "",
+                        windowID: AXWindowAccess.windowID(of: window), terminalSession: app.launchDate))
                 elements[handle] = Element(
                     bundleID: bundleID, app: app, application: application, window: window)
             }
@@ -80,14 +83,14 @@ enum WindowInventory {
 
     /// A window a layout may name: real, standard, on screen, and reporting geometry.
     private static func eligibleFrame(
-        _ window: AXUIElement, positionableOnly: Bool
+        _ window: AXUIElement, positionableOnly: Bool, allowsMinimized: Bool = false
     ) -> CGRect? {
         // Stricter than the mover's rule: a Save sheet must never be captured as an entry.
         guard
             AXWindowAccess.string(window, kAXSubroleAttribute)
                 == (kAXStandardWindowSubrole as String)
         else { return nil }
-        guard AXWindowAccess.bool(window, kAXMinimizedAttribute) != true,
+        guard allowsMinimized || AXWindowAccess.bool(window, kAXMinimizedAttribute) != true,
             !AXWindowAccess.isFullScreen(window), let frame = AXWindowAccess.frame(of: window),
             frame.width > 0, frame.height > 0
         else { return nil }

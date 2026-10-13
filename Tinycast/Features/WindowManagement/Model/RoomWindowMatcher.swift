@@ -14,6 +14,10 @@ enum RoomWindowMatcher {
                 guard
                     let match = live.indices.first(where: {
                         !used.contains($0) && live[$0].bundleID == window.bundleID
+                            && (window.bundleID != "com.apple.Terminal"
+                                || (window.windowID != nil && window.windowID == live[$0].windowID
+                                    && window.terminalSession != nil
+                                    && window.terminalSession == live[$0].terminalSession))
                             && accepts(window, live[$0])
                     })
                 else { continue }

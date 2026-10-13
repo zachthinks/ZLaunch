@@ -35,7 +35,7 @@ struct WindowLayoutEditorPanel: View {
             HStack(spacing: 0) {
                 previewColumn
                 Divider()
-                WindowLayoutInspector(draft: draft, displays: screens.map(\.display))
+                WindowLayoutInspector(draft: draft, screens: screens)
                     .frame(width: Theme.Size.layoutInspectorColumn)
             }
             // Stated, never intrinsic: a panel that grew as fields appeared would jump.

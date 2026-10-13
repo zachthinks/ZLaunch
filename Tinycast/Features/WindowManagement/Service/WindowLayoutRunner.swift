@@ -10,6 +10,9 @@ enum WindowLayoutRunner {
     private static let pollInterval = Duration.milliseconds(200)
 
     struct Outcome: Sendable {
+        var restoredLayout: WindowLayout?
+        var spaceFailures: [String] = []
+        var fallbackCount = 0
         var placed = 0
         var opened = 0
         var skipped: [WindowLayoutPlan.Skipped] = []
@@ -30,21 +33,69 @@ enum WindowLayoutRunner {
             return Outcome(isBlockedOnPermission: true)
         }
 
-        let snapshot = WindowInventory.snapshot()
+        var layout = layout
+        var failures: [String] = []
+        var snapshot = WindowInventory.snapshot()
+        let initial = WindowLayoutPlan.make(layout: layout, screens: snapshot.screens,
+                                            windows: snapshot.windows, preferredGap: gap)
+        if initial.placements.contains(where: { $0.spaceID != nil }), !WindowSpaceAccess.isAvailable {
+            return Outcome(spaceFailures: ["Moving windows between Spaces is unavailable on this macOS build."])
+        }
+        for placement in initial.opens where placement.bundleID == "com.apple.Terminal" {
+            guard !Task.isCancelled else { break }
+            guard let index = layout.entries.firstIndex(where: { $0.id == placement.entryID })
+            else { continue }
+            do {
+                layout.entries[index].terminalWindowID = try await TerminalWindowService.create(
+                    argument: placement.argument)
+                layout.entries[index].terminalSession = NSRunningApplication.runningApplications(
+                    withBundleIdentifier: "com.apple.Terminal").first?.launchDate
+            } catch {
+                failures.append(error.localizedDescription)
+                break
+            }
+        }
+        let deadline = ContinuousClock.now + launchDeadline
+        repeat {
+            snapshot = WindowInventory.snapshot()
+            let missing = layout.entries.contains { entry in
+                entry.bundleID == "com.apple.Terminal" && entry.terminalWindowID != nil
+                    && !snapshot.windows.contains { $0.windowID == entry.terminalWindowID
+                        && $0.terminalSession == entry.terminalSession }
+            }
+            if !missing || Task.isCancelled || ContinuousClock.now >= deadline { break }
+            try? await Task.sleep(for: pollInterval)
+        } while true
         let plan = WindowLayoutPlan.make(
             layout: layout, screens: snapshot.screens, windows: snapshot.windows,
             preferredGap: gap)
-        var outcome = Outcome(skipped: plan.skipped)
+        var outcome = Outcome(restoredLayout: layout, skipped: plan.skipped, openFailures: failures)
+        outcome.fallbackCount = plan.placements.filter(\.usedFallback).count
+        outcome.neverAppeared = plan.opens.filter { $0.bundleID == "com.apple.Terminal" }.map(\.bundleID)
         guard !plan.placements.isEmpty else { return outcome }
 
         let startingApp = NSWorkspace.shared.frontmostApplication?.processIdentifier
         var bound: [UUID: WindowInventory.Element] = [:]
         placeExisting(plan, snapshot: snapshot, bound: &bound, outcome: &outcome)
 
-        let pending = plan.opens
+        let pending = plan.opens.filter { $0.bundleID != "com.apple.Terminal" }
         if !pending.isEmpty {
             await open(pending, outcome: &outcome)
             await placeOpened(pending, bound: &bound, outcome: &outcome)
+        }
+        for placement in plan.placements {
+            guard !Task.isCancelled else { break }
+            guard let spaceID = placement.spaceID, let element = bound[placement.entryID] else { continue }
+            guard let windowID = AXWindowAccess.windowID(of: element.window) else {
+                outcome.spaceFailures.append("Couldn't identify a window for its Space placement.")
+                continue
+            }
+            do {
+                try await WindowSpaceAccess.move(windowID: windowID, to: spaceID)
+                _ = place(placement, on: element.window)
+            } catch {
+                outcome.spaceFailures.append(error.localizedDescription)
+            }
         }
         // Last, so no app this run opened can activate over the one the layout names.
         if !Task.isCancelled, let frontmost = plan.frontmostEntryID.flatMap({ bound[$0] }),
@@ -78,9 +129,18 @@ enum WindowLayoutRunner {
                     containing: window.frame, in: screens.map(\.screen)),
                 let target = screens.first(where: { $0.screen.id == host.id })
             else { return nil }
-            let entry = WindowLayoutGeometry.entry(
+            var entry = WindowLayoutGeometry.entry(
                 bundleID: window.bundleID, display: target.display, frame: window.frame,
                 on: target.screen)
+            if let windowID = window.windowID {
+                let spaces = WindowSpaceAccess.spaces(of: windowID)
+                entry.space = target.desktopIDs.firstIndex(where: spaces.contains).map { $0 + 1 }
+            }
+            entry.fallbackSpace = 1
+            if window.bundleID == "com.apple.Terminal" {
+                entry.terminalWindowID = window.windowID
+                entry.terminalSession = window.terminalSession
+            }
             if window.handle == focusedHandle { frontmostEntryID = entry.id }
             return entry
         }
@@ -128,6 +188,10 @@ enum WindowLayoutRunner {
         _ placement: WindowLayoutPlan.Placement, on window: AXUIElement
     ) -> Bool {
         AXUIElementSetMessagingTimeout(window, AXWindowAccess.messagingTimeout)
+        if placement.bundleID == "com.apple.Terminal",
+            AXWindowAccess.bool(window, kAXMinimizedAttribute) == true {
+            _ = AXWindowAccess.unminimize(window)
+        }
         // Checked before any write, so an unpositionable window is left untouched.
         guard AXWindowAccess.isSettable(kAXPositionAttribute, on: window),
             let current = AXWindowAccess.frame(of: window)
@@ -193,6 +257,6 @@ enum WindowLayoutRunner {
                 return false
             }
         }
-        outcome.neverAppeared = pending.map(\.bundleID)
+        outcome.neverAppeared += pending.map(\.bundleID)
     }
 }

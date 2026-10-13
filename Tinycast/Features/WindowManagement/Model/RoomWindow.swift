@@ -10,18 +10,20 @@ struct RoomWindow: Codable, Hashable, Sendable {
     var title: String
     /// The window server's number; it lasts only while the window stays open.
     var windowID: UInt32?
+    var terminalSession: Date?
     /// Where it sits under `.saved`, as a fraction of the display's visible frame.
     var unitFrame: CGRect
     var cell: RoomGrid.Cell?
 
     init(
-        bundleID: String, appName: String, title: String, windowID: UInt32? = nil,
+        bundleID: String, appName: String, title: String, windowID: UInt32? = nil, terminalSession: Date? = nil,
         unitFrame: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1), cell: RoomGrid.Cell? = nil
     ) {
         self.bundleID = bundleID
         self.appName = appName
         self.title = title
         self.windowID = windowID
+        self.terminalSession = terminalSession
         self.unitFrame = unitFrame
         self.cell = cell
     }
@@ -50,7 +52,7 @@ struct RoomWindow: Codable, Hashable, Sendable {
 
     // Hand-written, so an added field keeps stored rooms and older backups readable.
     private enum CodingKeys: String, CodingKey {
-        case bundleID, appName, title, windowID, unitFrame, cell
+        case bundleID, appName, title, windowID, terminalSession, unitFrame, cell
     }
 
     init(from decoder: Decoder) throws {
@@ -59,6 +61,7 @@ struct RoomWindow: Codable, Hashable, Sendable {
         appName = try container.decodeIfPresent(String.self, forKey: .appName) ?? bundleID
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         windowID = try container.decodeIfPresent(UInt32.self, forKey: .windowID)
+        terminalSession = try container.decodeIfPresent(Date.self, forKey: .terminalSession)
         unitFrame =
             try container.decodeIfPresent(CGRect.self, forKey: .unitFrame)
             ?? CGRect(x: 0, y: 0, width: 1, height: 1)

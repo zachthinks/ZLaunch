@@ -1,7 +1,7 @@
 # Window Layouts
 
 A **Window Layout** is a saved, declarative arrangement: these apps, at these sizes, at these
-positions, on these displays. Running it from the launcher or a global shortcut opens whatever isn't
+positions, on these displays and regular macOS Spaces. Running it from the launcher or a global shortcut opens whatever isn't
 running and places every window in one pass.
 
 It rides on Window Management's switch, its Accessibility grant and its gap setting, and adds no
@@ -92,20 +92,49 @@ pulls a different app forward mid-pass.
 `WindowLayoutRunner.run` then:
 
 1. Prompts for Accessibility once for the whole pass.
-2. Takes **one** `AXGeometry` snapshot and one `WindowInventory` sweep. Mixing two anchors inside one
+2. Reads connected displays, native Desktops and available windows; creates missing owned terminals
+   and refreshes the inventory. Each sweep takes **one** `AXGeometry` snapshot. Mixing two anchors inside one
    run shears every rect, exactly as it would inside one command.
 3. Builds the plan, which is pure and therefore the tested half.
 4. Places every window that already exists, in one go with no `await` between them, so a
    multi-window layout lands in one visible step.
-5. Opens what is missing, then waits for each window and places it.
+5. Opens what is missing, then waits for each window and places it. Moves bound windows into their
+   requested Spaces, verifies membership and corrects geometry.
 6. Focuses the frontmost entry's window, if the layout names one and the plan placed it.
 
-**Binding windows to entries** is greedy nearest-centre: among the app's unclaimed windows, the one
+**Binding non-Terminal windows to entries** is greedy nearest-centre: among the app's unclaimed windows, the one
 whose centre is closest to the entry's target wins. An already-correct desktop is then a no-op and
 nothing swaps displays, which reading order alone would not give. An entry carrying an **argument**
 always opens rather than claiming an existing window — that is the only reliable way to get another
 window out of most apps, and it is what the user asked for. Two entries naming the same app *and*
 argument describe one window, so the second is reported as `duplicateTarget`.
+
+**Terminal windows belong to their entries.** Capture records the window number and Terminal's
+launch date. A run reuses only that exact window in that same Terminal process; missing windows are
+created individually with Terminal's AppleScript `do script`, even when Terminal is already running.
+Unrelated terminals are never matched by proximity or title. Repeated runs reuse the replacements;
+duplicating a layout clears its Terminal bindings. A Terminal argument is an existing folder path.
+Changing it clears the binding so the next run opens a fresh window in that folder. Automation denial
+is reported with the permission setting to change. Old entries lacking a session binding create their
+own replacements on first run, or can be recaptured to adopt selected existing windows.
+
+**Screen and Space** in the entry inspector selects its monitor and regular Desktop number (local to
+that monitor, excluding full-screen app Spaces). Current Space preserves ordinary placement. Capture
+records each window's current Desktop and enables a Space 1 fallback on the built-in screen. Space
+numbers follow Mission Control's order; turn off automatic Space rearrangement for stable numbering.
+
+**Fallback is per window.** Enable it and choose a fallback monitor and Space. With the preferred
+monitor disconnected, geometry is recomputed against the fallback monitor using the same fractions,
+anchor and offsets. An absent fallback monitor selects the built-in screen, or the first available
+screen on a desktop Mac. Reconnecting the preferred monitor restores the original destination. A
+missing Desktop skips that entry and names the missing Space; no Desktop is created automatically.
+The original record is never overwritten with the fallback monitor's geometry.
+
+`WindowSpaceAccess` reads native Spaces and executes the asynchronous bridged move operation used
+by [yabai](https://github.com/asmvik/yabai/issues/2788). SIP stays enabled; no Dock injection or scripting
+addition is installed. These are private SkyLight APIs, resolved at runtime. An unavailable capability
+or unconfirmed move reports a failure. After the move, geometry is corrected once on its destination.
+The saved file stores Desktop numbers; native Space IDs are resolved afresh on every run.
 
 `AXEnhancedUserInterface` is suppressed **per application**, not per window, and restored in a
 `defer` — the flag is application-scoped, and restoring per group means a long launch wait never
