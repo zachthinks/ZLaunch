@@ -287,3 +287,15 @@ all 145 preferences and the saved LaunchDeck menu were unchanged after restart.
 Guest Debug/tests were blocked by the suspended VM’s stalled resume.
 The prior signed build 20 and verification receipt remain at
 `/Users/zlink/Documents/Codex/2026-10-13/task/menu-icon/`.
+
+## Production updates and rollback (October 13, 2026)
+
+Zach authorizes future ZLaunch updates directly in production after the relevant
+checks pass. A separate installed Dev app is not required. Before replacing the
+app, preserve the current signed app and a consistent backup of affected settings
+and data, with a recorded recovery path. Verify the replacement signature and
+installed version. Preserve user customizations, shortcuts and LaunchDeck data.
+Flag any migration that prevents a reliable return to the previous app and data
+before installing it; a backup alone does not prove restoration works. This
+preference does not waive checks or authorize unrelated publication, credential
+changes or irreversible cleanup. Keep the VM testing instructions in effect.

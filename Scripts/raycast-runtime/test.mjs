@@ -203,6 +203,9 @@ function syncHostCall(api, method, args) {
       }));
     case "fs.mkdir":
       return fs.mkdirSync(args[0], { recursive: args[1] }) ?? null;
+    case "fs.utimes":
+      fs.utimesSync(args[0], args[1], args[2]);
+      return null;
     case "fs.realpath":
       return fs.realpathSync(args[0]);
     case "fs.mkdtemp":
@@ -511,7 +514,7 @@ async function runExtension(dir, commandName) {
       },
     }),
   );
-  harness.start("s1", readFileSync(file, "utf8"), file, dir, target.mode === "view" ? "view" : "no-view", {});
+  harness.start("s1", readFileSync(file, "utf8"), file, dir, target.mode, {});
 
   await new Promise((resolve) => setTimeout(resolve, Number(process.env.EXT_TEST_SETTLE_MS ?? 1500)));
   if (harness.state.failures.length) {

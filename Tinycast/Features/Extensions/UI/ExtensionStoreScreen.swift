@@ -133,7 +133,11 @@ struct ExtensionStoreScreen: PaletteScreen {
         return PaletteMenuContent(
             rowCount: items.count, preferredSelection: filtered.bestMatch,
             view: { _ in AnyView(ExtensionActionsPanel(
-                header: content.header, items: items, selection: menuSelection, onActivate: onActivate)) },
+                header: content.header, items: items, selection: menuSelection, onActivate: onActivate,
+                shortcutRow: { key, modifiers in
+                    guard key == .return, modifiers == .command else { return nil }
+                    return filtered.content.items.firstIndex { $0.shortcut == "⌘↵" }
+                })) },
             activate: { filtered.content.items[$0].action() },
             clipPath: { bounds, metrics, _ in
                 RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath

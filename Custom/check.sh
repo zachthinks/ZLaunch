@@ -5,6 +5,8 @@ node Custom/verify-config.mjs
 node Custom/tests/sync-test.mjs
 node Custom/tests/workflow-policy-test.mjs
 node Custom/tests/release-notes-test.mjs
+node Custom/tests/publication-policy-test.mjs
+node Custom/tests/delivery-test.mjs
 node Custom/verify-project.mjs
 git diff --exit-code -- Tinycast.xcodeproj
 ./Scripts/run-tests.sh
