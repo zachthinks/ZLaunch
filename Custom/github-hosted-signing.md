@@ -95,7 +95,10 @@ Launch Services. It can validate 0.1.9 without changing its published assets.
 
 This is a real upload to Apple, not a simulation. An Apple submission may remain
 in progress after the runner's timeout; a timeout is not success or cancellation
-of that server-side submission. Inspect its status before authorizing a retry.
+of that server-side submission. The job summary preserves only the validated
+Apple submission UUID and an allowlisted status before temporary output cleanup,
+on success or failure. If no usable status was returned, it records Unavailable.
+Use that ID to inspect its status before authorizing a retry.
 The runner deletes the temporary P12, keychain and build, and cleanup errors fail
 the job. Runner termination can still interrupt cleanup; no absolute erasure
 guarantee is made. Do not print credential values or entire private keychain data.

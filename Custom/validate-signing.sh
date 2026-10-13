@@ -13,6 +13,27 @@ cd "$(dirname "$0")/.."
 VALIDATION_DIR="$RUNNER_TEMP/zlaunch-validation"
 KEYCHAIN="$VALIDATION_DIR/signing.keychain-db"
 [ -d "$VALIDATION_DIR" ] && [ -f "$KEYCHAIN" ]
+record_notarization_result() {
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    node - "$VALIDATION_DIR" <<'NODE' || echo "::warning::Could not record the notarization receipt."
+const { appendFileSync, readFileSync } = require("node:fs");
+const readResult = name => {
+  try { return JSON.parse(readFileSync(process.argv[2] + "/" + name, "utf8")) ?? {}; }
+  catch { return {}; }
+};
+const submitted = readResult("notary-submission.json");
+const id = submitted.id;
+if (typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+  const result = readResult("notary-result.json");
+  const allowed = ["Accepted", "Invalid", "Rejected", "In Progress"];
+  const status = result.id === id && allowed.includes(result.status) ? result.status : "Unavailable";
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    "Apple submission ID: " + id + "\nApple status: " + status + "\n");
+}
+NODE
+  fi
+}
+trap record_notarization_result EXIT
 DERIVED="$VALIDATION_DIR/DerivedData"
 VERSION="$(node -p 'require("./Custom/release.json").version')"
 xcodebuild -project Tinycast.xcodeproj -scheme Tinycast -configuration Release \
@@ -29,12 +50,27 @@ done
 ditto -c -k --keepParent --sequesterRsrc "$APP" "$VALIDATION_DIR/validation.zip"
 xcrun notarytool submit "$VALIDATION_DIR/validation.zip" \
   --keychain-profile ZLaunch-Validation --keychain "$KEYCHAIN" \
-  --wait --timeout 15m --output-format json > "$VALIDATION_DIR/notary-result.json"
+  --no-wait --output-format json > "$VALIDATION_DIR/notary-submission.json"
+SUBMISSION_ID="$(node -e '
+  const { readFileSync } = require("node:fs");
+  let result;
+  try { result = JSON.parse(readFileSync(process.argv[1], "utf8")); }
+  catch { throw new Error("Apple submission response was not valid JSON."); }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.id ?? ""))
+    throw new Error("Apple did not return a valid submission ID.");
+  process.stdout.write(result.id);
+' "$VALIDATION_DIR/notary-submission.json")"
+xcrun notarytool wait "$SUBMISSION_ID" \
+  --keychain-profile ZLaunch-Validation --keychain "$KEYCHAIN" \
+  --timeout 15m --output-format json > "$VALIDATION_DIR/notary-result.json"
 node -e '
-  const result = require(process.argv[1]);
-  if (result.status !== "Accepted" || !/^[0-9a-f-]{36}$/i.test(result.id ?? ""))
+  const { readFileSync } = require("node:fs");
+  let result;
+  try { result = JSON.parse(readFileSync(process.argv[1], "utf8")); }
+  catch { throw new Error("Apple status response was not valid JSON."); }
+  if (result.status !== "Accepted" || result.id !== process.argv[2])
     throw new Error("Apple did not return an accepted notarization submission.");
-' "$VALIDATION_DIR/notary-result.json"
+' "$VALIDATION_DIR/notary-result.json" "$SUBMISSION_ID"
 xcrun stapler staple "$APP"
 xcrun stapler validate "$APP"
 spctl --assess --type execute --verbose "$APP"
