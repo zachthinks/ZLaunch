@@ -48,14 +48,7 @@ jobs:
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
           git switch -c custom/main "$GITHUB_SHA"
           node Custom/verify-config.mjs
-          VERSION="$(node -p 'require("./Custom/release.json").version')"
-          RELEASES="$(gh api --paginate --slurp repos/zachthinks/ZLaunch/releases)"
-          printf '%s' "$RELEASES" | VERSION="$VERSION" node -e '
-            let input=""; process.stdin.on("data", x => input+=x);
-            process.stdin.on("end", () => {
-              if (JSON.parse(input).flat().some(r => r.tag_name === "v"+process.env.VERSION))
-                throw new Error("Version already exists, including drafts; no overwrite.");
-            });'
+          node Custom/verify-release-state.mjs
       - name: Select Xcode 26
         run: |
           XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
@@ -100,5 +93,14 @@ jobs:
       - name: Remove temporary signing material
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP/signing.p12"
-          security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || true
+          set -euo pipefail
+          : "${RUNNER_TEMP:?}"
+          CLEANUP_STATUS=0
+          rm -f "$RUNNER_TEMP/signing.p12" || CLEANUP_STATUS=1
+          if [ -f "$RUNNER_TEMP/zlaunch.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || CLEANUP_STATUS=1
+          fi
+          if [ "$CLEANUP_STATUS" != 0 ]; then
+            echo "::error::Temporary signing material cleanup failed."
+          fi
+          exit "$CLEANUP_STATUS"
