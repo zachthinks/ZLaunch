@@ -64,3 +64,20 @@ the QA VM. The existing production ZLaunch installation was not replaced.
 
 Guest logs remain in `~/QA-Projects/zlaunch/jobs/`, and the native probes/render remain in
 `~/QA-Projects/zlaunch/space-probe/`. The VM is left running with the user-created Desktops.
+
+## Local production installation
+
+On October 13, 2026, source `84ed43c1` was built from a clean committed snapshot as ZLaunch
+0.1.6 (20), signed with the established Developer ID, notarized by Apple, and installed at
+`/Applications/ZLaunch.app`. Gatekeeper and deep/strict signature verification passed.
+Unrelated uncommitted workspace changes were excluded. No public release was published.
+
+The running production About screen confirmed 0.1.6 (20). The existing Codex layout editor
+displayed preferred screen and Space controls. Its picker enumerated three available Desktops
+and marked absent Desktops unavailable. Enabling fallback in an unsaved draft displayed its
+screen and Space controls; Cancel discarded the draft. No production Room/layout was run.
+
+The prior build 19 bundle, rollback ZIP, build/notarization logs, and installation receipt remain
+in ignored `build/room-spaces-install-receipt/`. The complete preference-file hash changed during
+relaunch and UI inspection; that hash alone does not establish which runtime preferences changed.
+The installation replaced only the app bundle, and no saved layout edits were submitted.
