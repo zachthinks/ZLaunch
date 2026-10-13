@@ -48,6 +48,17 @@ final class ExtensionCoordinator {
         core.extensionStore.install(listing, coordinator: self)
     }
 
+    func configureStoreExtension(_ listing: ExtensionListing) {
+        guard let owner = extensions.extensionNamed(listing.name) else { return }
+        showExtensionSettings(for: owner)
+    }
+
+    func reportStoreInstall(_ listing: ExtensionListing, failure: String? = nil) {
+        core.showMessage(
+            failure == nil ? "Installed \(listing.title)" : "Could not install \(listing.title). Open Store for details.",
+            tone: failure == nil ? .success : .danger)
+    }
+
     func installStoreExtension(
         _ listing: ExtensionListing,
         onProgress: @Sendable @escaping (ExtensionInstaller.Progress) -> Void

@@ -389,10 +389,14 @@ struct RootPaletteView: View {
         emojiObservers(content)
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) {
-                searchFocused = !screen.hidesSearchField
+                searchFocused = vm.isVisible && !screen.hidesSearchField
             }
             // A preserved screen re-summons as it was left, so a menu must end with the palette.
-            .modifier(PaletteHideObserver { if menuOpen { closeMenus() } })
+            .modifier(PaletteHideObserver {
+                if menuOpen { closeMenus() }
+                searchFocused = false
+                argumentFocused = nil
+            })
             .onChange(of: vm.query) {
                 if vm.collapseQueryLineBreaks() { return }
                 land()
@@ -427,7 +431,7 @@ struct RootPaletteView: View {
                 vm.fileSearchQuickLook = false
                 if menuOpen { closeMenus() }
                 land()
-                searchFocused = !screen.hidesSearchField
+                searchFocused = vm.isVisible && !screen.hidesSearchField
                 // Every way out of the Uninstall screen: back chevron, bare backspace, a fresh summon.
                 if vm.mode != .uninstall { uninstall.cancel() }
                 // Entering with no query is the blank screen's own request for recents.
@@ -489,10 +493,11 @@ struct RootPaletteView: View {
             .onDisappear {
                 menuPanel.hide()
                 (hostWindow as? PalettePanel)?.onHeaderFieldBoundaryArrow = nil
+                (hostWindow as? PalettePanel)?.onReturn = nil
             }
             // The first show builds this view after `prepare`, so no handler saw that reset.
             .onAppear {
-                searchFocused = !screen.hidesSearchField
+                searchFocused = vm.isVisible && !screen.hidesSearchField
                 land()
             }
             .modifier(SearchFieldHiding(hidden: hidesSearchField, apply: applySearchFieldHiding))
@@ -650,7 +655,7 @@ struct RootPaletteView: View {
 
     /// A command can push a Form over its own list, which takes the keyboard mid-session.
     private func applySearchFieldHiding(_ hidden: Bool) {
-        searchFocused = !hidden
+        searchFocused = vm.isVisible && !hidden
         if hidden { vm.query = "" }
     }
 
@@ -1401,6 +1406,12 @@ struct RootPaletteView: View {
     /// Right at an inline field's end and Left at its start continue the same ring as Tab.
     private func installHeaderArrowHandler(in window: NSWindow?) {
         guard let panel = window as? PalettePanel else { return }
+        panel.onReturn = {
+            guard vm.mode == .extensionStoreDetail, !menuOpen, !vm.isComposing else { return false }
+            let screen = screen
+            if screen.hasPrimaryAction(at: selection(in: screen)) { activateSelection() }
+            return true
+        }
         panel.onHeaderFieldBoundaryArrow = { boundary in
             guard !menuOpen, !vm.isControlListOpen, !isCollapsed,
                 let accessory = headerAccessory, !accessory.fieldNames.isEmpty

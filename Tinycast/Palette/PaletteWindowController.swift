@@ -113,10 +113,11 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             // Non-activating, so summoning never raises our own aux windows behind it.
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
-            // A never-activated login item can drop the first key request, so re-assert.
-            DispatchQueue.main.async { [weak panel] in
-                guard let panel, panel.isVisible, !panel.isKeyWindow else { return }
+            Task { @MainActor [weak self, weak panel] in
+                await Task.yield()
+                guard let self, let panel, panel.isVisible else { return }
                 panel.makeKeyAndOrderFront(nil)
+                core.palette.focusToken = UUID()
             }
         }
     }
@@ -261,8 +262,9 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
     /// Re-bump a turn later: on the first show a synchronous bump lands before `onChange`.
     func windowDidBecomeKey(_ notification: Notification) {
         panel?.level = .palette
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
+        Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let self, panel?.isVisible == true, panel?.isKeyWindow == true else { return }
             core.palette.focusToken = UUID()
             // A re-summon leaves first responder where it was, so neither of these gets an event.
             panel?.trackComposition()

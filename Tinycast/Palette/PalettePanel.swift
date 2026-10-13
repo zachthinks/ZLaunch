@@ -13,6 +13,7 @@ final class PalettePanel: NSPanel {
     var onBareBackspace: (() -> Bool)?
     /// Escape, which an `AVPlayerView` in the preview answers before `onKeyPress` could see it.
     var onEscape: (() -> Bool)?
+    var onReturn: (() -> Bool)?
     /// Command chords the field editor swallows, plus the ones no main menu handles.
     var onCommandShortcut: ((NSEvent) -> Bool)?
     /// The palette's typing context, handed over each time a field takes focus.
@@ -170,6 +171,13 @@ final class PalettePanel: NSPanel {
         default: break
         }
         defer { applyCursorPolicy(for: event) }
+        if event.type == .keyDown,
+            event.specialKey == .carriageReturn || event.specialKey == .enter,
+            event.modifierFlags.isDisjoint(with: [.command, .option, .control, .shift]),
+            !event.isARepeat, onReturn?() == true
+        {
+            return
+        }
         // Before every other rule, so the arrows' own policies apply to the chords too.
         if event.type == .keyDown, let arrow = Self.emacsArrow(for: event) {
             sendEvent(arrow)
@@ -221,6 +229,7 @@ final class PalettePanel: NSPanel {
         )
 
         isFloatingPanel = true
+        becomesKeyOnlyIfNeeded = false
         acceptsMouseMovedEvents = true
         level = .palette
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]

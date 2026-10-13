@@ -3,6 +3,8 @@ import SwiftUI
 struct ExtensionStoreDetail: View {
     let listing: ExtensionListing
     let loading: Bool
+    let progress: String?
+    let installed: Bool
     let failure: String?
     @Environment(\.isDarkAppearance) private var isDark
     @Environment(\.metrics) private var metrics
@@ -31,7 +33,19 @@ struct ExtensionStoreDetail: View {
                         .font(metrics.typography.rowTrailing).foregroundStyle(Theme.Colors.textSecondary)
                     }
                 }
-                if loading { ProgressView().controlSize(.small) }
+                if let progress {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text(progress)
+                    }
+                    .font(metrics.typography.rowTitle)
+                    .accessibilityElement(children: .combine)
+                } else if installed {
+                    Label("Installed in ZLaunch. Choose Configure Extension to set it up.",
+                        systemImage: "checkmark.circle.fill")
+                        .font(metrics.typography.rowTitle)
+                }
+                if loading { ProgressView("Loading details…").controlSize(.small) }
                 if let failure {
                     Text(failure).font(metrics.typography.rowTrailing).foregroundStyle(.orange)
                 }

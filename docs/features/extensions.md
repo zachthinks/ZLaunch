@@ -471,6 +471,10 @@ Settings → Extensions offers four routes, under **Install New**:
    `ExtensionStoreScreen` owns the visible row order; section-qualified IDs keep featured entries
    distinct from their appearances in All Extensions. The native palette hosts the feature opaquely.
    Installation resolves a fresh download URL and reuses `ExtensionManager` and `ExtensionInstaller`.
+   List rows and details show installation progress and errors. Success stays visible as Installed,
+   and the detail action becomes Configure Extension. A HUD reports completion or failure even after
+   navigating away. Return and keypad Enter work on details without a focused search field;
+   repeated installation requests are ignored while downloading or after installation.
    Nothing is compiled, so no Node or package manager is involved. Search and category queries use
    `raycast.com/frontend_api/extensions/search`; curated feeds use `api/v1/extensions/featured` and
    `api/v1/extensions/trending`, and browsing uses `api/v1/store_listings`. These are unofficial;

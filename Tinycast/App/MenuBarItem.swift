@@ -5,7 +5,7 @@ struct MenuBarLabel: View {
     let appName: String
 
     var body: some View {
-        Image("MenuBarIcon")
+        Image("ZLaunchMenuBarIcon")
             .accessibilityLabel(appName)
     }
 }

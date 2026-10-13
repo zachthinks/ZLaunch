@@ -56,6 +56,9 @@ only the closure wiring; the behaviour is `PaletteCoordinator`'s.
 ## Screens
 
 `PaletteState` (mode / query / selection / `focusToken`) is the bridge between the panel and the app.
+Hiding clears SwiftUI search and argument focus. Every summon reasserts the key window and bumps
+focus after layout, even if AppKit already considered the panel key; deferred focus work ignores
+a panel that has since hidden or lost key status.
 Showing the palette calls `prepare(mode:)`, which resets state and bumps `focusToken` (a UUID) so the
 SwiftUI search field re-focuses. `prepare` is one of four motions over the screen — see
 [Navigation](#navigation).
