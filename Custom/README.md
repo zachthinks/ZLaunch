@@ -101,7 +101,8 @@ See [LaunchDeck](shortcut-palette.md) for behavior and verification details.
 
 User-facing app labels, permission descriptions and status messages identify
 ZLaunch. About links distinguish this fork from Tinycast's upstream community
-and developer; the Support window explicitly identifies upstream donations.
+and developer; About retains the copyright and license footer without a donation card.
+The separate Support window explicitly identifies upstream donations.
 The `.tinycast` backup format, internal identifiers and license attribution
 retain their original names.
 

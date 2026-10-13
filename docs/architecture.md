@@ -158,7 +158,7 @@ driven imperatively from AppKit. Extension menu extras are dynamic `NSStatusItem
   actor, and the presenter refuses a second dialog while one is up — that, not a flag, is what stops a
   held hotkey stacking dialogs.
 - **Support** — a titled `AppWindowController` window owned by `SupportCoordinator`, sized to the
-  height its content measured. Every route into it — the palette's menu circle, Settings → About, the
+  height its content measured. Every route into it — the palette's menu circle, the
   menu bar, the launcher, and the 30-day reminder — lands on `showSupport()`, which is what moves the
   reminder's anchor. See [features/support.md](features/support.md).
 - **The camera surfaces** — a borderless, non-activating `CameraPanel` at `.floating`, in two
