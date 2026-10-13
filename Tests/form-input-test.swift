@@ -15,8 +15,11 @@ struct FormInputTests {
 
     static func main() {
         _ = NSApplication.shared
-        testSingleLine()
-        testCapAlignment()
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            NSApp.appearance = NSAppearance(named: appearance)
+            testSingleLine()
+            testCapAlignment()
+        }
         testTextArea()
         testCodeFont()
         if failures > 0 { exit(1) }
@@ -28,6 +31,8 @@ struct FormInputTests {
             contentRect: NSRect(x: 0, y: 0, width: 300, height: height),
             styleMask: .borderless, backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.contentView = content
         content.layoutSubtreeIfNeeded()
         return window
@@ -132,7 +137,7 @@ struct FormInputTests {
                 "editing preserves the cap-height alignment at scale \(scale)")
             let swiftUI = NSHostingView(
                 rootView: Text("H").font(metrics.typography.rowTitle)
-                    .foregroundStyle(.white).frame(width: 300, height: height))
+                    .foregroundStyle(Theme.Colors.textPrimary).frame(width: 300, height: height))
             let other = Self.window(content: swiftUI, height: height)
             expect(
                 abs(inkBounds(swiftUI).midY - restingInk.midY) <= 1,
@@ -149,7 +154,7 @@ struct FormInputTests {
         for y in 0..<image.pixelsHigh {
             for x in 0..<image.pixelsWide {
                 if let color = image.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
-                    color.alphaComponent > 0.2, color.redComponent > 0.2
+                    color.alphaComponent > 0.2
                 {
                     result = result.union(CGRect(x: x, y: y, width: 1, height: 1))
                 }
