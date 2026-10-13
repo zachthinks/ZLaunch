@@ -300,3 +300,10 @@ Flag any migration that prevents a reliable return to the previous app and data
 before installing it; a backup alone does not prove restoration works. This
 preference does not waive checks or authorize unrelated publication, credential
 changes or irreversible cleanup. Keep the VM testing instructions in effect.
+
+## Preparing GitHub-hosted signing
+
+See [the protected hosted-signing setup](github-hosted-signing.md) for the user-only
+credential handoff, explicit environment approvals, and coordinated publisher
+switch. The preparation does not activate hosted publication or alter the current
+publisher schedule.

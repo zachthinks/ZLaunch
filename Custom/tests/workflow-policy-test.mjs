@@ -13,8 +13,10 @@ rejects("custom-checks.yml", "runs-on: macos-26", "runs-on: macos-26-xlarge");
 rejects("custom-sync.yml", "runs-on: ubuntu-latest", "runs-on: paid-linux");
 for (const name of names) {
   rejects(name, "if: github.event.repository.private == false", "if: true");
-  rejects(name, "actions/checkout@v7", "actions/upload-artifact@v7");
-  rejects(name, "actions/checkout@v7", "actions/cache@v4");
+  const checkout = name === "custom-release.yml"
+    ? "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" : "actions/checkout@v7";
+  rejects(name, checkout, "actions/upload-artifact@v7");
+  rejects(name, checkout, "actions/cache@v4");
 }
 rejects("custom-sync.yml", "github.event.repository.private == false && needs.sync.outputs.candidate != ''",
   "needs.sync.outputs.candidate != ''");
@@ -24,3 +26,13 @@ rejects("custom-sync.yml", "needs.checks.result == 'success'", "needs.checks.res
 rejects("custom-sync.yml", "CHECKED_COMMIT: ${{ needs.sync.outputs.candidate }}", "CHECKED_COMMIT: main");
 assert.throws(() => verifyWorkflowPolicy({ ...workflows, "custom-unreviewed.yml": workflows[names[0]] }));
 console.log("Workflow policy rejects paid runner labels, private jobs, caches, artifacts, and unreviewed jobs.");
+
+rejects("custom-release.yml", "github.ref == 'refs/heads/custom/main'", "true");
+rejects("custom-release.yml", "github.event_name == 'workflow_dispatch'", "true");
+rejects("custom-release.yml", "vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true'", "true");
+rejects("custom-release.yml", "needs: preflight", "needs: []");
+rejects("custom-release.yml", "needs.preflight.result == 'success'", "true");
+rejects("custom-release.yml", "environment: zlaunch-release", "environment: unprotected");
+rejects("custom-release.yml", "ref: ${{ github.sha }}", "ref: custom/main");
+rejects("custom-release.yml", "persist-credentials: false", "persist-credentials: true");
+rejects("custom-release.yml", "if: always()", "if: success()");

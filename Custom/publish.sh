@@ -35,7 +35,9 @@ CONFIGURATION=Release ./Custom/build.sh
 APP="$DERIVED/Build/Products/Release/ZLaunch.app"
 : "${NOTARY_PROFILE:?Configure a local notarytool Keychain profile before publishing.}"
 ditto -c -k --keepParent --sequesterRsrc "$APP" build/notarize.zip
-xcrun notarytool submit build/notarize.zip --keychain-profile "$NOTARY_PROFILE" --wait
+NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+if [ -n "${NOTARY_KEYCHAIN:-}" ]; then NOTARY_ARGS+=(--keychain "$NOTARY_KEYCHAIN"); fi
+xcrun notarytool submit build/notarize.zip "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$APP"
 spctl --assess --type execute --verbose "$APP"
 ./Custom/package.sh "$APP"
