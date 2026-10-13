@@ -183,7 +183,7 @@ Capture never saves silently — the draft opens in the editor so it can be seen
 ## The editor
 
 A Settings editor panel at `Theme.Size.layoutEditorSheet`, presented from Window Management so the
-two launcher commands can open it too. Two columns split two to one: a read-only preview, and the
+two launcher commands can open it too. Two columns split two to one: a selectable preview, and the
 inspector. Both the width and the height are stated — the inspector reveals four field groups the
 moment an app is picked, and a panel sized to its content would resize under the pointer.
 
@@ -195,6 +195,9 @@ moment an app is picked, and a panel sized to its content would resize under the
   `adaptive`, never `ramp`.
 - **No coordinate flip in the view.** `resolve` works in AX space (top-left origin, +Y down) and
   SwiftUI's y also points down. This is the one place the two conventions agree.
+- **Clicking a preview window selects that entry in the inspector and dropdown.** Selection uses
+  the entry's ID, so multiple windows from the same app keep their own settings. Each window is an
+  accessible button; the selected window stays above overlapping entries.
 - **The tabs sit on the caption row, not over the canvas**, so a tab can never cover a window rect.
   The row shows a tab for every connected display *plus* any display an entry names, so a layout
   authored at a desk is still editable on the laptop. The entry picker is deliberately **not** scoped

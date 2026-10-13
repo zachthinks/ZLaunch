@@ -76,7 +76,7 @@ struct WindowLayoutPreviewCanvas: View {
                 }
             }
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityDescription)
     }
 
@@ -118,17 +118,27 @@ struct WindowLayoutPreviewCanvas: View {
             width: placed.frame.width * scale, height: placed.frame.height * scale)
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.thumbnail, style: .continuous)
 
-        shape
-            .fill(
-                isSelected
-                    ? Theme.Colors.layoutPreviewWindowSelected : Theme.Colors.layoutPreviewWindow
-            )
-            .overlay(shape.stroke(isSelected ? Color.accentColor : Theme.Colors.border))
-            .overlay(icon(for: placed.entry.bundleID))
-            .frame(width: max(1, rect.width), height: max(1, rect.height))
-            .position(x: rect.midX, y: rect.midY)
-            // Drawn last, since a layout may legitimately stack two windows.
-            .zIndex(isSelected ? 1 : 0)
+        Button {
+            draft.select(entryID: placed.entry.id)
+        } label: {
+            shape
+                .fill(
+                    isSelected
+                        ? Theme.Colors.layoutPreviewWindowSelected : Theme.Colors.layoutPreviewWindow
+                )
+                .overlay(shape.stroke(isSelected ? Color.accentColor : Theme.Colors.border))
+                .overlay(icon(for: placed.entry.bundleID))
+                .frame(width: max(1, rect.width), height: max(1, rect.height))
+                .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            "\(AppPresentation.resolve(bundleID: placed.entry.bundleID, in: appIndex).name) window")
+        .accessibilityHint("Select to edit this window's settings")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .position(x: rect.midX, y: rect.midY)
+        // Drawn last, since a layout may legitimately stack two windows.
+        .zIndex(isSelected ? 1 : 0)
     }
 
     /// Through the index's cache: a `urlForApplication` per rect would touch disk every keystroke.
