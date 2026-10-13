@@ -1,6 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Shared by manual and scheduled publication in this checkout. Never reclaim a
+# stale lock automatically: inspect any interrupted publication before retrying.
+PUBLISH_LOCK="$(git rev-parse --git-common-dir)/zlaunch-publish.lock"
+if ! mkdir "$PUBLISH_LOCK"; then
+  echo "Another or interrupted publisher holds $PUBLISH_LOCK; inspect it before retrying." >&2
+  exit 1
+fi
+trap 'rmdir "$PUBLISH_LOCK"' EXIT
 [ "$(git branch --show-current)" = custom/main ]
 [ -z "$(git status --porcelain)" ]
 : "${NOTARY_PROFILE:?Configure a local notarytool Keychain profile before publishing.}"

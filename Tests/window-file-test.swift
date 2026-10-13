@@ -13,6 +13,7 @@ struct WindowFileTest {
         testCommandAliases()
         testCustomSizes()
         testLayouts()
+        testLayoutDestinations()
         testRooms()
 
         print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
@@ -133,6 +134,24 @@ struct WindowFileTest {
             from: .array([.object(["name": "Half", "apps": .array([.object(["app": "com.example.a"])])])]))
         check("an app without a display is skipped", broken?.records.first?.entries.isEmpty == true)
         check("and reported", broken?.problems.count == 1)
+    }
+
+    private static func testLayoutDestinations() {
+        let screen = WindowLayoutDisplay(uuid: "external", name: "Monitor")
+        var entry = WindowLayoutEntry(bundleID: "com.apple.Terminal", display: screen,
+                                      space: 2, fallbackDisplay: .init(uuid: "builtin", name: "MacBook"),
+                                      fallbackSpace: 3)
+        entry.terminalWindowID = 42
+        entry.terminalSession = Date(timeIntervalSince1970: 100)
+        let saved = WindowLayout(name: "Morning", entries: [entry])
+        let json = WindowManagementFileFormat.json(saved, shortcut: nil, alias: nil)
+        let read = WindowManagementFileFormat.layouts(from: .array([json]))?.records.first
+        check("settings file preserves preferred Space", read?.entries.first?.space == 2)
+        check("settings file preserves fallback screen and Space",
+              read?.entries.first?.fallbackDisplay?.uuid == "builtin" && read?.entries.first?.fallbackSpace == 3)
+        check("settings file excludes Terminal session identities", read?.entries.first?.terminalWindowID == nil)
+        check("file edits retain the existing local Terminal binding",
+              read?.keepingRuntime(of: saved).entries.first?.terminalWindowID == 42)
     }
 
     private static func testRooms() {

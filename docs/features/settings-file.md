@@ -184,3 +184,11 @@ in `commands.builtIn` — by their ID after `command:`. App Launcher and Dictati
 4. Run its side effect from a `track` sink in `AppCore`.
 
 A consent flag, content or machine state gets no key.
+
+### ZLaunch layout destinations
+
+Each `windowLayouts` app record can include `space` (a regular Desktop number on its preferred display)
+and `fallback` with a `space` number and optional `display` object (`id`, `name`). A null fallback disables
+fallback; an omitted fallback display uses the built-in or first connected screen. These fields survive
+settings-file and backup round trips. Terminal window numbers and process identities remain local
+runtime data; settings-file edits retain a matching entry's existing binding.

@@ -58,6 +58,7 @@ enum SettingsBackupCoverage {
         "calendarSpan": .calendarSpan,
         "joinWindowMinutes": .joinWindowMinutes,
         "autoJoinConfirms": .autoJoinConfirms,
+        "autoJoinNamedProvidersOnly": .autoJoinNamedProvidersOnly,
         "menuBarEvents": .menuBarEvents,
         "calendarMenuBarDisplay": .calendarMenuBarDisplay,
         "menuBarLinkedEventsOnly": .menuBarLinkedEventsOnly,

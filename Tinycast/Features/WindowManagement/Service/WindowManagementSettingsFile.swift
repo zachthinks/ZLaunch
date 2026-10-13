@@ -106,7 +106,10 @@ struct WindowManagementSettingsFile {
                     return [.invalidValue(key)]
                 }
                 let previous = Set(layouts.layouts.map(\.entryID))
-                let kept = layouts.replace(with: decoded.records)
+                let learned = Dictionary(uniqueKeysWithValues: layouts.layouts.map { ($0.id, $0) })
+                let kept = layouts.replace(with: decoded.records.map { layout in
+                    learned[layout.id].map(layout.keepingRuntime) ?? layout
+                })
                 let rule = "a name is empty or used twice, or it has no apps"
                 return report(decoded, kept: kept, kind: "layout", rule: rule, key: key)
                     + follow(

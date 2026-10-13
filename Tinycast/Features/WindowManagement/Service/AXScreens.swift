@@ -39,6 +39,7 @@ enum AXScreens {
     static func layoutScreens(geometry: AXGeometry) -> [WindowLayoutScreen] {
         let screens = NSScreen.screens
         let converted = converted(screens, geometry: geometry)
+        let spaces = WindowSpaceAccess.displays()
         let ordered = WindowPlacementEngine.ordered(converted)
         return ordered.compactMap { screen in
             guard let index = converted.firstIndex(where: { $0.id == screen.id }),
@@ -46,7 +47,10 @@ enum AXScreens {
             else { return nil }
             return WindowLayoutScreen(
                 display: WindowLayoutDisplay(uuid: uuid, name: screens[index].localizedName),
-                screen: screen)
+                screen: screen,
+                desktopIDs: spaces.first(where: { $0.uuid == uuid })?.desktops.map(\.id) ?? [],
+                currentDesktopID: spaces.first(where: { $0.uuid == uuid })?.currentID,
+                isBuiltin: displayID(screens[index]).map { CGDisplayIsBuiltin($0) != 0 } ?? false)
         }
     }
 

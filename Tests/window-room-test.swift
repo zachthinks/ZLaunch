@@ -116,6 +116,7 @@ struct WindowRoomTests {
     }
 
     static func main() {
+        terminalOwnership()
         tilingBasics()
         minimumSizes()
         autoAndStack()
@@ -908,5 +909,28 @@ struct WindowRoomTests {
         expect(
             kept.filter { $0.hasPrefix("room-parking.unreadable-") }.count == 1,
             "the unreadable ledger is kept aside")
+    }
+
+    static func terminalOwnership() {
+        let session = Date(timeIntervalSince1970: 100)
+        let saved = RoomWindow(bundleID: "com.apple.Terminal", appName: "Terminal", title: "shell",
+                               windowID: 42, terminalSession: session)
+        var owned = live(0, "com.apple.Terminal", title: "changed", id: 42)
+        owned.terminalSession = session
+        var other = live(1, "com.apple.Terminal", title: "shell", id: 43)
+        other.terminalSession = session
+        expect(RoomWindowMatcher.assign([saved], to: [other, owned])[0] == 1,
+               "Terminal uses its identity despite changed titles")
+        expect(RoomWindowMatcher.assign([saved], to: [other]).isEmpty,
+               "Terminal never borrows a matching title on any screen")
+        owned.terminalSession = session.addingTimeInterval(1)
+        expect(RoomWindowMatcher.assign([saved], to: [owned]).isEmpty,
+               "a reused window number after relaunch is not owned")
+        owned.terminalSession = session
+        let plan = RoomPlan.make(Room(name: "Work", windows: [saved]), windows: [owned, other],
+                                 on: screen(area), gap: 0, minimums: [:])
+        expect(plan.parks.isEmpty, "unrelated terminals never park")
+        let decoded = try? JSONDecoder().decode(RoomWindow.self, from: JSONEncoder().encode(saved))
+        expect(decoded == saved, "Terminal ownership survives persistence")
     }
 }

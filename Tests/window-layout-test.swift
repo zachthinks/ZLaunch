@@ -84,6 +84,8 @@ struct WindowLayoutTests {
     }
 
     static func main() {
+        terminalOwnership()
+        spaceDestinations()
         recordIdentity()
         anchorGrid()
         resolverExactFrames()
@@ -987,5 +989,77 @@ struct WindowLayoutTests {
             expect(reopened.sizes.count == 1, "a reopened store finds its custom sizes")
             expect(reopened.sizes.first == stored, "every field survives persistence")
         }
+    }
+
+    static func terminalOwnership() {
+        let session = Date(timeIntervalSince1970: 100)
+        var first = entry(bundleID: "com.apple.Terminal")
+        first.terminalWindowID = 42
+        first.terminalSession = session
+        let second = entry(bundleID: "com.apple.Terminal")
+        let owned = WindowLayoutWindow(handle: 0, bundleID: "com.apple.Terminal",
+                                       frame: rightScreen.frame, windowID: 42, terminalSession: session)
+        let other = WindowLayoutWindow(handle: 1, bundleID: "com.apple.Terminal",
+                                       frame: mainScreen.frame, windowID: 43, terminalSession: session)
+        let saved = layout(entries: [first, second])
+        let plan = WindowLayoutPlan.make(layout: saved, screens: [target(mainScreen, 1)],
+                                         windows: [other, owned], preferredGap: 0)
+        expect(plan.placements[0].source == .existing(handle: 0), "identity beats nearest terminal")
+        expect(plan.opens.count == 1, "missing second terminal creates its own window")
+        let missing = WindowLayoutPlan.make(layout: saved, screens: [target(mainScreen, 1)],
+                                            windows: [other], preferredGap: 0)
+        expect(missing.opens.count == 2 && missing.skipped.isEmpty,
+               "two missing terminals are distinct launches")
+        var recycled = owned
+        recycled.terminalSession = session.addingTimeInterval(1)
+        let relaunched = WindowLayoutPlan.make(layout: saved, screens: [target(mainScreen, 1)],
+                                               windows: [recycled], preferredGap: 0)
+        expect(relaunched.opens.count == 2, "relaunch invalidates Terminal window numbers")
+        expect(first.copy.terminalWindowID == nil, "duplicating a layout does not steal its terminals")
+        let decoded = try? JSONDecoder().decode(WindowLayout.self, from: JSONEncoder().encode(saved))
+        expect(decoded == saved, "layout Terminal bindings survive persistence")
+    }
+
+    static func spaceDestinations() {
+        var laptop = target(mainScreen, 1)
+        laptop.desktopIDs = [11, 12, 13]
+        laptop.isBuiltin = true
+        var external = target(rightScreen, 2)
+        external.desktopIDs = [21, 22]
+        var window = entry(display: 2, width: 0.5, height: 0.5)
+        window.space = 2
+        window.fallbackSpace = 3
+        let saved = layout(entries: [window])
+        let preferred = WindowLayoutPlan.make(layout: saved, screens: [laptop, external], windows: [], preferredGap: 0)
+        expect(preferred.placements.first?.screenID == rightScreen.id, "preferred monitor wins when connected")
+        expect(preferred.placements.first?.spaceID == 22, "preferred Space is resolved on its monitor")
+        expect(preferred.placements.first?.usedFallback == false, "connected target does not use fallback")
+        let fallback = WindowLayoutPlan.make(layout: saved, screens: [laptop], windows: [], preferredGap: 0)
+        expect(fallback.placements.first?.spaceID == 13, "missing monitor selects fallback Space")
+        expect(fallback.placements.first?.usedFallback == true, "fallback is reported")
+        expect(fallback.placements.first?.frame.width == mainScreen.visibleFrame.width / 2,
+               "fallback geometry scales to the available screen")
+        let reconnected = WindowLayoutPlan.make(layout: saved, screens: [external, laptop], windows: [], preferredGap: 0)
+        expect(reconnected.placements.first?.spaceID == 22, "reconnecting restores the original target")
+        window.fallbackDisplay = display(2)
+        let absentFallback = WindowLayoutPlan.make(layout: layout(entries: [window]), screens: [laptop],
+                                                  windows: [], preferredGap: 0)
+        expect(absentFallback.placements.first?.spaceID == 13, "absent explicit fallback uses the built-in screen")
+        window.fallbackSpace = 4
+        let missing = WindowLayoutPlan.make(layout: layout(entries: [window]), screens: [laptop], windows: [], preferredGap: 0)
+        expect(missing.placements.isEmpty, "unavailable fallback Space never launches into the wrong Desktop")
+        expect(missing.skippedSummary?.contains("Space 4 unavailable") == true, "missing Space is named")
+        window.space = 3
+        let connectedMissing = WindowLayoutPlan.make(layout: layout(entries: [window]), screens: [external, laptop],
+                                                    windows: [], preferredGap: 0)
+        expect(connectedMissing.placements.isEmpty, "a connected monitor with a missing Space is reported")
+        window.space = Int.min
+        let invalid = WindowLayoutPlan.make(layout: layout(entries: [window]), screens: [external],
+                                             windows: [], preferredGap: 0)
+        expect(invalid.placements.isEmpty, "invalid Space input cannot overflow")
+        let decoded = try? JSONDecoder().decode(WindowLayout.self, from: JSONEncoder().encode(saved))
+        expect(decoded == saved, "preferred and fallback destinations persist")
+        expect(saved.entries[0].copy.space == 2 && saved.entries[0].copy.fallbackSpace == 3,
+               "duplicate layouts retain destination choices")
     }
 }

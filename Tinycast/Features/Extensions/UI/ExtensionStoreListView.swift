@@ -26,7 +26,8 @@ struct ExtensionStoreListView: View {
                         }
                         ExtensionStoreRow(
                             listing: row.listing, selected: index == selection,
-                            installed: installed.contains(row.listing.name), progress: session.installing[row.listing.name])
+                            installed: installed.contains(row.listing.name), progress: session.installing[row.listing.name],
+                            failure: session.installFailures[row.listing.name])
                             .contentShape(Rectangle())
                             .onTapGesture { onSelect(index); onActivate(index) }
                             .onRightClick { onActions(index) }
@@ -71,6 +72,7 @@ private struct ExtensionStoreRow: View {
     let selected: Bool
     let installed: Bool
     let progress: String?
+    let failure: String?
     @Environment(\.metrics) private var metrics
     @Environment(\.isDarkAppearance) private var isDark
     @Environment(PaletteState.self) private var palette
@@ -84,8 +86,10 @@ private struct ExtensionStoreRow: View {
             }, size: metrics.size.rowIcon)
             VStack(alignment: .leading, spacing: metrics.spacing.xs) {
                 Text(listing.title).font(metrics.typography.rowTitle).lineLimit(1)
-                Text(listing.summary).font(metrics.typography.rowTrailing)
-                    .foregroundStyle(Theme.Colors.textSecondary).lineLimit(1)
+                Text(progress ?? failure.map { "Install failed: \($0)" }
+                    ?? (installed ? "Installed in ZLaunch" : listing.summary))
+                    .font(metrics.typography.rowTrailing)
+                    .foregroundStyle(failure == nil ? Theme.Colors.textSecondary : .orange).lineLimit(1)
             }
             Spacer(minLength: metrics.spacing.xl)
             if installed {

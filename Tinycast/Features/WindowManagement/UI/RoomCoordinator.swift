@@ -217,8 +217,14 @@ final class RoomCoordinator {
             gap: gap, displayUUID: targetDisplayUUID,
             claimed: store.claimedWindowIDs(excluding: room.id), minimums: minimums, ledger: ledger)
         inTurn { [weak self] in
+            guard let room = self?.store.room(id: id) else { return }
             let outcome = await RoomRunner.enter(room, context: context)
             guard let self else { return }
+            if let restored = outcome.restoredRoom, self.store.room(id: id) == room {
+                do { try self.store.update(restored) } catch {
+                    self.core.showMessage(error.localizedDescription, tone: .danger)
+                }
+            }
             self.isEntering = false
             self.preview.hide(settling: true)
             self.session.reset()
@@ -519,6 +525,11 @@ final class RoomCoordinator {
 
     private func report(_ outcome: RoomRunner.Outcome, for room: Room) async {
         if outcome.isBlockedOnPermission { return await reportPermissionFailure() }
+        if let failure = outcome.openFailures.first {
+            await core.showNotice(title: "Couldn't Open Terminal", message: failure,
+                                  symbol: Room.sfSymbol, tone: .danger)
+            return
+        }
         guard outcome.placed > 0 else {
             await core.showNotice(
                 title: "Couldn't Enter “\(room.name)”",

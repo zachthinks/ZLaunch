@@ -80,10 +80,6 @@ final class AppCore {
     let installedAI = InstalledAIManager()
     @ObservationIgnored private var appliedLaunchRevisions: [InstalledAIKind: Int] = [:]
 
-    /// Set when a quicklink editor should open with Settings; the pane consumes it.
-    var pendingQuicklinkEdit: QuicklinkEditRequest?
-    /// Set when a snippet editor should open with Settings; the pane consumes it.
-    var pendingSnippetEdit: SnippetEditRequest?
     /// Set when a layout editor should open with Settings; the pane consumes it.
     var pendingWindowLayoutEdit: WindowLayoutEditRequest?
 
@@ -91,8 +87,8 @@ final class AppCore {
         store: snippetsStore, listener: snippetListener, injector: textInjector,
         clipboardStore: clipboardStore, appIndex: appIndex, settings: settings,
         windowController: windowController, paletteCoordinator: paletteCoordinator,
-        settingsCoordinator: settingsCoordinator,
-        showMessage: { [unowned self] in self.showMessage($0) }, core: self)
+        palette: palette,
+        showMessage: { [unowned self] in self.showMessage($0, tone: $1) }, core: self)
     @ObservationIgnored private(set) lazy var dictationCoordinator = DictationCoordinator(
         settings: settings, hotKeys: hotKeys, models: dictationModels, injector: textInjector,
         audioDucker: dictationAudioDucker,
@@ -110,7 +106,7 @@ final class AppCore {
         appIndex: appIndex, injector: textInjector, hotKeys: hotKeys, favorites: favorites,
         visibility: visibility, ranking: launcherRanking, aliases: aliases,
         windowController: windowController,
-        paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
+        paletteCoordinator: paletteCoordinator,
         clipboardHistory: { [unowned self] in self.snippetCoordinator.clipboardHistoryForExpansion() },
         core: self)
 
@@ -514,11 +510,16 @@ final class AppCore {
             break
         }
         guard ExtensionDeepLink.claims(url) else { return }
-        guard let link = ExtensionDeepLink.parse(url: url) else {
+        guard let route = ExtensionDeepLink.route(url: url) else {
             paletteCoordinator.showPalette(mode: .launcher, restoreAnyMode: true)
             return
         }
-        extensionCoordinator.runDeepLink(link)
+        switch route {
+        case .command(let link):
+            extensionCoordinator.runDeepLink(link)
+        case .storeInstall(let install):
+            extensionCoordinator.showStoreInstall(install)
+        }
     }
 
     /// The store-backed half of the conflict message; `HotKeyManager` names the catalogs itself.
@@ -964,11 +965,6 @@ final class AppCore {
     /// The volume slider, so `dialogs` stays the single owner of every prompt in the app.
     func pickVolume(current: Float32) async -> Float32? {
         await dialogs.pickVolume(current: current)
-    }
-
-    /// The new-event prompt, for the same reason.
-    func createEvent() async -> EventDraft? {
-        await dialogs.createEvent()
     }
 
     /// The snippet argument prompt, for the same reason.

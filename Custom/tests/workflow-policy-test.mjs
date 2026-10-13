@@ -19,5 +19,8 @@ for (const name of names) {
 rejects("custom-sync.yml", "github.event.repository.private == false && needs.sync.outputs.candidate != ''",
   "needs.sync.outputs.candidate != ''");
 rejects("custom-checks.yml", "  verify:", "  unreviewed:\n    runs-on: macos-26\n  verify:");
+rejects("custom-sync.yml", "needs: [sync, checks]", "needs: [sync]");
+rejects("custom-sync.yml", "needs.checks.result == 'success'", "needs.checks.result != 'cancelled'");
+rejects("custom-sync.yml", "CHECKED_COMMIT: ${{ needs.sync.outputs.candidate }}", "CHECKED_COMMIT: main");
 assert.throws(() => verifyWorkflowPolicy({ ...workflows, "custom-unreviewed.yml": workflows[names[0]] }));
 console.log("Workflow policy rejects paid runner labels, private jobs, caches, artifacts, and unreviewed jobs.");

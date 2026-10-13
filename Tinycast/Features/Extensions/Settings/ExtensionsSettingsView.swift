@@ -85,7 +85,7 @@ struct ExtensionsSettingsView: View {
             SettingsRow(
                 title: "What works",
                 subtitle:
-                    "List, detail, form, grid, no-view and menu-bar commands, plus preferences, storage and OAuth.",
+                    "List, detail, form, grid, no-view and menu-bar commands, plus preferences and storage.",
                 subtitleLineLimit: 2
             ) {
                 ExtensionSettingsIcon(systemName: "checkmark.circle")
@@ -94,7 +94,7 @@ struct ExtensionsSettingsView: View {
             }
             SettingsRow(
                 title: "What doesn't, yet",
-                subtitle: "Raycast's OAuth proxy, and its AI, browser and window services.",
+                subtitle: "Raycast's AI, browser and window services.",
                 subtitleLineLimit: 2
             ) {
                 ExtensionSettingsIcon(systemName: "xmark.circle")

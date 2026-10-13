@@ -12,7 +12,12 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
     var bundleID: String
     /// A file, folder, URL or deeplink to open the app with; nil is a plain launch.
     var argument: String?
+    var terminalWindowID: UInt32?
+    var terminalSession: Date?
     var display: WindowLayoutDisplay
+    var space: Int?
+    var fallbackDisplay: WindowLayoutDisplay?
+    var fallbackSpace: Int?
     var widthFraction: CGFloat
     var heightFraction: CGFloat
     var anchor: WindowLayoutAnchor
@@ -22,12 +27,16 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
     init(
         id: UUID = UUID(), bundleID: String, argument: String? = nil,
         display: WindowLayoutDisplay, widthFraction: CGFloat = 1, heightFraction: CGFloat = 1,
-        anchor: WindowLayoutAnchor = .center, offset: CGPoint = .zero
+        anchor: WindowLayoutAnchor = .center, offset: CGPoint = .zero,
+        space: Int? = nil, fallbackDisplay: WindowLayoutDisplay? = nil, fallbackSpace: Int? = nil
     ) {
         self.id = id
         self.bundleID = bundleID
         self.argument = argument
         self.display = display
+        self.space = space
+        self.fallbackDisplay = fallbackDisplay
+        self.fallbackSpace = fallbackSpace
         self.widthFraction = widthFraction
         self.heightFraction = heightFraction
         self.anchor = anchor
@@ -37,6 +46,7 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
     // Hand-written, so an added field keeps stored layouts and older backups readable.
     private enum CodingKeys: String, CodingKey {
         case id, bundleID, argument, display, widthFraction, heightFraction, anchor, offset
+        case terminalWindowID, terminalSession, space, fallbackDisplay, fallbackSpace
     }
 
     init(from decoder: Decoder) throws {
@@ -44,7 +54,12 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         bundleID = try container.decode(String.self, forKey: .bundleID)
         argument = try container.decodeIfPresent(String.self, forKey: .argument)
+        terminalWindowID = try container.decodeIfPresent(UInt32.self, forKey: .terminalWindowID)
+        terminalSession = try container.decodeIfPresent(Date.self, forKey: .terminalSession)
         display = try container.decode(WindowLayoutDisplay.self, forKey: .display)
+        space = try container.decodeIfPresent(Int.self, forKey: .space)
+        fallbackDisplay = try container.decodeIfPresent(WindowLayoutDisplay.self, forKey: .fallbackDisplay)
+        fallbackSpace = try container.decodeIfPresent(Int.self, forKey: .fallbackSpace)
         widthFraction = try container.decodeIfPresent(CGFloat.self, forKey: .widthFraction) ?? 1
         heightFraction = try container.decodeIfPresent(CGFloat.self, forKey: .heightFraction) ?? 1
         anchor = try container.decodeIfPresent(WindowLayoutAnchor.self, forKey: .anchor) ?? .center
@@ -56,7 +71,7 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
         WindowLayoutEntry(
             bundleID: bundleID, argument: argument, display: display,
             widthFraction: widthFraction, heightFraction: heightFraction, anchor: anchor,
-            offset: offset)
+            offset: offset, space: space, fallbackDisplay: fallbackDisplay, fallbackSpace: fallbackSpace)
     }
 
     /// Clamped rather than rejected: a bad import loses a nudge, never the whole layout.
@@ -67,6 +82,8 @@ struct WindowLayoutEntry: Codable, Hashable, Identifiable, Sendable {
             cleaned.argument = entry.argument?.cleanedLayoutField
             cleaned.display.uuid = entry.display.uuid.trimmingCharacters(
                 in: .whitespacesAndNewlines)
+            cleaned.space = entry.space.map { max(1, $0) }
+            cleaned.fallbackSpace = entry.fallbackSpace.map { max(1, $0) }
             cleaned.widthFraction = clampFraction(entry.widthFraction)
             cleaned.heightFraction = clampFraction(entry.heightFraction)
             cleaned.offset = CGPoint(
@@ -113,6 +130,19 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
         self.usesPreferredGap = usesPreferredGap
         self.entries = entries
         self.frontmostEntryID = frontmostEntryID
+    }
+
+    func keepingRuntime(of previous: WindowLayout) -> WindowLayout {
+        var value = self
+        for index in entries.indices where previous.entries.indices.contains(index) {
+            let saved = previous.entries[index]
+            guard entries[index].bundleID == saved.bundleID,
+                entries[index].argument == saved.argument
+            else { continue }
+            value.entries[index].terminalWindowID = saved.terminalWindowID
+            value.entries[index].terminalSession = saved.terminalSession
+        }
+        return value
     }
 
     /// The glyph every surface draws for this layout.

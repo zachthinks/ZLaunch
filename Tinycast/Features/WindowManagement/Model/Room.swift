@@ -40,6 +40,7 @@ struct Room: Codable, Hashable, Identifiable, Sendable {
         for (index, window) in zip(room.windows.indices, learned.windows)
         where window.bundleID == room.windows[index].bundleID {
             room.windows[index].windowID = window.windowID
+                room.windows[index].terminalSession = window.terminalSession
         }
         return room
     }

@@ -29,6 +29,10 @@ final class ExtensionCoordinator {
         self.core = core
     }
 
+    @ObservationIgnored private var storeLookup: Task<Void, Never>?
+
+    isolated deinit { storeLookup?.cancel() }
+
     // MARK: - Feature presence
 
     var installedNames: Set<String> { Set(extensions.installed.map(\.manifest.name)) }
@@ -46,6 +50,17 @@ final class ExtensionCoordinator {
 
     func installSelectedStoreExtension(_ listing: ExtensionListing) {
         core.extensionStore.install(listing, coordinator: self)
+    }
+
+    func configureStoreExtension(_ listing: ExtensionListing) {
+        guard let owner = extensions.extensionNamed(listing.name) else { return }
+        showExtensionSettings(for: owner)
+    }
+
+    func reportStoreInstall(_ listing: ExtensionListing, failure: String? = nil) {
+        core.showMessage(
+            failure == nil ? "Installed \(listing.title)" : "Could not install \(listing.title). Open Store for details.",
+            tone: failure == nil ? .success : .danger)
     }
 
     func installStoreExtension(
@@ -126,6 +141,36 @@ final class ExtensionCoordinator {
     }
 
     // MARK: - Managing one extension from the launcher
+
+    func showStoreInstall(_ install: ExtensionDeepLink.StoreInstall) {
+        guard settings.extensionsEnabled else {
+            settingsCoordinator.showSettings(tab: .extensions)
+            core.showMessage("Extensions are disabled — enable them in Settings", tone: .danger)
+            return
+        }
+        storeLookup?.cancel()
+        paletteCoordinator.showPalette(mode: .extensionStore)
+        palette.query = install.name
+        core.extensionStore.search(install.name, debounce: false)
+        storeLookup = Task { [weak self] in
+            do {
+                let listing = try await ExtensionStoreClient().lookup(handle: install.handle, name: install.name)
+                try Task.checkCancellation()
+                guard let self, settings.extensionsEnabled, palette.isVisible, palette.mode == .extensionStore,
+                    palette.query == install.name else { return }
+                if let listing {
+                    showStoreDetail(listing)
+                } else {
+                    core.showMessage("That extension is unavailable in the Store.", tone: .danger)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self, !Task.isCancelled else { return }
+                core.showMessage("Could not look up the extension. Try searching the Store.", tone: .danger)
+            }
+        }
+    }
 
     /// Opens Settings on the extension a launcher row belongs to.
     func showExtensionSettings(for app: AppEntry) {
@@ -293,6 +338,17 @@ final class ExtensionCoordinator {
 
     func clearSearchBar() {
         palette.query = ""
+    }
+
+    var extensionSearch: ExtensionSearchState.Screen? {
+        guard palette.mode == .extensionCommand else { return nil }
+        return ExtensionSearchState.Screen(query: palette.query, selection: palette.selection)
+    }
+
+    func showExtensionSearch(_ search: ExtensionSearchState.Screen, tree: RenderTree) {
+        let count = ExtensionScreen(tree: tree, query: search.query).items.count
+        palette.query = search.query
+        palette.selection = min(max(search.selection, 0), max(count - 1, 0))
     }
 
     /// Its own window: a no-view command closes the palette before the pill is done.

@@ -4,7 +4,7 @@ import SwiftUI
 /// The editor's right column. Stacks the field groups; holds no geometry of its own.
 struct WindowLayoutInspector: View {
     let draft: WindowLayoutDraft
-    let displays: [WindowLayoutDisplay]
+    let screens: [WindowLayoutScreen]
 
     @State private var showingIconPicker = false
     @FocusState private var nameFocused: Bool
@@ -26,8 +26,9 @@ struct WindowLayoutInspector: View {
                 gapToggle
                 Divider()
                 sectionLabel("Layout")
-                WindowLayoutEntryPicker(draft: draft, displays: displays)
+                WindowLayoutEntryPicker(draft: draft, displays: screens.map(\.display))
                 if draft.selectedEntry != nil {
+                    WindowLayoutDestinationFields(draft: draft, screens: screens)
                     WindowLayoutArgumentField(draft: draft)
                     frontmostToggle
                     Divider()

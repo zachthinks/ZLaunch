@@ -98,7 +98,7 @@ entered comes first, so the room you just left is one row away. Typing a new nam
 - **↵** enters the selected room. **⇥ / ⇧⇥** step through `RoomPlan.layoutChoices` — the layouts
   that fit its open windows here, each drawn differently; Stack only when nothing tidier fits — and
   store the choice for this display. A single choice says so in a message.
-- **⌘K** holds Enter Room, Next Layout, Remember Arrangement, Choose Windows… and Delete Room (**⌘⌫**, confirmed through `DialogController`). **⌘N** creates a room.
+- **⌘K** holds Enter Room, Next Layout, Remember Arrangement, Choose Windows… and Delete Room (**⌃X**, confirmed through `DialogController`). **⌘N** creates a room.
 - The screen claims ⇥ through `PaletteScreen.tab(at:backwards:)`, asked before `tabTarget` and the
   palette's ring; every other screen keeps today's Tab.
 
@@ -149,6 +149,17 @@ window is a notice — and steps nothing back, since hiding everything around an
 leave an empty desk. Switching the feature off unhides the apps rooms hid first and waits for them
 to come back before returning parked windows.
 
+## Terminal ownership in ZLaunch
+
+Terminal is special: an exact window number and the app's launch date identify a room's terminal.
+Titles and arbitrary available terminals cannot replace it. Missing terminals are created individually
+through Terminal automation and their new identities are saved, so re-entering does not create more.
+Other Terminal windows stay in place, are never parked, and Terminal is not hidden when outside a room.
+Old saved terminals without a session identity create room-owned replacements on first entry. Capture
+or Choose Windows can record current windows explicitly. Automation failures include permission guidance.
+Rooms retain their single-display tiling behavior; multi-monitor and native Space destinations belong
+to Window Layouts' entry inspector.
+
 ## Wiring
 
 - **`AppEntry.Kind.windowRoom`**, entries `window-room:<uuid>`, published by `AppIndex.setWindowRooms`
@@ -157,8 +168,9 @@ to come back before returning parked windows.
   `boundWindowRoomIDs` index, dispatched to `enterRoom(id:)`.
 - **Commands**: Switch Room and Create Room, owned by
   `SettingsTab.windowManagement` and gated with the feature.
-- **Settings**: `windowRoomsShowInLauncher` (on). Rooms and their shortcuts ride in settings
-  backups; learned minimum sizes and the ledger do not — one is a cache, the other this Mac's state.
+- **Settings**: `windowRoomsShowInLauncher` (on), which also dims each room row's alias field. Rooms
+  and their shortcuts ride in settings backups; learned minimum sizes and the ledger do not — one is
+  a cache, the other this Mac's state.
   The [settings file](settings-file.md) carries rooms without their window numbers or entry times, and
   an edit made there keeps both through `Room.keepingRuntime(of:)`.
 

@@ -32,7 +32,7 @@ struct ExtensionStoreScreen: PaletteScreen {
     var primaryActionTitle: String {
         guard isDetail, let listing = session.detail else { return "Show Details" }
         if let progress = session.installing[listing.name] { return progress }
-        if coordinator.installedNames.contains(listing.name) { return "Installed" }
+        if coordinator.installedNames.contains(listing.name) { return "Configure Extension" }
         if !coordinator.extensionsEnabled { return "Enable Extensions" }
         return session.installFailures[listing.name] == nil ? "Install Extension" : "Retry Install"
     }
@@ -41,13 +41,18 @@ struct ExtensionStoreScreen: PaletteScreen {
         guard rows.indices.contains(selection) else { return false }
         guard isDetail else { return true }
         let name = rows[selection].listing.name
-        return session.installing[name] == nil && !coordinator.installedNames.contains(name)
+        return session.installing[name] == nil
     }
 
     func activate(at selection: Int) {
         guard rows.indices.contains(selection) else { return }
         let listing = rows[selection].listing
         if isDetail {
+            guard session.installing[listing.name] == nil else { return }
+            if coordinator.installedNames.contains(listing.name) {
+                coordinator.configureStoreExtension(listing)
+                return
+            }
             if !coordinator.extensionsEnabled { coordinator.setExtensionsEnabled(true); return }
             coordinator.installSelectedStoreExtension(listing)
         } else {
@@ -76,6 +81,8 @@ struct ExtensionStoreScreen: PaletteScreen {
         if isDetail, let listing = session.detail {
             return AnyView(ExtensionStoreDetail(
                 listing: listing, loading: session.loadingDetail,
+                progress: session.installing[listing.name],
+                installed: coordinator.installedNames.contains(listing.name),
                 failure: session.installFailures[listing.name] ?? session.detailFailure))
         }
         return AnyView(ExtensionStoreListView(
@@ -126,7 +133,11 @@ struct ExtensionStoreScreen: PaletteScreen {
         return PaletteMenuContent(
             rowCount: items.count, preferredSelection: filtered.bestMatch,
             view: { _ in AnyView(ExtensionActionsPanel(
-                header: content.header, items: items, selection: menuSelection, onActivate: onActivate)) },
+                header: content.header, items: items, selection: menuSelection, onActivate: onActivate,
+                shortcutRow: { key, modifiers in
+                    guard key == .return, modifiers == .command else { return nil }
+                    return filtered.content.items.firstIndex { $0.shortcut == "⌘↵" }
+                })) },
             activate: { filtered.content.items[$0].action() },
             clipPath: { bounds, metrics, _ in
                 RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath

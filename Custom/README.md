@@ -59,7 +59,8 @@ from Raycast's live catalog; category filters use its actual category search.
 Return opens an extension's detail page, with screenshots, its description,
 commands, author, contributors, update date, README and source links when the
 catalog provides them. Return on that page installs it; ⌘Return installs a
-selected listing directly. Installed extensions show a checkmark. Arrow keys
+selected listing directly. Installation shows progress, reports success or failure,
+and offers Configure Extension after success. Installed extensions show a checkmark. Arrow keys
 navigate, ⌘K opens actions, and Escape returns to the previous screen. More
 results can be loaded without losing the current selection.
 
@@ -273,3 +274,28 @@ Gatekeeper accepted it. The installed About screen visibly shows the new icon.
 The saved menu was unchanged, including its Liquid Glass selection. The Dev icon
 was verified in the compiled Debug bundle; no additional Dev app was installed.
 Rollback and verification records are in ignored `build/zlaunch-icon-receipt/`.
+
+The menu-bar label uses `ZLaunchMenuBarIcon`, a separate 18-point template vector
+in the custom catalog. It adapts the approved rounded Launch Key and engraved Z
+with an inset front bevel for monochrome light/dark rendering; the app icon
+masters remain unchanged.
+
+The refined raised-key menu icon (C) is installed locally in 0.1.6 build 21.
+It uses build 20’s source baseline plus the icon change, preserving unrelated
+working edits. Developer ID signature, Apple notarization and Gatekeeper passed;
+all 145 preferences and the saved LaunchDeck menu were unchanged after restart.
+Guest Debug/tests were blocked by the suspended VM’s stalled resume.
+The prior signed build 20 and verification receipt remain at
+`/Users/zlink/Documents/Codex/2026-10-13/task/menu-icon/`.
+
+## Production updates and rollback (October 13, 2026)
+
+Zach authorizes future ZLaunch updates directly in production after the relevant
+checks pass. A separate installed Dev app is not required. Before replacing the
+app, preserve the current signed app and a consistent backup of affected settings
+and data, with a recorded recovery path. Verify the replacement signature and
+installed version. Preserve user customizations, shortcuts and LaunchDeck data.
+Flag any migration that prevents a reliable return to the previous app and data
+before installing it; a backup alone does not prove restoration works. This
+preference does not waive checks or authorize unrelated publication, credential
+changes or irreversible cleanup. Keep the VM testing instructions in effect.

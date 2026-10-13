@@ -103,12 +103,38 @@ final class WindowLayoutDraft {
     }
 
     func setArgument(_ argument: String?) {
-        update { $0.argument = argument?.isEmpty == true ? nil : argument }
+        update {
+            let value = argument?.isEmpty == true ? nil : argument
+            if $0.argument != value {
+                $0.terminalWindowID = nil
+                $0.terminalSession = nil
+            }
+            $0.argument = value
+        }
     }
 
     func setDisplay(_ display: WindowLayoutDisplay) {
         update { $0.display = display }
         selectedDisplayUUID = display.uuid
+    }
+
+    func setSpace(_ number: Int?) {
+        update { $0.space = number }
+    }
+
+    func setFallback(enabled: Bool) {
+        update {
+            $0.fallbackSpace = enabled ? ($0.fallbackSpace ?? 1) : nil
+            if !enabled { $0.fallbackDisplay = nil }
+        }
+    }
+
+    func setFallbackDisplay(_ display: WindowLayoutDisplay?) {
+        update { $0.fallbackDisplay = display }
+    }
+
+    func setFallbackSpace(_ number: Int) {
+        update { $0.fallbackSpace = number }
     }
 
     func setAnchor(_ anchor: WindowLayoutAnchor) {

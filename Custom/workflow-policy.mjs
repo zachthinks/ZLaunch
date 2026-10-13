@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 const policy = {
   "custom-checks.yml": { verify: "macos-26" },
   "custom-release.yml": { release: "macos-26" },
-  "custom-sync.yml": { sync: "ubuntu-latest", checks: null },
+  "custom-sync.yml": { sync: "ubuntu-latest", checks: null, promote: "ubuntu-latest" },
 };
 
 export function verifyWorkflowPolicy(workflows) {
@@ -18,7 +18,9 @@ export function verifyWorkflowPolicy(workflows) {
       const body = jobs.slice(headings[index].index, headings[index + 1]?.index ?? jobs.length);
       const guard = job === "checks"
         ? "github.event.repository.private == false && needs.sync.outputs.candidate != ''"
-        : "github.event.repository.private == false";
+        : job === "promote"
+          ? "github.event.repository.private == false && needs.checks.result == 'success' && needs.sync.outputs.candidate != ''"
+          : "github.event.repository.private == false";
       assert.equal(body.match(/^    if: (.+)$/m)?.[1], guard, `${name}/${job}: requires public-only execution`);
       const runner = expectedJobs[job];
       const runners = [...body.matchAll(/^\s*runs-on: (.+)$/gm)].map((match) => match[1]);
@@ -26,6 +28,13 @@ export function verifyWorkflowPolicy(workflows) {
       if (!runner) {
         assert.match(body, /^    needs: sync$/m);
         assert.match(body, /^    uses: \.\/\.github\/workflows\/custom-checks\.yml$/m);
+      }
+      if (job === "promote") {
+        assert.match(body, /^    needs: \[sync, checks\]$/m);
+        assert.match(body, /ref: \$\{\{ needs.sync.outputs.candidate \}\}/);
+        assert.match(body, /CHECKED_COMMIT: \$\{\{ needs.sync.outputs.candidate \}\}/);
+        assert.match(body, /SYNC_BASE: \$\{\{ needs.sync.outputs.base \}\}/);
+        assert.match(body, /run: node Custom\/promote\.mjs/);
       }
     }
     const actions = [...source.matchAll(/^\s*(?:- )?uses: (.+)$/gm)].map((match) => match[1]);

@@ -1,5 +1,22 @@
 # Native Store verification for 0.1.2
 
+## Install feedback and keyboard follow-up — 2026-10-06
+
+- All 95 harnesses passed; signed Debug build succeeded with no new compiler warnings.
+- Lint, model import purity, and diff whitespace checks passed.
+- Dev: Return on Home Assistant details installed the extension from the live Store.
+- Dev: completion text remained visible and the footer changed to Configure Extension.
+- Dev: keypad Enter opened the installed extension's preferences.
+- Dev: Escape cleared search and dismissed the launcher; reopening from Finder restored search
+  focus and accepted typing without clicking the field.
+- The Store session harness exercises immediate progress, progress updates, duplicate requests,
+  failure retention, retry, completion notification, and refusal to reinstall an installed extension.
+- Progress and failure rendering are implemented in both list and detail views; a real network
+  failure was not induced during UI verification.
+- The reported Codex-chat focus leak cannot be reproduced directly with the available UI tool,
+  which does not permit targeting Codex. Hidden-view focus and reopen handling were corrected.
+- These observations concern the local Dev build, not the installed production app.
+
 Pre-release verification below was performed in the isolated Dev channel.
 Release packaging and installation are verified separately.
 

@@ -5,6 +5,9 @@ import Foundation
 struct WindowLayoutScreen: Equatable, Sendable {
     var display: WindowLayoutDisplay
     var screen: WindowPlacementEngine.Screen
+    var desktopIDs: [UInt64] = []
+    var currentDesktopID: UInt64?
+    var isBuiltin = false
 }
 
 /// One window the inventory found. A handle, not an `AXUIElement`: this layer stays pure.
@@ -14,12 +17,18 @@ struct WindowLayoutWindow: Equatable, Sendable {
     var frame: CGRect
     /// Only ever used to make the binding order deterministic.
     var title: String
+    var windowID: UInt32?
+    var terminalSession: Date?
 
-    init(handle: Int, bundleID: String, frame: CGRect, title: String = "") {
+    init(
+        handle: Int, bundleID: String, frame: CGRect, title: String = "",
+        windowID: UInt32? = nil, terminalSession: Date? = nil) {
         self.handle = handle
         self.bundleID = bundleID
         self.frame = frame
         self.title = title
+        self.windowID = windowID
+        self.terminalSession = terminalSession
     }
 }
 
@@ -30,6 +39,7 @@ struct WindowLayoutPlan: Equatable, Sendable {
         case displayDisconnected(name: String)
         /// The display reported no usable visible frame, so `resolve` refused.
         case unresolvableGeometry
+        case spaceUnavailable(display: String, number: Int)
         /// An earlier entry already claims this app and argument; there is no window left to give.
         case duplicateTarget
     }
@@ -51,6 +61,8 @@ struct WindowLayoutPlan: Equatable, Sendable {
         var anchor: WindowLayoutAnchor
         /// The box to re-clamp into when an app refuses to shrink to `frame`.
         var canvas: CGRect
+        var spaceID: UInt64?
+        var usedFallback = false
     }
 
     struct Skipped: Equatable, Sendable {
@@ -79,6 +91,11 @@ struct WindowLayoutPlan: Equatable, Sendable {
             return displays.count == 1
                 ? "1 display not connected" : "\(displays.count) displays not connected"
         }
+        let missingSpaces = skipped.compactMap { skip -> String? in
+            guard case .spaceUnavailable(let display, let number) = skip.reason else { return nil }
+            return "\(display): Space \(number) unavailable"
+        }
+        if !missingSpaces.isEmpty { return Array(Set(missingSpaces)).sorted().joined(separator: " · ") }
         return skipped.count == 1 ? "1 entry skipped" : "\(skipped.count) entries skipped"
     }
 
@@ -98,11 +115,26 @@ struct WindowLayoutPlan: Equatable, Sendable {
         var skipped: [Skipped] = []
 
         for entry in layout.entries {
-            guard let target = screensByUUID[entry.display.uuid.lowercased()] else {
+            let preferred = screensByUUID[entry.display.uuid.lowercased()]
+            let fallback = entry.fallbackSpace.flatMap { _ in
+                entry.fallbackDisplay.flatMap { screensByUUID[$0.uuid.lowercased()] }
+                    ?? screens.first(where: \.isBuiltin) ?? screens.first
+            }
+            guard let target = preferred ?? fallback else {
                 skipped.append(
                     Skipped(
                         entryID: entry.id, reason: .displayDisconnected(name: entry.display.name)))
                 continue
+            }
+            let desktop = preferred == nil ? entry.fallbackSpace : entry.space
+            var spaceID: UInt64?
+            if let desktop {
+                guard desktop > 0, target.desktopIDs.indices.contains(desktop - 1) else {
+                    skipped.append(Skipped(entryID: entry.id,
+                                           reason: .spaceUnavailable(display: target.display.name, number: desktop)))
+                    continue
+                }
+                spaceID = target.desktopIDs[desktop - 1]
             }
             guard
                 let frame = WindowLayoutGeometry.resolve(entry, on: target.screen, gap: gap)
@@ -112,7 +144,17 @@ struct WindowLayoutPlan: Equatable, Sendable {
             }
 
             let source: Source
-            if entry.argument == nil,
+            if entry.bundleID == "com.apple.Terminal" {
+                let index = available[entry.bundleID]?.firstIndex {
+                    entry.terminalWindowID != nil && $0.windowID == entry.terminalWindowID
+                        && entry.terminalSession != nil && $0.terminalSession == entry.terminalSession
+                }
+                if let index {
+                    source = .existing(handle: available[entry.bundleID]!.remove(at: index).handle)
+                } else {
+                    source = .launch
+                }
+            } else if entry.argument == nil,
                 let index = nearest(to: frame, among: available[entry.bundleID] ?? [])
             {
                 source = .existing(handle: available[entry.bundleID]!.remove(at: index).handle)
@@ -130,7 +172,8 @@ struct WindowLayoutPlan: Equatable, Sendable {
                 Placement(
                     entryID: entry.id, bundleID: entry.bundleID, argument: entry.argument,
                     source: source, frame: frame, screenID: target.screen.id, anchor: entry.anchor,
-                    canvas: WindowLayoutGeometry.box(target.screen, gap: gap)))
+                    canvas: WindowLayoutGeometry.box(target.screen, gap: gap),
+                    spaceID: spaceID, usedFallback: preferred == nil))
         }
         let frontmost = placements.first { $0.entryID == layout.frontmostEntryID }?.entryID
         return WindowLayoutPlan(

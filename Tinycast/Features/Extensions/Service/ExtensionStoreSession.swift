@@ -94,7 +94,7 @@ final class ExtensionStoreSession {
     }
 
     func install(_ listing: ExtensionListing, coordinator: ExtensionCoordinator) {
-        guard installing[listing.name] == nil else { return }
+        guard installing[listing.name] == nil, !coordinator.installedNames.contains(listing.name) else { return }
         installing[listing.name] = "Downloading…"
         installFailures[listing.name] = nil
         let client = client
@@ -109,8 +109,10 @@ final class ExtensionStoreSession {
                         self?.installing[listing.name] = progress.message
                     }
                 }
+                coordinator.reportStoreInstall(listing)
             } catch {
                 self?.installFailures[listing.name] = error.localizedDescription
+                coordinator.reportStoreInstall(listing, failure: error.localizedDescription)
             }
             self?.installing[listing.name] = nil
             self?.installTasks[listing.name] = nil

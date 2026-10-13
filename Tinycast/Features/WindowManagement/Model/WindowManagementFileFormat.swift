@@ -127,6 +127,15 @@ enum WindowManagementFileFormat {
             "display": .object([
                 "id": .string(entry.display.uuid), "name": .string(entry.display.name)
             ]),
+            "space": entry.space.map { .number(Double($0)) } ?? .null,
+            "fallback": entry.fallbackSpace.map { number in
+                .object([
+                    "space": .number(Double(number)),
+                    "display": entry.fallbackDisplay.map { display in
+                        .object(["id": .string(display.uuid), "name": .string(display.name)])
+                    } ?? .null
+                ])
+            } ?? .null,
             "width": .number(Double(entry.widthFraction)),
             "height": .number(Double(entry.heightFraction)),
             "position": .string(entry.anchor.rawValue),
@@ -166,7 +175,13 @@ enum WindowManagementFileFormat {
                         widthFraction: CGFloat(app["width"]?.number ?? 1),
                         heightFraction: CGFloat(app["height"]?.number ?? 1),
                         anchor: anchor(app["position"], label: label, into: &decoded),
-                        offset: CGPoint(x: offset.x, y: offset.y)))
+                        offset: CGPoint(x: offset.x, y: offset.y),
+                        space: app["space"]?.number.flatMap(Int.init(exactly:)),
+                        fallbackDisplay: app["fallback"]?["display"]?["id"]?.string.map { uuid in
+                            WindowLayoutDisplay(uuid: uuid,
+                                name: app["fallback"]?["display"]?["name"]?.string ?? "Display")
+                        },
+                        fallbackSpace: app["fallback"]?["space"]?.number.flatMap(Int.init(exactly:))))
                 if frontmostEntryID == nil, app["frontmost"]?.bool == true {
                     frontmostEntryID = entryID
                 }

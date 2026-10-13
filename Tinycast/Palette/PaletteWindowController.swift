@@ -79,6 +79,7 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
     func show() {
         Signposts.interval("PaletteWindowController.show") {
             isPoppedToRoot = false
+            core.palette.focusToken = UUID()
             // Summoned over one of our own windows: there is no external paste or focus target.
             if preserveFocusOnNextShow {
                 preserveFocusOnNextShow = false
@@ -113,9 +114,9 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             // Non-activating, so summoning never raises our own aux windows behind it.
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
-            // A never-activated login item can drop the first key request, so re-assert.
-            DispatchQueue.main.async { [weak panel] in
-                guard let panel, panel.isVisible, !panel.isKeyWindow else { return }
+            Task { @MainActor [weak self, weak panel] in
+                await Task.yield()
+                guard let self, let panel, panel.isVisible else { return }
                 panel.makeKeyAndOrderFront(nil)
             }
         }
@@ -192,7 +193,6 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
 
     /// Pop to Root Search: reset now, or after the delay unless a reopen consumes it.
     private func schedulePopToRoot() {
-        // Don't pop to root if an extension is waiting for OAuth authorization in the browser.
         guard !core.extensions.isAuthorizing else { return }
         popToRootTimer?.invalidate()
         let timeout = core.settings.popToRootTimeout
@@ -258,12 +258,11 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         core.paletteCoordinator.hidePalette(restoreFocus: false)
     }
 
-    /// Re-bump a turn later: on the first show a synchronous bump lands before `onChange`.
     func windowDidBecomeKey(_ notification: Notification) {
         panel?.level = .palette
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            core.palette.focusToken = UUID()
+        Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let self, panel?.isVisible == true, panel?.isKeyWindow == true else { return }
             // A re-summon leaves first responder where it was, so neither of these gets an event.
             panel?.trackComposition()
             if let context = panel?.fieldEditorContext {
@@ -414,6 +413,22 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         // Handled at the panel: a focused preview answers Escape before the palette's own handler.
         panel.onEscape = { [weak self] in
             guard let self else { return false }
+            if core.palette.mode == .customCommandEditor, !core.palette.isComposing {
+                core.customCommandCoordinator.cancelCustomCommandEditing()
+                return true
+            }
+            if core.palette.mode == .eventEditor, !core.palette.isComposing {
+                core.calendarCoordinator.cancelEventEditing()
+                return true
+            }
+            if core.palette.mode == .quicklinkEditor, !core.palette.isComposing {
+                core.quicklinkCoordinator.cancelQuicklinkEditing()
+                return true
+            }
+            if core.palette.mode == .snippetEditor, !core.palette.isComposing {
+                core.snippetCoordinator.cancelSnippetEditing()
+                return true
+            }
             if core.palette.fileSearchQuickLook {
                 core.palette.fileSearchQuickLook = false
                 return true
@@ -427,6 +442,24 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         // Handled at the panel: the field editor or a missing main menu eats these first.
         panel.onCommandShortcut = { [weak self] event in
             guard let self else { return false }
+            if core.palette.mode.isNativeEditor,
+                event.keyCode == kVK_Return || event.keyCode == kVK_ANSI_KeypadEnter,
+                event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
+                !core.palette.isComposing
+            {
+                switch core.palette.mode {
+                case .quicklinkEditor:
+                    core.quicklinkCoordinator.saveQuicklink()
+                case .snippetEditor:
+                    core.snippetCoordinator.requestSnippetSave()
+                case .eventEditor:
+                    core.calendarCoordinator.saveEvent()
+                case .customCommandEditor:
+                    core.customCommandCoordinator.saveCustomCommand()
+                default: break
+                }
+                return true
+            }
             if self.core.palette.mode == .emoji, let zoom = Self.emojiGridZoom(from: event) {
                 self.core.palette.noteEmojiGridZoom(zoom)
                 return true

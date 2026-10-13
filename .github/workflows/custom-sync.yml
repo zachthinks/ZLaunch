@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       candidate: ${{ steps.sync.outputs.candidate }}
+      base: ${{ steps.sync.outputs.base }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -30,6 +31,7 @@ jobs:
           git config user.email 'zlaunch-sync@users.noreply.github.com'
           git remote add upstream https://github.com/abue-ammar/tinycast.git
           mkdir -p build
+          echo "base=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           node Custom/sync.mjs
           BRANCH="$(git branch --show-current)"
           if [ "$BRANCH" != custom/main ]; then
@@ -59,3 +61,24 @@ jobs:
       ref: ${{ needs.sync.outputs.candidate }}
     permissions:
       contents: read
+  promote:
+    needs: [sync, checks]
+    if: github.event.repository.private == false && needs.checks.result == 'success' && needs.sync.outputs.candidate != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.sync.outputs.candidate }}
+          fetch-depth: 0
+      - name: Promote the exact checked candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKED_COMMIT: ${{ needs.sync.outputs.candidate }}
+          SYNC_BASE: ${{ needs.sync.outputs.base }}
+        run: node Custom/promote.mjs
+      - name: Report promotion failure
+        if: failure()
+        run: echo 'Checked candidate was not promoted. Review the failed step; production and existing releases remain unchanged.' >> "$GITHUB_STEP_SUMMARY"

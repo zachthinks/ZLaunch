@@ -15,6 +15,7 @@ struct RoomLiveWindow: Equatable, Sendable {
     /// The window server's front-to-back order; `.max` when it is not on screen.
     var frontRank = Int.max
     var appURL: URL?
+    var terminalSession: Date?
 }
 
 /// Everything entering a room does on one display, decided before a single AX write. Pure.
@@ -52,7 +53,7 @@ struct RoomPlan: Equatable, Sendable {
         let placed = Set(placements.map(\.handle))
         let roomApps = Set(placements.map { room.windows[$0.index].bundleID })
         let parks = windows.filter {
-            !placed.contains($0.handle) && !$0.isMinimized
+            !placed.contains($0.handle) && !$0.isMinimized && $0.bundleID != "com.apple.Terminal"
                 && (roomApps.contains($0.bundleID) || parksInsteadOfHiding.contains($0.bundleID))
         }.map(\.handle)
         return RoomPlan(
