@@ -186,46 +186,83 @@ struct ClipboardTextTests {
         return sqlite3_step(statement) == SQLITE_ROW
     }
 
+    @MainActor
+    final class ExtractionProbe {
+        private(set) var items: [UUID] = []
+        private(set) var cancelled: [Int] = []
+        private var pending: [Int: CheckedContinuation<Void, Never>] = [:]
+
+        func extract(_ item: ClipboardItem) async throws -> String {
+            let call = items.count + 1
+            items.append(item.id)
+            await withCheckedContinuation { pending[call] = $0 }
+            if Task.isCancelled { cancelled.append(call) }
+            try Task.checkCancellation()
+            return "scheduled result"
+        }
+
+        func finish(_ call: Int) {
+            pending.removeValue(forKey: call)?.resume()
+        }
+    }
+
     static func scheduling(in directory: URL) async throws {
         let store = ClipboardStore(directory: directory.appendingPathComponent("store"))
         expect(store.setTextSearchEnabled(true), "enable extraction for scheduling fixture")
         var idle = false
-        var calls = 0
+        var busyChecks = 0
+        let probe = ExtractionProbe()
         let indexer = ClipboardTextIndexer(
-            store: store, delay: .milliseconds(10), canRun: { idle },
-            extract: { _ in
-                await MainActor.run { calls += 1 }
-                try await Task.sleep(for: .milliseconds(80))
-                return "scheduled result"
-            })
+            store: store, delay: .milliseconds(10), canRun: {
+                if !idle { busyChecks += 1 }
+                return idle
+            },
+            extract: { try await probe.extract($0) })
         store.onItemsChanged = { [weak indexer] in indexer?.schedule() }
         store.addFiles(["/tmp/fixture.pdf"], sourceBundleID: nil)
+        let first = store.items[0].id
         indexer.start()
-        try await Task.sleep(for: .milliseconds(50))
-        expect(calls == 0, "busy input defers extraction")
+        try await waitUntil { busyChecks > 0 }
+        expect(probe.items.isEmpty, "busy input defers extraction")
         idle = true
-        try await waitUntil { calls == 1 }
+        try await waitUntil { probe.items.count == 1 }
         indexer.stop()
+        probe.finish(1)
         await indexer.waitUntilStopped()
-        try await Task.sleep(for: .milliseconds(120))
-        expect(store.nextExtractionItem() != nil, "disable cancels in-flight result")
+        expect(probe.cancelled == [1], "stop cancels the detached extraction worker")
+        expect(store.nextExtractionItem()?.id == first, "disable cancels in-flight result")
         indexer.start()
-        try await waitUntil { store.nextExtractionItem() == nil }
-        expect(calls == 2, "reenable resumes cancelled work")
-        try await Task.sleep(for: .milliseconds(50))
-        expect(calls == 2, "completed item is processed once")
+        try await waitUntil { probe.items.count == 2 }
+        expect(probe.items == [first, first], "reenable resumes cancelled work")
+        probe.finish(2)
+        await indexer.waitUntilStopped()
+        expect(store.nextExtractionItem() == nil, "resumed extraction is persisted")
+        expect(probe.items.count == 2, "completed item is processed once")
         store.addFiles(["/tmp/second.pdf"], sourceBundleID: nil)
-        try await waitUntil { calls == 3 }
-        // `applyClipboardTextSearch` never waits between the two, so a cancelled run must requeue.
+        let second = store.items[0].id
+        try await waitUntil { probe.items.count == 3 }
         store.addFiles(["/tmp/third.pdf"], sourceBundleID: nil)
-        let restarted = calls
+        let third = store.items[0].id
         indexer.stop()
         indexer.start()
-        try await waitUntil { store.nextExtractionItem() == nil }
-        expect(calls > restarted, "stop immediately followed by start drains the queue")
+        probe.finish(3)
+        try await waitUntil { probe.items.count == 4 }
+        expect(probe.cancelled == [1, 3], "immediate restart cancels the previous worker")
+        expect(probe.items[3] == third, "restart begins with newest queued item")
+        probe.finish(4)
+        try await waitUntil { probe.items.count == 5 }
+        expect(probe.items[4] == second, "restart resumes the interrupted item")
+        probe.finish(5)
+        await indexer.waitUntilStopped()
+        expect(store.nextExtractionItem() == nil, "stop immediately followed by start drains the queue")
+        expect(probe.items == [first, first, second, third, second], "completed items are processed once")
+        store.addFiles(["/tmp/cleared.pdf"], sourceBundleID: nil)
+        try await waitUntil { probe.items.count == 6 }
         store.clearAll()
-        try await Task.sleep(for: .milliseconds(120))
+        probe.finish(6)
+        await indexer.waitUntilStopped()
         expect(store.search("scheduled", filter: .all).isEmpty, "clear discards in-flight result")
+        expect(store.nextExtractionItem() == nil, "clear cannot requeue a deleted item")
         indexer.stop()
     }
 
@@ -297,13 +334,18 @@ struct ClipboardTextTests {
         store.close()
     }
 
-    static func waitUntil(_ condition: () -> Bool) async throws {
+    enum WaitFailure: Error { case timedOut }
+
+    static func waitUntil(
+        file: StaticString = #filePath, line: UInt = #line, _ condition: () -> Bool
+    ) async throws {
         let deadline = ContinuousClock.now + .seconds(10)
         while ContinuousClock.now < deadline {
             if condition() { return }
             try await Task.sleep(for: .milliseconds(10))
         }
-        expect(false, "scheduler completed before timeout")
+        expect(false, "scheduler completed before timeout at \(file):\(line)")
+        throw WaitFailure.timedOut
     }
 
     static func makeImage() -> CGImage {
