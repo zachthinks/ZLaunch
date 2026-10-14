@@ -2,57 +2,105 @@ name: ZLaunch release
 on:
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: zlaunch-release
   cancel-in-progress: false
 jobs:
-  release:
-    if: github.event.repository.private == false
-    environment: zlaunch-release
+  preflight:
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true'
     runs-on: macos-26
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: custom/main
+          ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
       - name: Select Xcode 26
         run: |
           XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
+          test -n "$XCODE_PATH"
           echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
       - run: brew install swiftlint xcodegen
       - run: ./Custom/check.sh
-      - name: Import custom signing identity
+  release:
+    needs: preflight
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && needs.preflight.result == 'success'
+    environment: zlaunch-release
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Confirm the tested commit is still current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin custom/main
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+          git switch -c custom/main "$GITHUB_SHA"
+          node Custom/verify-config.mjs
+          node Custom/verify-release-state.mjs
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
+          test -n "$XCODE_PATH"
+          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+      - name: Import signing identity into a temporary keychain
         env:
           P12_BASE64: ${{ secrets.ZLAUNCH_SIGNING_P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.ZLAUNCH_SIGNING_P12_PASSWORD }}
         run: |
-          test -n "$P12_BASE64"
+          set -euo pipefail
+          umask 077
+          test -n "$P12_BASE64" && test -n "$P12_PASSWORD"
           KEYCHAIN="$RUNNER_TEMP/zlaunch.keychain-db"
           KPW="$(openssl rand -base64 24)"
           echo "::add-mask::$KPW"
+          trap 'rm -f "$RUNNER_TEMP/signing.p12"' EXIT
           printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.p12"
           security create-keychain -p "$KPW" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security set-keychain-settings -lut 7200 "$KEYCHAIN"
           security unlock-keychain -p "$KPW" "$KEYCHAIN"
           security import "$RUNNER_TEMP/signing.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KPW" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN"
-          rm "$RUNNER_TEMP/signing.p12"
-      - name: Configure notarization
+          security find-identity -v -p codesigning "$KEYCHAIN" | grep -F 'Developer ID Application: Zachary Linquist (FVY9AS28CU)'
+      - name: Configure notarization in the temporary keychain
         env:
           APPLE_ID: ${{ secrets.ZLAUNCH_APPLE_ID }}
           APP_PASSWORD: ${{ secrets.ZLAUNCH_APP_PASSWORD }}
         run: |
+          set -euo pipefail
           test -n "$APPLE_ID" && test -n "$APP_PASSWORD"
-          xcrun notarytool store-credentials ZLaunch-CI --apple-id "$APPLE_ID" --team-id FVY9AS28CU --password "$APP_PASSWORD"
+          xcrun notarytool store-credentials ZLaunch-CI --apple-id "$APPLE_ID" --team-id FVY9AS28CU --password "$APP_PASSWORD" --keychain "$RUNNER_TEMP/zlaunch.keychain-db"
       - name: Sign, notarize, package, publish
         env:
           GH_TOKEN: ${{ github.token }}
           NOTARY_PROFILE: ZLaunch-CI
+          NOTARY_KEYCHAIN: ${{ runner.temp }}/zlaunch.keychain-db
           BUILD_NUMBER: ${{ github.run_number }}
           CHECKS_VERIFIED: 1
         run: ./Custom/publish.sh
-      - name: Remove signing keychain
+      - name: Remove temporary signing material
         if: always()
-        run: security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || true
+        run: |
+          set -euo pipefail
+          : "${RUNNER_TEMP:?}"
+          CLEANUP_STATUS=0
+          rm -f "$RUNNER_TEMP/signing.p12" || CLEANUP_STATUS=1
+          if [ -f "$RUNNER_TEMP/zlaunch.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || CLEANUP_STATUS=1
+          fi
+          if [ "$CLEANUP_STATUS" != 0 ]; then
+            echo "::error::Temporary signing material cleanup failed."
+          fi
+          exit "$CLEANUP_STATUS"

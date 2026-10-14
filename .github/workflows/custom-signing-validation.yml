@@ -1,0 +1,122 @@
+name: ZLaunch signing validation
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Full reviewed custom/main commit SHA
+        type: string
+        required: true
+      confirm_signing_validation:
+        description: Sign and submit the temporary app to Apple without publishing
+        type: boolean
+        required: true
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: zlaunch-release
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_VALIDATION_ENABLED == 'true' && inputs.confirm_signing_validation == true
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the approved commit
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+          git fetch origin custom/main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_COMMIT"
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
+          test -n "$XCODE_PATH"
+          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+      - run: brew install swiftlint xcodegen
+      - run: ./Custom/check.sh
+  validate:
+    needs: preflight
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_VALIDATION_ENABLED == 'true' && inputs.confirm_signing_validation == true && needs.preflight.result == 'success'
+    environment: zlaunch-release
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the approved commit
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+          git fetch origin custom/main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_COMMIT"
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
+          test -n "$XCODE_PATH"
+          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+      - name: Import signing identity into a temporary keychain
+        env:
+          P12_BASE64: ${{ secrets.ZLAUNCH_SIGNING_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.ZLAUNCH_SIGNING_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$P12_BASE64" && test -n "$P12_PASSWORD"
+          VALIDATION_DIR="$RUNNER_TEMP/zlaunch-validation"
+          mkdir -m 700 "$VALIDATION_DIR"
+          KEYCHAIN="$VALIDATION_DIR/signing.keychain-db"
+          KPW="$(openssl rand -base64 24)"
+          echo "::add-mask::$KPW"
+          trap 'rm -f "$RUNNER_TEMP/zlaunch-validation/signing.p12"' EXIT
+          printf '%s' "$P12_BASE64" | base64 --decode > "$VALIDATION_DIR/signing.p12"
+          security create-keychain -p "$KPW" "$KEYCHAIN"
+          security set-keychain-settings -lut 7200 "$KEYCHAIN"
+          security unlock-keychain -p "$KPW" "$KEYCHAIN"
+          security import "$VALIDATION_DIR/signing.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KPW" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN"
+          security find-identity -v -p codesigning "$KEYCHAIN" | grep -F 'Developer ID Application: Zachary Linquist (FVY9AS28CU)'
+      - name: Configure notarization in the temporary keychain
+        env:
+          APPLE_ID: ${{ secrets.ZLAUNCH_APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.ZLAUNCH_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_ID" && test -n "$APP_PASSWORD"
+          xcrun notarytool store-credentials ZLaunch-Validation --apple-id "$APPLE_ID" --team-id FVY9AS28CU --password "$APP_PASSWORD" --keychain "$RUNNER_TEMP/zlaunch-validation/signing.keychain-db"
+      - name: Build, sign and validate with Apple
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: ./Custom/validate-signing.sh
+      - name: Remove temporary signing material and build
+        if: always()
+        run: |
+          set -euo pipefail
+          : "${RUNNER_TEMP:?}"
+          VALIDATION_DIR="$RUNNER_TEMP/zlaunch-validation"
+          CLEANUP_STATUS=0
+          if [ -f "$VALIDATION_DIR/signing.keychain-db" ]; then
+            security delete-keychain "$VALIDATION_DIR/signing.keychain-db" || CLEANUP_STATUS=1
+          fi
+          rm -rf "$VALIDATION_DIR" || CLEANUP_STATUS=1
+          if [ "$CLEANUP_STATUS" != 0 ]; then
+            echo "::error::Temporary validation material cleanup failed."
+          fi
+          exit "$CLEANUP_STATUS"
