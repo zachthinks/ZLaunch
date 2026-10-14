@@ -119,14 +119,43 @@ struct ExtensionStoreDetail: View {
 }
 
 private struct ExtensionStoreScreenshot: View {
+    private struct Preview: Identifiable {
+        let id: URL
+        let image: NSImage
+    }
+
     let url: URL
     @Environment(\.metrics) private var metrics
     @State private var loaded: NSImage?
     @State private var loading = true
+    @State private var preview: Preview?
     private static let width: CGFloat = 224
     private static let height: CGFloat = 140
 
     var body: some View {
+        Button {
+            if let loaded { preview = Preview(id: url, image: loaded) }
+        } label: {
+            thumbnail
+        }
+        .buttonStyle(.plain)
+        .disabled(loaded == nil)
+        .help("Enlarge screenshot")
+        .accessibilityLabel("Enlarge extension screenshot")
+        .sheet(item: $preview) { preview in
+            ExtensionStoreScreenshotPreview(image: preview.image)
+        }
+        .task(id: url) {
+            loading = true
+            loaded = nil
+            let image = await ExtensionIconCache.loadRemoteAsync(url, asIcon: false)
+            guard !Task.isCancelled else { return }
+            loaded = image
+            loading = false
+        }
+    }
+
+    private var thumbnail: some View {
         Group {
             if let loaded {
                 Image(nsImage: loaded).resizable().scaledToFit()
@@ -139,11 +168,31 @@ private struct ExtensionStoreScreenshot: View {
         .frame(width: metrics.scaled(Self.width), height: metrics.scaled(Self.height))
         .background(Theme.Colors.controlSurface, in: RoundedRectangle(cornerRadius: metrics.radius.row))
         .clipShape(RoundedRectangle(cornerRadius: metrics.radius.row))
-        .task(id: url) {
-            loading = true
-            loaded = await ExtensionIconCache.loadRemoteAsync(url, asIcon: false)
-            loading = false
+    }
+}
+
+private struct ExtensionStoreScreenshotPreview: View {
+    let image: NSImage
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.metrics) private var metrics
+    private static let width: CGFloat = 900
+    private static let height: CGFloat = 600
+
+    var body: some View {
+        VStack(spacing: metrics.spacing.xl) {
+            HStack {
+                Text("Screenshot").font(metrics.typography.rowTitle)
+                Spacer()
+                Button("Close", systemImage: "xmark") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityLabel("Enlarged extension screenshot")
         }
-        .accessibilityLabel("Extension screenshot")
+        .padding(metrics.spacing.xxl)
+        .frame(width: Self.width, height: Self.height)
     }
 }
