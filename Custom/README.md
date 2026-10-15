@@ -190,15 +190,16 @@ will be rare or automatically resolvable is made.
 ## Publishing and remaining verification
 
 Local signing and notarization are configured. `Custom/publish.sh` uses the
-`ZLaunch-Local` notarization profile stored in this Mac's Keychain. No private
-certificate, password or notarization credential has been uploaded to GitHub
-or committed to source control.
+`ZLaunch-Local` notarization profile stored in this Mac's Keychain. Signing secrets are now configured in GitHub's protected `zlaunch-release`
+environment and were verified by signing-only validation; none are committed
+to source control.
 
-The hosted Release workflow remains an alternative that needs separate signing
-and notarization secrets before it can publish. GitHub's free daily sync and
-checks already work without those secrets. Passing candidates still require
-review and merging, and local publishing still requires action; maintenance is
-not fully unattended.
+Hosted signing and notarization have now passed using the configured GitHub
+`zlaunch-release` environment. Hosted publication is still disabled pending the
+coordinated cutover in [stable delivery](automatic-delivery.md). The prepared
+release trigger verifies exact successful promotion and retains GitHub's reviewer
+gate. The active local publisher remains the sole owner until that switch is
+approved; installing a published update remains the user's updater-button action.
 
 The regular 0.1.1 app is installed and running. The real updater successfully
 downloaded, verified, installed and relaunched 0.1.1 from 0.1.0. We then quit

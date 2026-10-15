@@ -66,3 +66,14 @@ rejects("custom-signing-validation.yml", "test \"$EXPECTED_COMMIT\" = \"$GITHUB_
 rejects("custom-signing-validation.yml", "run: ./Custom/validate-signing.sh", "run: ./Custom/publish.sh");
 rejects("custom-signing-validation.yml", "exit \"$CLEANUP_STATUS\"", "exit 0");
 console.log("Every hosted job guard, checkout, fresh-main check and cleanup mutation is rejected.");
+
+for (const guard of ["github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.head_branch == 'custom/main'",
+  "needs.preflight.outputs.eligible == 'true'"]) rejects("custom-release.yml", guard, "true");
+rejects("custom-release.yml", "workflows: [ZLaunch upstream sync]", "workflows: [ZLaunch checks]");
+rejects("custom-release.yml", "types: [completed]", "types: [requested]");
+rejects("custom-release.yml", "actions: read", "actions: write");
+rejects("custom-release.yml", "node Custom/verify-hosted-release.mjs", "echo skipped");
+rejects("custom-release.yml", "if: steps.eligibility.outputs.eligible == 'true'", "if: always()");
+
+rejects("custom-sync.yml", "VERIFY_CURRENT_RELEASE: ${{ inputs.verify_current_release }}", "VERIFY_CURRENT_RELEASE: true");
+rejects("custom-sync.yml", "node Custom/prepare-custom-release.mjs", "echo skipped");

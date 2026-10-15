@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { appendFileSync, readFileSync } from "node:fs";
+
+const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
+assert.equal(process.env.GITHUB_REPOSITORY, "zachthinks/ZLaunch");
+assert.equal(process.env.GITHUB_EVENT_NAME, "workflow_dispatch");
+assert.equal(process.env.GITHUB_REF, "refs/heads/custom/main");
+assert.equal(process.env.VERIFY_CURRENT_RELEASE, "true");
+const commit = process.env.EXPECTED_COMMIT;
+assert.match(commit ?? "", /^[a-f0-9]{40}$/);
+assert.equal(commit, process.env.GITHUB_SHA);
+assert.equal(commit, git("rev-parse", "HEAD"));
+assert.equal(git("status", "--porcelain"), "");
+assert.equal(git("ls-remote", "origin", "refs/heads/custom/main").split(/\s/)[0], commit);
+execFileSync("node", ["Custom/verify-release-state.mjs"], { stdio: "inherit" });
+const metadata = JSON.parse(readFileSync("Custom/release.json", "utf8"));
+git("merge-base", "--is-ancestor", metadata.upstream_commit, commit);
+appendFileSync(process.env.GITHUB_OUTPUT, `candidate=${commit}\n`);
+console.log(`Prepared stable custom release ${metadata.version} at ${commit}; exact-commit checks must pass before attestation.`);
