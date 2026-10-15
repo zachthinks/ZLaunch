@@ -29,9 +29,12 @@ struct WindowLayoutDisplayMap: View {
                                 rect: geometry.map(frame), isOffline: !isConnected(display)) {
                                     draft.select(entryID: entry.id)
                                     mapFocused = true
-                                } commit: { translation, resizing in
-                                    commit(entry, frame: frame, translation: translation,
-                                           resizing: resizing, geometry: geometry)
+                                } preview: { translation, handle in
+                                    geometry.map(placement(entry, on: display, frame: frame, translation: translation,
+                                                           handle: handle, geometry: geometry).frame)
+                                } commit: { translation, handle in
+                                    commit(entry, on: display, frame: frame, translation: translation,
+                                           handle: handle, geometry: geometry)
                                 }
                         }
                     }
@@ -41,6 +44,7 @@ struct WindowLayoutDisplayMap: View {
         }
         .focusable()
         .focused($mapFocused)
+        .focusEffectDisabled()
         .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
             guard press.modifiers.isEmpty, draft.selectedEntryID != nil else { return .ignored }
             draft.removeSelectedEntry()
@@ -72,7 +76,8 @@ struct WindowLayoutDisplayMap: View {
     private func displayCaption(_ display: WindowLayoutDisplaySnapshot, rect: CGRect) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
             Text(display.display.name).font(.caption.weight(.semibold))
-            Text("\(Int(display.frame.width)) × \(Int(display.frame.height))\(isConnected(display) ? "" : " · offline, last saved")")
+            Text("\(Int(display.frame.width)) × \(Int(display.frame.height))"
+                 + (isConnected(display) ? "" : " · offline, last saved"))
                 .font(.caption2)
         }
         .lineLimit(1)
@@ -84,80 +89,35 @@ struct WindowLayoutDisplayMap: View {
         .allowsHitTesting(false)
     }
 
-    private func commit(_ entry: WindowLayoutEntry, frame: CGRect, translation: CGSize,
-                        resizing: Bool, geometry: WindowLayoutMapGeometry) {
+    private func placement(_ entry: WindowLayoutEntry, on source: WindowLayoutDisplaySnapshot, frame: CGRect, translation: CGSize,
+                           handle: WindowLayoutInteraction.Handle, geometry: WindowLayoutMapGeometry)
+        -> (display: WindowLayoutDisplay, screen: WindowPlacementEngine.Screen, frame: CGRect) {
         let delta = CGSize(width: translation.width / geometry.scale, height: translation.height / geometry.scale)
-        var changed = resizing
-            ? CGRect(origin: frame.origin, size: CGSize(width: max(40, frame.width + delta.width),
-                                                       height: max(40, frame.height + delta.height)))
-            : frame.offsetBy(dx: delta.width, dy: delta.height)
-        let center = CGPoint(x: changed.midX, y: changed.midY)
-        guard let target = displays.first(where: { $0.frame.contains(center) }) else { return }
+        let center = CGPoint(x: frame.midX + delta.width, y: frame.midY + delta.height)
+        let target = handle == .move ? displays.first { $0.frame.contains(center) } ?? source : source
         let screen = WindowPlacementEngine.Screen(id: 0, frame: target.frame, visibleFrame: target.visibleFrame)
-        let box = WindowLayoutGeometry.box(screen, gap: gap)
-        changed.size.width = min(max(changed.width, box.width * 0.05), box.width)
-        changed.size.height = min(max(changed.height, box.height * 0.05), box.height)
-        changed.origin.x = min(max(changed.minX, box.minX), box.maxX - changed.width)
-        changed.origin.y = min(max(changed.minY, box.minY), box.maxY - changed.height)
+        let proposed = WindowLayoutInteraction.proposed(frame, delta: delta, handle: handle,
+                                                        bounds: WindowLayoutGeometry.box(screen, gap: gap))
+        let neighbors = WindowLayoutInteraction.neighbors(of: entry, in: draft.entries,
+                                                         displayID: target.display.uuid)
+            .compactMap { WindowLayoutGeometry.resolve($0, on: screen, gap: gap) }
+        if target.id != source.id {
+            let rounded = WindowPlacementEngine.rounded(proposed)
+            if neighbors.contains(where: { WindowLayoutInteraction.overlaps(rounded, $0) }) {
+                return (source.display, .init(id: 0, frame: source.frame, visibleFrame: source.visibleFrame), frame)
+            }
+            return (target.display, screen, rounded)
+        }
+        return (target.display, screen,
+                WindowLayoutInteraction.constrained(from: frame, to: proposed, neighbors: neighbors, handle: handle))
+    }
+
+    private func commit(_ entry: WindowLayoutEntry, on source: WindowLayoutDisplaySnapshot, frame: CGRect, translation: CGSize,
+                        handle: WindowLayoutInteraction.Handle, geometry: WindowLayoutMapGeometry) {
+        let result = placement(entry, on: source, frame: frame, translation: translation, handle: handle, geometry: geometry)
         draft.select(entryID: entry.id)
-        draft.placeSelected(frame: changed, display: target.display,
-                            capture: WindowLayoutGeometry.describe(changed, on: screen, gap: gap))
+        draft.placeSelected(frame: result.frame, display: result.display,
+                            capture: WindowLayoutGeometry.describe(result.frame, on: result.screen, gap: gap))
         mapFocused = true
-    }
-}
-
-/// Selection stays keyed by entry UUID, so repeated instances of one app remain independent.
-private struct WindowLayoutMapTile: View {
-    let entry: WindowLayoutEntry
-    let selected: Bool
-    let rect: CGRect
-    let isOffline: Bool
-    let select: () -> Void
-    let commit: (CGSize, Bool) -> Void
-    @Environment(AppIndex.self) private var appIndex
-    @State private var translation: CGSize = .zero
-    @State private var resizing = false
-
-    var body: some View {
-        let app = AppPresentation.resolve(bundleID: entry.bundleID, in: appIndex)
-        Button(action: select) {
-            RoundedRectangle(cornerRadius: Theme.Radius.thumbnail)
-                .fill(selected ? Theme.Colors.layoutPreviewWindowSelected : Theme.Colors.layoutPreviewWindow)
-                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.thumbnail)
-                    .stroke(selected ? Color.accentColor : Theme.Colors.border))
-                .overlay { Image(nsImage: app.icon).resizable().frame(width: Theme.Size.layoutPreviewIcon, height: Theme.Size.layoutPreviewIcon) }
-                .frame(width: max(20, rect.width + (resizing ? translation.width : 0)),
-                       height: max(20, rect.height + (resizing ? translation.height : 0)))
-        }
-        .buttonStyle(.plain)
-        .highPriorityGesture(drag(resize: false))
-        .overlay(alignment: .bottomTrailing) {
-            if selected {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.caption2)
-                    .padding(Theme.Spacing.sm)
-                    .background(Theme.Colors.controlSurface)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(drag(resize: true))
-                    .accessibilityLabel("Resize selected window")
-            }
-        }
-        .opacity(isOffline ? 0.6 : 1)
-        .offset(x: rect.minX + (resizing ? 0 : translation.width),
-                y: rect.minY + (resizing ? 0 : translation.height))
-        .zIndex(selected ? 2 : 1)
-        .accessibilityLabel("\(app.name) window")
-        .accessibilityHint("Drag to place, drag the bottom-right handle to resize, or press Delete to remove")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    private func drag(resize: Bool) -> some Gesture {
-        DragGesture(minimumDistance: 3, coordinateSpace: .global)
-            .onChanged { value in resizing = resize; translation = value.translation }
-            .onEnded { value in
-                commit(value.translation, resize)
-                translation = .zero
-                resizing = false
-            }
     }
 }

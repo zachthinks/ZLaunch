@@ -401,6 +401,7 @@ run space-gesture-test     Tinycast/Features/WindowManagement/Model/WindowComman
                            Tinycast/Features/WindowManagement/Model/SpaceGesture.swift
 run window-space-test      Tinycast/Features/WindowManagement/Service/WindowSpaceAccess.swift
 run window-layout-test     Tests/window-layout-map-cases.swift \
+                           Tests/window-layout-interaction-cases.swift \
                            Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
                            Tinycast/Features/WindowManagement/Model/WindowCycle.swift \
                            Tinycast/Features/WindowManagement/Model/WindowPlacementEngine.swift \
@@ -413,6 +414,7 @@ run window-layout-test     Tests/window-layout-map-cases.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutStore.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutDraft.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutMapGeometry.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutInteraction.swift \
                            Tinycast/Features/WindowManagement/Model/CustomWindowSize.swift \
                            Tinycast/Features/WindowManagement/Model/CustomWindowSizeStore.swift
 run window-room-test       Tinycast/Features/WindowManagement/Model/WindowCommand.swift \

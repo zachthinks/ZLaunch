@@ -13,8 +13,10 @@ struct WindowLayoutPreview: View {
             WindowLayoutDisplayMap(draft: draft, screens: screens, gap: gap)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if let entry = draft.selectedEntry {
-                Text(entry.fallbackSpace.map { "Fallback: \(entry.fallbackDisplay?.name ?? "Built-in screen, or first available") · Space \($0)" }
-                     ?? "Fallback: none")
+                Text(entry.fallbackSpace.map { space in
+                    let display = entry.fallbackDisplay?.name ?? "Built-in screen, or first available"
+                    return "Window fallback: \(display) · Space \(space)"
+                } ?? "Window fallback: none")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -23,9 +25,12 @@ struct WindowLayoutPreview: View {
                     .buttonStyle(.plain)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .help("Connect this monitor while this editor is open, then Save to remember its geometry.")
             }
-            Text("Drag a window to place it; drag its corner to resize.")
+            Text("Drag to move. Resize from any edge or corner.")
                 .font(.caption).foregroundStyle(.secondary)
+                .help("Pointer edits stop at neighboring windows on the same display and Space. "
+                      + "Use the inspector for intentional stacked layouts.")
         }
     }
 

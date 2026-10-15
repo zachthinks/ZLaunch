@@ -292,11 +292,11 @@ run the saved layout using its play button, launcher entry, or shortcut.
 
 The default entries remain the legacy/default arrangement. Optional named arrangements contain an
 exact connected display UUID set, their own entries/frontmost identity, and last authored display
-snapshots. Save setup copies the active entries for the currently connected displays; selecting an
+snapshots. Add display setup copies the active entries for the currently connected displays; selecting an
 existing setup for the same display set avoids ambiguous matches. Arrangement switching preserves
 unsaved edits in every variant. Names can be edited and variants removed without deleting Default.
 
-Only an explicit coordinator Run selects an exact connected-display set (case/order independent).
+At runtime, an explicit coordinator Run selects an exact connected-display set (case/order independent).
 No match, or an ambiguous imported set, uses Default. The existing runner still resolves per-entry
 Space IDs, window matching, and fallbacks. Runtime Terminal bindings are reconciled into the variant
 that actually ran only if the original saved record is unchanged across the await.
@@ -306,3 +306,29 @@ export/import preserve arrangements and snapshots; exported data omits runtime T
 Older app versions discard unknown fields when saving, so retain a preference backup before rolling
 back after authoring arrangements. Opening an editor never writes preferences; Cancel discards all
 draft changes. The editor observes displays for drawing only and never runs a layout on connection.
+
+## Pointer editing and setup clarity
+
+The editor initially selects a unique arrangement matching the connected display UUID set; if
+none matches, it opens Default. This is a one-time editor choice. Display connection changes while
+editing refresh geometry without switching arrangements or moving real windows. Existing names
+and all saved records remain unchanged. Add display setup asks for a name, copies the current
+arrangement into the draft, and explains that the footer Save persists it. Existing display sets
+cannot be duplicated through that action. Arrangement options contains Rename and Remove.
+
+The map retains keyboard focus for Delete while suppressing the system's outer focus effect.
+Selected tiles and displays retain their custom outlines. Any edge or corner resizes a tile, with
+macOS frame-resize cursor feedback. The body moves it. Opposite edges stay anchored; minimum sizes
+and display bounds still apply. Pointer previews and commits share the same geometry policy.
+
+Collision constraints apply only to other entries on the same preferred display and assigned
+Space. They stop at the first collision across the full pointer path, including fast drags through
+thin tiles. Neighboring tiles never move. Existing overlaps remain untouched when loading, and a
+gesture may reduce but never increase the area of an existing overlap. A corner stops as a whole
+at first contact; use an individual edge to adjust the other dimension. Cross-display drops into
+occupied space are rejected. Numeric inspector fields remain available for intentional stacking.
+
+An offline monitor without a saved snapshot stays listed by name instead of receiving invented
+geometry. Connect it while the editor is open, then Save to retain geometry for the active
+arrangement. A per-window fallback handles a disconnected preferred monitor; display-matched
+arrangements choose the whole layout only at explicit Run.
