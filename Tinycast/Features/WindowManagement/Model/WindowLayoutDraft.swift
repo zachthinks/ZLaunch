@@ -44,6 +44,8 @@ final class WindowLayoutDraft {
         selectedEntryID = entries.first?.id
         previewSpace = entries.first?.space
         selectedDisplayUUID = entries.first?.display.uuid ?? displays.first?.uuid
+        let matching = arrangements.filter { $0.displaySet == Set(displays.map { $0.uuid.lowercased() }) }
+        if matching.count == 1 { selectArrangement(matching[0].id) }
     }
 
     var symbol: String { iconSymbol ?? WindowLayout.sfSymbol }
@@ -209,7 +211,7 @@ final class WindowLayoutDraft {
         previewSpace = entries.first?.space
     }
 
-    func createArrangement(displays: [WindowLayoutDisplaySnapshot]) {
+    func createArrangement(displays: [WindowLayoutDisplaySnapshot], name: String? = nil) {
         let ids = Set(displays.map(\.id))
         if let existing = arrangements.first(where: { $0.displaySet == ids }) {
             selectArrangement(existing.id)
@@ -219,7 +221,7 @@ final class WindowLayoutDraft {
         rememberArrangement()
         let copies = entries.map(\.copy)
         let front = entries.firstIndex { $0.id == frontmostEntryID }.map { copies[$0].id }
-        let value = WindowLayoutArrangement(name: displays.count == 1 ? "Laptop only" : "Docked",
+        let value = WindowLayoutArrangement(name: name ?? (displays.count == 1 ? "Laptop only" : "Docked"),
             displayIDs: ids.sorted(), displays: displaySnapshots, entries: copies, frontmostEntryID: front)
         arrangements.append(value)
         selectArrangement(value.id)

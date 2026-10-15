@@ -84,6 +84,7 @@ struct WindowLayoutTests {
     }
 
     static func main() {
+        interactionConstraints()
         mapArrangements()
         draftSpacePreview()
         draftRemoval()

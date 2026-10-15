@@ -39,6 +39,11 @@ extension WindowLayoutTests {
 
         let draft = WindowLayoutDraft(layout: value, displays: [display(1), display(2)])
         expect(draft.layout() == value, "opening the draft does not change saved setups")
+        expect(draft.selectedArrangementID == docked.id, "editor initially shows the matching display setup")
+        let portableEditor = WindowLayoutDraft(layout: value, displays: [display(1)])
+        expect(portableEditor.selectedArrangementID == laptopOnly.id, "laptop editor initially shows its saved variant")
+        let unmatchedEditor = WindowLayoutDraft(layout: value, displays: [display(3)])
+        expect(unmatchedEditor.selectedArrangementID == nil, "unmatched editor opens Default")
         draft.selectArrangement(laptopOnly.id)
         draft.setWidthPercent(40)
         draft.selectArrangement(docked.id)
@@ -69,7 +74,8 @@ extension WindowLayoutTests {
         expect(duplicate.entries.allSatisfy { $0.terminalWindowID == nil }, "duplicates clear Terminal ownership")
         let fresh = WindowLayoutDraft(layout: layout(entries: [first, second]), displays: [display(1)])
         fresh.rememberDisplays([laptop, monitor])
-        fresh.createArrangement(displays: [laptop])
+        fresh.createArrangement(displays: [laptop], name: "Portable writing")
+        expect(fresh.arrangements.first?.name == "Portable writing", "setup creation uses the explicit name")
         expect(fresh.arrangements.count == 1 && fresh.selectedArrangementID != nil,
                "Save setup creates and selects the current connected-display variant")
         expect(fresh.displaySnapshots.contains { $0.id == monitor.id },
