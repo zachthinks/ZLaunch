@@ -12,12 +12,31 @@ struct WindowFileTest {
         testCommandShortcuts()
         testCommandAliases()
         testCustomSizes()
+        testArrangementFiles()
         testLayouts()
         testLayoutDestinations()
         testRooms()
 
         print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
         exit(failures == 0 ? 0 : 1)
+    }
+
+    private static func testArrangementFiles() {
+        let display = WindowLayoutDisplay(uuid: "external", name: "Monitor")
+        var entry = WindowLayoutEntry(bundleID: "com.apple.Terminal", display: display, space: 2, fallbackSpace: 1)
+        entry.terminalWindowID = 42
+        let arrangement = WindowLayoutArrangement(name: "Docked", displayIDs: ["external"], displays: [], entries: [entry])
+        let layout = WindowLayout(name: "Setups", entries: [entry], arrangements: [arrangement])
+        let json = WindowManagementFileFormat.json(layout, shortcut: nil, alias: nil)
+        let decoded = WindowManagementFileFormat.layouts(from: .array([json]))
+        let variant = decoded?.records.first?.arrangements.first
+        check("settings file retains arrangements and entry identities", variant?.entries.first?.id == entry.id)
+        check("settings file retains exact display matching", variant?.displayIDs == ["external"])
+        check("settings file strips arrangement runtime handles", variant?.entries.first?.terminalWindowID == nil)
+        check("settings file keeps Space and fallback", variant?.entries.first?.space == 2
+              && variant?.entries.first?.fallbackSpace == 1)
+        check("runtime identities reattached only to their arrangement", decoded?.records.first?
+            .keepingRuntime(of: layout).arrangements.first?.entries.first?.terminalWindowID == 42)
     }
 
     private static func testCommandShortcuts() {

@@ -20,6 +20,13 @@ final class WindowLayoutDraft {
     /// Identity, never an index: removing an entry must not strand a field's binding.
     private(set) var selectedEntryID: UUID?
     private(set) var selectedDisplayUUID: String?
+    private(set) var previewSpace: Int?
+    private(set) var arrangements: [WindowLayoutArrangement]
+    private(set) var selectedArrangementID: UUID?
+    private(set) var displaySnapshots: [WindowLayoutDisplaySnapshot]
+    private var defaultEntries: [WindowLayoutEntry]
+    private var defaultFrontmostEntryID: UUID?
+    private var defaultDisplays: [WindowLayoutDisplaySnapshot]
 
     init(layout: WindowLayout?, isCapture: Bool = false, displays: [WindowLayoutDisplay]) {
         existingID = layout?.id
@@ -27,15 +34,23 @@ final class WindowLayoutDraft {
         name = layout?.name ?? ""
         iconSymbol = layout?.iconSymbol
         usesPreferredGap = layout?.usesPreferredGap ?? true
+        arrangements = layout?.arrangements ?? []
+        displaySnapshots = layout?.displaySnapshots ?? []
+        defaultDisplays = layout?.displaySnapshots ?? []
+        defaultEntries = layout?.entries ?? []
+        defaultFrontmostEntryID = layout?.frontmostEntryID
         entries = layout?.entries ?? []
         frontmostEntryID = layout?.frontmostEntryID
         selectedEntryID = entries.first?.id
+        previewSpace = entries.first?.space
         selectedDisplayUUID = entries.first?.display.uuid ?? displays.first?.uuid
     }
 
     var symbol: String { iconSymbol ?? WindowLayout.sfSymbol }
     var canSave: Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !entries.isEmpty
+            && !previewLayout.entries.isEmpty && !previewLayout.hasDuplicateArrangements
+            && previewLayout.arrangements.allSatisfy { !$0.entries.isEmpty }
     }
 
     var selectedEntry: WindowLayoutEntry? {
@@ -59,6 +74,15 @@ final class WindowLayoutDraft {
         entries.filter { $0.display.uuid == uuid }
     }
 
+    func previewEntries(onDisplay uuid: String) -> [WindowLayoutEntry] {
+        entries(onDisplay: uuid).filter { $0.space == previewSpace }
+    }
+
+    func selectPreviewSpace(_ number: Int?) {
+        previewSpace = number
+        selectedEntryID = selectedDisplayUUID.flatMap { previewEntries(onDisplay: $0).first?.id }
+    }
+
     /// Every display the sheet must offer a tab for: the connected ones plus any an entry names.
     func tabs(connected: [WindowLayoutDisplay]) -> [WindowLayoutDisplay] {
         var seen = Set(connected.map(\.uuid))
@@ -76,19 +100,22 @@ final class WindowLayoutDraft {
         guard let entry = entries.first(where: { $0.id == entryID }) else { return }
         selectedEntryID = entryID
         selectedDisplayUUID = entry.display.uuid
+        previewSpace = entry.space
     }
 
     func select(displayUUID: String) {
         selectedDisplayUUID = displayUUID
         if selectedEntry?.display.uuid != displayUUID {
             selectedEntryID = entries(onDisplay: displayUUID).first?.id
+            previewSpace = selectedEntry?.space
         }
     }
 
     // MARK: - Editing
 
     func addEntry(bundleID: String, on display: WindowLayoutDisplay) {
-        let entry = WindowLayoutEntry(bundleID: bundleID, display: display)
+        var entry = WindowLayoutEntry(bundleID: bundleID, display: display)
+        if display.uuid == selectedDisplayUUID { entry.space = previewSpace }
         entries.append(entry)
         select(entryID: entry.id)
     }
@@ -100,6 +127,10 @@ final class WindowLayoutDraft {
         selectedEntryID =
             selectedDisplayUUID.flatMap { entries(onDisplay: $0).first?.id }
             ?? entries.first?.id
+        if let selectedEntry {
+            selectedDisplayUUID = selectedEntry.display.uuid
+            previewSpace = selectedEntry.space
+        }
     }
 
     func setArgument(_ argument: String?) {
@@ -120,6 +151,7 @@ final class WindowLayoutDraft {
 
     func setSpace(_ number: Int?) {
         update { $0.space = number }
+        previewSpace = number
     }
 
     func setFallback(enabled: Bool) {
@@ -157,14 +189,103 @@ final class WindowLayoutDraft {
         update { $0.offset.y = CGFloat(points.clamped(to: Self.offsetRange)) }
     }
 
+    // MARK: - Arrangements
+
+    func selectArrangement(_ id: UUID?) {
+        guard id != selectedArrangementID else { return }
+        rememberArrangement()
+        selectedArrangementID = id
+        if let chosen = arrangements.first(where: { $0.id == id }) {
+            entries = chosen.entries
+            frontmostEntryID = chosen.frontmostEntryID
+            displaySnapshots = chosen.displays
+        } else {
+            entries = defaultEntries
+            frontmostEntryID = defaultFrontmostEntryID
+            displaySnapshots = defaultDisplays
+        }
+        selectedEntryID = entries.first?.id
+        selectedDisplayUUID = entries.first?.display.uuid ?? displaySnapshots.first?.display.uuid
+        previewSpace = entries.first?.space
+    }
+
+    func createArrangement(displays: [WindowLayoutDisplaySnapshot]) {
+        let ids = Set(displays.map(\.id))
+        if let existing = arrangements.first(where: { $0.displaySet == ids }) {
+            selectArrangement(existing.id)
+            return
+        }
+        rememberDisplays(displays)
+        rememberArrangement()
+        let copies = entries.map(\.copy)
+        let front = entries.firstIndex { $0.id == frontmostEntryID }.map { copies[$0].id }
+        let value = WindowLayoutArrangement(name: displays.count == 1 ? "Laptop only" : "Docked",
+            displayIDs: ids.sorted(), displays: displaySnapshots, entries: copies, frontmostEntryID: front)
+        arrangements.append(value)
+        selectArrangement(value.id)
+    }
+
+    var arrangementName: String {
+        get { arrangements.first { $0.id == selectedArrangementID }?.name ?? "Default" }
+        set {
+            guard let index = arrangements.firstIndex(where: { $0.id == selectedArrangementID }) else { return }
+            arrangements[index].name = newValue
+        }
+    }
+
+    func removeArrangement() {
+        guard let id = selectedArrangementID else { return }
+        selectArrangement(nil)
+        arrangements.removeAll { $0.id == id }
+    }
+
+    func rememberDisplays(_ displays: [WindowLayoutDisplaySnapshot]) {
+        for display in displays {
+            if let index = displaySnapshots.firstIndex(where: { $0.id == display.id }) {
+                displaySnapshots[index] = display
+            } else { displaySnapshots.append(display) }
+        }
+    }
+
+    func placeSelected(frame: CGRect, display: WindowLayoutDisplay, capture: WindowLayoutGeometry.Capture) {
+        update {
+            $0.display = display
+            $0.widthFraction = capture.widthFraction
+            $0.heightFraction = capture.heightFraction
+            $0.anchor = capture.anchor
+            $0.offset = capture.offset
+        }
+        selectedDisplayUUID = display.uuid
+    }
+
+    private func rememberArrangement() {
+        if let index = arrangements.firstIndex(where: { $0.id == selectedArrangementID }) {
+            arrangements[index].entries = entries
+            arrangements[index].frontmostEntryID = frontmostEntryID
+            arrangements[index].displays = displaySnapshots
+        } else {
+            defaultEntries = entries
+            defaultFrontmostEntryID = frontmostEntryID
+            defaultDisplays = displaySnapshots
+        }
+    }
+
     // MARK: - Output
 
     /// What the preview draws — unvalidated, so an unnamed draft still shows its windows.
     var previewLayout: WindowLayout {
-        WindowLayout(
+        var variants = arrangements
+        let index = variants.firstIndex { $0.id == selectedArrangementID }
+        if let index {
+            variants[index].entries = entries
+            variants[index].frontmostEntryID = frontmostEntryID
+            variants[index].displays = displaySnapshots
+        }
+        return WindowLayout(
             id: existingID ?? UUID(), name: name, iconSymbol: iconSymbol,
-            usesPreferredGap: usesPreferredGap, entries: entries,
-            frontmostEntryID: frontmostEntryID)
+            usesPreferredGap: usesPreferredGap, entries: index == nil ? entries : defaultEntries,
+            frontmostEntryID: index == nil ? frontmostEntryID : defaultFrontmostEntryID,
+            arrangements: variants, displaySnapshots: index == nil ? displaySnapshots : defaultDisplays)
     }
 
     /// What Save persists; the sheet never assembles a record itself.

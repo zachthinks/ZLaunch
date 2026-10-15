@@ -84,6 +84,9 @@ struct WindowLayoutTests {
     }
 
     static func main() {
+        mapArrangements()
+        draftSpacePreview()
+        draftRemoval()
         terminalOwnership()
         spaceDestinations()
         recordIdentity()
@@ -1062,4 +1065,58 @@ struct WindowLayoutTests {
         expect(saved.entries[0].copy.space == 2 && saved.entries[0].copy.fallbackSpace == 3,
                "duplicate layouts retain destination choices")
     }
+    static func draftSpacePreview() {
+        let draft = WindowLayoutDraft(layout: nil, displays: [display(1)])
+        draft.name = "Code 3 fixture"
+        draft.addEntry(bundleID: "com.example.first", on: display(1))
+        let firstID = draft.selectedEntryID
+        draft.setSpace(1)
+        draft.addEntry(bundleID: "com.example.claude", on: display(1))
+        let claudeID = draft.selectedEntryID
+        draft.setSpace(2)
+        expect(draft.previewSpace == 2, "changing destination follows Space 2 in preview")
+        expect(draft.previewEntries(onDisplay: display(1).uuid).map(\.id) == [claudeID],
+               "Space 2 preview excludes Space 1 windows on the same display")
+        draft.selectPreviewSpace(1)
+        expect(draft.selectedEntryID == firstID, "Space 1 preview selects only its own entry")
+        expect(draft.previewEntries(onDisplay: display(1).uuid).count == 1,
+               "Space 1 preview excludes Claude on Space 2")
+        if let claudeID { draft.select(entryID: claudeID) }
+        expect(draft.previewSpace == 2, "entry picker follows the selected entry's Space")
+        let value = draft.layout()
+        let decoded = try? JSONDecoder().decode(WindowLayout.self, from: JSONEncoder().encode(value))
+        expect(decoded?.entries.last?.space == 2, "new draft saves Claude's Space 2 without loss")
+        let edited = WindowLayoutDraft(layout: decoded, displays: [display(1)])
+        if let claudeID { edited.select(entryID: claudeID) }
+        expect(edited.previewSpace == 2, "existing layout uses the same Space-scoped preview")
+        let screen = WindowLayoutScreen(display: display(1), screen: mainScreen,
+                                        desktopIDs: [101, 303], isBuiltin: true)
+        let plan = WindowLayoutPlan.make(layout: edited.layout(), screens: [screen], windows: [], preferredGap: 0)
+        expect(plan.placements.last?.spaceID == 303,
+               "saved draft's Space 2 becomes native ID 303, not display index 1")
+        edited.setSpace(nil)
+        expect(edited.previewEntries(onDisplay: display(1).uuid).count == 1,
+               "Current Space assignments have their own preview")
+        expect(value.entries.last?.space == 2, "editing leaves the source layout unchanged")
+    }
+
+    static func draftRemoval() {
+        let first = entry(display: 1)
+        let second = entry(display: 2)
+        var saved = layout(entries: [first, second])
+        saved.frontmostEntryID = first.id
+        let draft = WindowLayoutDraft(layout: saved, displays: [display(1), display(2)])
+        draft.removeSelectedEntry()
+        expect(draft.entries == [second], "Delete removes only the selected entry")
+        expect(draft.selectedEntryID == second.id, "Delete selects the remaining entry")
+        expect(draft.selectedDisplayUUID == second.display.uuid, "Delete follows remaining display")
+        expect(draft.layout().frontmostEntryID == nil, "Delete clears removed frontmost identity")
+        expect(saved.entries.count == 2, "Removing a draft entry leaves the saved layout unchanged")
+        draft.removeSelectedEntry()
+        expect(draft.entries.isEmpty && draft.selectedEntryID == nil, "Last deletion clears selection")
+        expect(!draft.canSave, "Empty layout cannot be saved")
+        draft.removeSelectedEntry()
+        expect(draft.entries.isEmpty, "Delete without selection is a no-op")
+    }
+
 }

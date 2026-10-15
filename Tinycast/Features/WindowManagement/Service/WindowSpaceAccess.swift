@@ -78,7 +78,7 @@ enum WindowSpaceAccess {
 
     static func move(windowID: UInt32, to spaceID: UInt64) async throws {
         guard !Task.isCancelled else { throw CancellationError() }
-        if spaces(of: windowID).contains(spaceID) { return }
+        if spaces(of: windowID) == [spaceID] { return }
         guard isAvailable, let symbol = bridgedMove,
             let cls = NSClassFromString("SLSBridgedMoveWindowsToManagedSpaceOperation"),
             let allocateMethod = class_getClassMethod(cls, NSSelectorFromString("alloc")),
@@ -93,12 +93,24 @@ enum WindowSpaceAccess {
         let perform = unsafeBitCast(symbol, to: Perform.self)
         _ = perform(UnsafeRawPointer(Unmanaged.passUnretained(operation).toOpaque()))
         let deadline = ContinuousClock.now + .seconds(3)
-        while !spaces(of: windowID).contains(spaceID) {
+        while spaces(of: windowID) != [spaceID] {
             guard !Task.isCancelled else { throw CancellationError() }
             guard ContinuousClock.now < deadline else {
                 throw Failure(message: "macOS didn't move a window to its requested Space.")
             }
             try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    static func verify(
+        windowID: UInt32, on spaceID: UInt64,
+        readSpaces: ((UInt32) -> [UInt64])? = nil
+    ) async throws {
+        for _ in 0..<6 {
+            try await Task.sleep(for: .milliseconds(50))
+            guard (readSpaces ?? spaces(of:))(windowID) == [spaceID] else {
+                throw Failure(message: "A window didn't stay on its requested Space. Check its Dock desktop assignment.")
+            }
         }
     }
 

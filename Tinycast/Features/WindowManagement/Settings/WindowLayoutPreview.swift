@@ -1,157 +1,68 @@
-import AppKit
 import SwiftUI
 
-/// The editor's left column: one display drawn to scale, its entries over it, and the tabs.
+/// A narrow composition point for arrangements, Spaces and the spatial display map.
 struct WindowLayoutPreview: View {
     let draft: WindowLayoutDraft
-    /// Resolved once by the panel: an AX read per render would cost a round trip per keystroke.
     let screens: [WindowLayoutScreen]
     let gap: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            // Greedy: the canvas letterboxes itself, so slack spent here is drawing, not margin.
-            WindowLayoutPreviewCanvas(draft: draft, screen: selectedScreen, gap: gap)
+            WindowLayoutArrangementControls(draft: draft, screens: screens)
+            spaceTabs
+            WindowLayoutDisplayMap(draft: draft, screens: screens, gap: gap)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // Beside the caption, not over the canvas: a tab must never cover a window rect.
-            HStack(spacing: Theme.Spacing.md) {
-                Text(caption)
+            if let entry = draft.selectedEntry {
+                Text(entry.fallbackSpace.map { "Fallback: \(entry.fallbackDisplay?.name ?? "Built-in screen, or first available") · Space \($0)" }
+                     ?? "Fallback: none")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                WindowLayoutDisplayTabs(draft: draft, displays: tabs)
             }
+            ForEach(unknownDisplays, id: \.uuid) { display in
+                Button("\(display.name) · offline, no saved geometry") { draft.select(displayUUID: display.uuid) }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Drag a window to place it; drag its corner to resize.")
+                .font(.caption).foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var tabs: [WindowLayoutDisplay] {
-        draft.tabs(connected: screens.map(\.display))
+    private var unknownDisplays: [WindowLayoutDisplay] {
+        draft.tabs(connected: screens.map(\.display)).filter { display in
+            !screens.contains { $0.display.uuid == display.uuid }
+                && !draft.displaySnapshots.contains { $0.id == display.uuid.lowercased() }
+        }
     }
 
-    /// The geometry for the selected tab, or nil when that display is not connected.
-    private var selectedScreen: WindowLayoutScreen? {
-        guard let uuid = draft.selectedDisplayUUID else { return nil }
-        return screens.first { $0.display.uuid == uuid }
-    }
-
-    private var caption: String {
-        guard let uuid = draft.selectedDisplayUUID,
-            let display = tabs.first(where: { $0.uuid == uuid })
-        else { return "No display selected" }
-        guard let screen = selectedScreen else { return "\(display.name) · not connected" }
-        // Points, not pixels: nothing in this feature touches `backingScaleFactor`.
-        let size = screen.screen.frame.size
-        return "\(display.name) · \(Int(size.width)) × \(Int(size.height))"
-    }
-}
-
-/// One display to scale with a rounded rect per entry on it. Draws; decides nothing.
-struct WindowLayoutPreviewCanvas: View {
-    let draft: WindowLayoutDraft
-    let screen: WindowLayoutScreen?
-    let gap: CGFloat
-
-    @Environment(AppIndex.self) private var appIndex
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                if let screen {
-                    // The plate is the display itself, at its own aspect ratio.
-                    let ground = ground(in: proxy.size, display: screen.screen.visibleFrame)
-                    plate
-                        .frame(width: ground.width, height: ground.height)
-                        .position(x: ground.midX, y: ground.midY)
-                    ForEach(placements(on: screen), id: \.entry.id) { placed in
-                        entryRect(placed, ground: ground, display: screen.screen.visibleFrame)
-                    }
-                } else {
-                    plate
-                    Text("This display isn't connected.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+    private var spaceTabs: some View {
+        let screen = screens.first { $0.display.uuid == draft.selectedDisplayUUID }
+        let saved = draft.displaySnapshots.first { $0.display.uuid == draft.selectedDisplayUUID }
+        let stored = draft.entries(onDisplay: draft.selectedDisplayUUID ?? "").compactMap(\.space)
+        let count = max(1, min(32, screen?.desktopIDs.count ?? saved?.desktopCount ?? 0))
+        let numbers = Set(stored + Array(1...count)).sorted()
+        return ScrollView(.horizontal) {
+            HStack(spacing: Theme.Spacing.sm) {
+                spaceTab(nil, title: "Current")
+                ForEach(numbers, id: \.self) { number in
+                    spaceTab(number, title: "Space \(number)\(number > count ? " · unavailable" : "")")
                 }
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(accessibilityDescription)
+        .scrollIndicators(.hidden)
+        .accessibilityLabel("Preview Space")
     }
 
-    private var plate: some View {
-        RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-            .fill(Theme.Colors.layoutPreviewGround)
-    }
-
-    private struct Placed {
-        let entry: WindowLayoutEntry
-        let frame: CGRect
-    }
-
-    /// Every rect comes from the resolver the runner uses; nothing here re-derives geometry.
-    private func placements(on screen: WindowLayoutScreen) -> [Placed] {
-        draft.entries(onDisplay: screen.display.uuid).compactMap { entry in
-            WindowLayoutGeometry.resolve(entry, on: screen.screen, gap: gap)
-                .map { Placed(entry: entry, frame: $0) }
-        }
-    }
-
-    /// Fit, not fill: a 16:10 display stretched into a 16:9 box misdraws every rect inside it.
-    private func ground(in box: CGSize, display: CGRect) -> CGRect {
-        guard display.width > 0, display.height > 0 else { return .zero }
-        let scale = min(box.width / display.width, box.height / display.height)
-        let size = CGSize(width: display.width * scale, height: display.height * scale)
-        return CGRect(
-            x: (box.width - size.width) / 2, y: (box.height - size.height) / 2,
-            width: size.width, height: size.height)
-    }
-
-    @ViewBuilder
-    private func entryRect(_ placed: Placed, ground: CGRect, display: CGRect) -> some View {
-        let isSelected = placed.entry.id == draft.selectedEntryID
-        let scale = display.width > 0 ? ground.width / display.width : 0
-        let rect = CGRect(
-            x: ground.minX + (placed.frame.minX - display.minX) * scale,
-            y: ground.minY + (placed.frame.minY - display.minY) * scale,
-            width: placed.frame.width * scale, height: placed.frame.height * scale)
-        let shape = RoundedRectangle(cornerRadius: Theme.Radius.thumbnail, style: .continuous)
-
-        Button {
-            draft.select(entryID: placed.entry.id)
-        } label: {
-            shape
-                .fill(
-                    isSelected
-                        ? Theme.Colors.layoutPreviewWindowSelected : Theme.Colors.layoutPreviewWindow
-                )
-                .overlay(shape.stroke(isSelected ? Color.accentColor : Theme.Colors.border))
-                .overlay(icon(for: placed.entry.bundleID))
-                .frame(width: max(1, rect.width), height: max(1, rect.height))
-                .contentShape(shape)
+    private func spaceTab(_ number: Int?, title: String) -> some View {
+        Button { draft.selectPreviewSpace(number) } label: {
+            Text(title)
+                .font(.caption.weight(draft.previewSpace == number ? .semibold : .regular))
+                .padding(Theme.Spacing.sm)
+                .background(draft.previewSpace == number ? Theme.Colors.selection : Color.clear,
+                            in: RoundedRectangle(cornerRadius: Theme.Radius.menu))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(
-            "\(AppPresentation.resolve(bundleID: placed.entry.bundleID, in: appIndex).name) window")
-        .accessibilityHint("Select to edit this window's settings")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .position(x: rect.midX, y: rect.midY)
-        // Drawn last, since a layout may legitimately stack two windows.
-        .zIndex(isSelected ? 1 : 0)
-    }
-
-    /// Through the index's cache: a `urlForApplication` per rect would touch disk every keystroke.
-    private func icon(for bundleID: String) -> some View {
-        Image(nsImage: AppPresentation.resolve(bundleID: bundleID, in: appIndex).icon)
-            .resizable()
-            .frame(width: Theme.Size.layoutPreviewIcon, height: Theme.Size.layoutPreviewIcon)
-    }
-
-    private var accessibilityDescription: String {
-        guard let screen else { return "Preview, display not connected" }
-        let count = draft.entries(onDisplay: screen.display.uuid).count
-        let windows = count == 1 ? "1 window" : "\(count) windows"
-        return "Preview of \(screen.display.name), \(windows)"
+        .accessibilityAddTraits(draft.previewSpace == number ? .isSelected : [])
     }
 }

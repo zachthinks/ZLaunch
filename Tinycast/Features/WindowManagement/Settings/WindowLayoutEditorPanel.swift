@@ -24,10 +24,10 @@ struct WindowLayoutEditorPanel: View {
         self.request = request
         let connected = Self.connectedScreens()
         _screens = State(initialValue: connected)
-        _draft = State(
-            initialValue: WindowLayoutDraft(
-                layout: request.layout, isCapture: request.isCapture,
-                displays: connected.map(\.display)))
+        let value = WindowLayoutDraft(layout: request.layout, isCapture: request.isCapture,
+                                      displays: connected.map(\.display))
+        value.rememberDisplays(connected.map(\.snapshot))
+        _draft = State(initialValue: value)
     }
 
     var body: some View {
@@ -51,6 +51,7 @@ struct WindowLayoutEditorPanel: View {
                 named: NSApplication.didChangeScreenParametersNotification)
             {
                 screens = Self.connectedScreens()
+                draft.rememberDisplays(screens.map(\.snapshot))
             }
         }
     }
@@ -87,6 +88,11 @@ struct WindowLayoutEditorPanel: View {
                     .foregroundStyle(.orange)
                     .lineLimit(2)
             }
+            if errorMessage == nil {
+                Text("Save, then run the layout to move windows.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Spacer(minLength: 0)
             Button("Cancel") { dismiss() }
                 .buttonStyle(.modalAction(.cancel, fillsWidth: false))
@@ -111,6 +117,7 @@ struct WindowLayoutEditorPanel: View {
 
     private func save() {
         guard draft.canSave else { return }
+        draft.rememberDisplays(screens.map(\.snapshot))
         let value = draft.layout()
         do {
             if draft.existingID == nil || core.windowLayouts.layout(id: value.id) == nil {

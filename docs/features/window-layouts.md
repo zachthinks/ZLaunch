@@ -190,18 +190,20 @@ moment an app is picked, and a panel sized to its content would resize under the
 - **The preview is handed its screens once** by the panel and re-reads them only on
   `didChangeScreenParameters`. Resolving displays inside `body` would cost an AX round trip per
   keystroke.
-- **The plate is the display**, drawn at its own aspect ratio and letterboxed inside the box — fit,
-  never fill, or every rect inside it is misdrawn. It stays dark in both appearances, so its token is
-  `adaptive`, never `ramp`.
+- **The map preserves display arrangement and relative size** through one affine transform of
+  AX frames. Connected displays use live geometry; disconnected displays use explicitly saved
+  snapshots and appear faded. Legacy displays without snapshots are listed as offline with unknown
+  geometry rather than assigned an invented position.
 - **No coordinate flip in the view.** `resolve` works in AX space (top-left origin, +Y down) and
   SwiftUI's y also points down. This is the one place the two conventions agree.
 - **Clicking a preview window selects that entry in the inspector and dropdown.** Selection uses
   the entry's ID, so multiple windows from the same app keep their own settings. Each window is an
   accessible button; the selected window stays above overlapping entries.
-- **The tabs sit on the caption row, not over the canvas**, so a tab can never cover a window rect.
-  The row shows a tab for every connected display *plus* any display an entry names, so a layout
-  authored at a desk is still editable on the laptop. The entry picker is deliberately **not** scoped
-  by the tab, for the same reason.
+- **Space tabs scope app tiles across the map.** Selecting an entry follows its assigned Space.
+  Space counts are read per selected display, and unavailable stored destinations remain visible.
+  The entry picker remains unfiltered so an offline or other-Space entry can always be edited.
+- **Dragging and corner resizing edit the draft.** The inverse geometry is described through
+  `WindowLayoutGeometry` and clamped to the destination display's box. No real window moves until Run.
 - **The entry dropdown is a button and a popover, not a `Menu`.** A menu label stretches an
   `NSImage` out of aspect, so the app icon beside it smeared; `AppPickerPopover` is the pattern the
   rest of the app already uses to name an app.
@@ -255,3 +257,52 @@ display.
 `AXWindowAccess`, `AXScreens`, `WindowInventory` and `WindowLayoutRunner` are not compiled into the
 harness and have no automated coverage, exactly as `WindowMover` and `SpaceSwitcher` do not. They need
 the manual sweep in [testing.md](../testing.md#manual-regression-sweep).
+
+## Destination and deletion verification
+
+A preferred Space belongs to its selected display. When that display is disconnected,
+the saved fallback Space is used instead; it can intentionally differ from the preferred
+Space. For example, preferred BenQ Space 2 with built-in fallback Space 1 places the
+window on the built-in display's Space 1. Changing the preferred Space does not change
+an existing fallback choice.
+
+Click a window in the preview and press Delete to remove that entry from the draft.
+The preview owns the delete command; text fields retain normal text deletion. Cancel
+leaves the saved layout unchanged. Removing the final entry disables Save.
+
+After geometry and optional activation, the runner rechecks the requested native Space,
+reapplies the move if needed, and checks membership over 300 milliseconds. Membership
+in multiple Spaces does not count as placement on one requested Desktop. This check
+cannot guarantee that another app or a later user action never moves the window again.
+
+`window-layout-test` also covers draft removal and selection across displays.
+`window-space-test` covers stable, missing, incorrect, multiple, transient membership,
+and cancellation through an injected read boundary. These are regression tests, not
+proof of physical movement; native-window movement still needs a live macOS check.
+
+### Space-scoped editor preview
+
+The map shows assignments for one Space across the displayed monitors. Selecting an entry or
+changing its destination follows that Space; the Preview Space menu inspects other
+assignments. Current Space is its own assignment category. Displays are named on the map so a display cannot be mistaken for a desktop number. New and
+existing layouts share this preview. Editing and Save do not move real windows;
+run the saved layout using its play button, launcher entry, or shortcut.
+
+## Display arrangements
+
+The default entries remain the legacy/default arrangement. Optional named arrangements contain an
+exact connected display UUID set, their own entries/frontmost identity, and last authored display
+snapshots. Save setup copies the active entries for the currently connected displays; selecting an
+existing setup for the same display set avoids ambiguous matches. Arrangement switching preserves
+unsaved edits in every variant. Names can be edited and variants removed without deleting Default.
+
+Only an explicit coordinator Run selects an exact connected-display set (case/order independent).
+No match, or an ambiguous imported set, uses Default. The existing runner still resolves per-entry
+Space IDs, window matching, and fallbacks. Runtime Terminal bindings are reconciled into the variant
+that actually ran only if the original saved record is unchanged across the await.
+
+Old JSON missing these optional fields decodes without migration. Copy/sanitize and settings-file
+export/import preserve arrangements and snapshots; exported data omits runtime Terminal handles.
+Older app versions discard unknown fields when saving, so retain a preference backup before rolling
+back after authoring arrangements. Opening an editor never writes preferences; Cancel discards all
+draft changes. The editor observes displays for drawing only and never runs a layout on connection.
