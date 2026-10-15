@@ -3,6 +3,16 @@ on:
   schedule:
     - cron: '17 13 * * *'
   workflow_dispatch:
+    inputs:
+      verify_current_release:
+        description: Check and attest an unpublished stable custom update already on custom/main
+        type: boolean
+        required: true
+        default: false
+      expected_commit:
+        description: Full reviewed custom/main SHA required for a custom update
+        type: string
+        required: false
 permissions:
   contents: write
   pull-requests: write
@@ -26,12 +36,18 @@ jobs:
         id: sync
         env:
           GH_TOKEN: ${{ github.token }}
+          VERIFY_CURRENT_RELEASE: ${{ inputs.verify_current_release }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: |
           git config user.name 'ZLaunch sync'
           git config user.email 'zlaunch-sync@users.noreply.github.com'
           git remote add upstream https://github.com/abue-ammar/tinycast.git
           mkdir -p build
           echo "base=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "$VERIFY_CURRENT_RELEASE" = true ]; then
+            node Custom/prepare-custom-release.mjs
+            exit 0
+          fi
           node Custom/sync.mjs
           BRANCH="$(git branch --show-current)"
           if [ "$BRANCH" != custom/main ]; then

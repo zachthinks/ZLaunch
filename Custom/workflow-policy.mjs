@@ -13,9 +13,14 @@ export function verifyWorkflowPolicy(workflows) {
     const source = workflows[name];
     const hosted = ["custom-release.yml", "custom-signing-validation.yml"].includes(name);
     if (hosted) {
-      assert.match(source, /^permissions:\n  contents: read\n/m);
+      assert.match(source, /^permissions:\n  contents: read\nconcurrency:/m);
       const events = source.slice(source.indexOf("\non:\n"), source.indexOf("\npermissions:"));
-      assert.deepEqual([...events.matchAll(/^  ([\w-]+):/gm)].map(match => match[1]), ["workflow_dispatch"]);
+      assert.deepEqual([...events.matchAll(/^  ([\w-]+):/gm)].map(match => match[1]),
+        name === "custom-release.yml" ? ["workflow_dispatch", "workflow_run"] : ["workflow_dispatch"]);
+      if (name === "custom-release.yml") {
+        assert.match(events, /workflows: \[ZLaunch upstream sync\]\n    types: \[completed\]\n    branches: \[custom\/main\]/);
+        assert.match(events, /expected_commit:[\s\S]*?required: true/);
+      }
       assert.match(source, /group: zlaunch-release\n  cancel-in-progress: false/);
       if (name === "custom-signing-validation.yml") {
         assert.match(source, /confirm_signing_validation:[\s\S]*?default: false/);
@@ -34,7 +39,7 @@ export function verifyWorkflowPolicy(workflows) {
       const guard = name === "custom-signing-validation.yml"
         ? "github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_VALIDATION_ENABLED == 'true' && inputs.confirm_signing_validation == true" + (job === "validate" ? " && needs.preflight.result == 'success'" : "")
         : name === "custom-release.yml"
-        ? "github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true'" + (job === "release" ? " && needs.preflight.result == 'success'" : "")
+        ? "github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main'))" + (job === "release" ? " && needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true'" : "")
         : job === "checks"
         ? "github.event.repository.private == false && needs.sync.outputs.candidate != ''"
         : job === "promote"
@@ -49,7 +54,7 @@ export function verifyWorkflowPolicy(workflows) {
         assert.match(body, /^    uses: \.\/\.github\/workflows\/custom-checks\.yml$/m);
       }
       if (hosted) {
-        const checkouts = [...body.matchAll(/uses: (.+)$/gm)].map(match => match[1]);
+        const checkouts = [...body.matchAll(/^      - uses: (.+)$/gm)].map(match => match[1]);
         assert.deepEqual(checkouts, ["actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"]);
         assert.match(body, /ref: \$\{\{ github.sha \}\}/);
         assert.match(body, /persist-credentials: false/);
@@ -57,6 +62,13 @@ export function verifyWorkflowPolicy(workflows) {
           assert.ok(!body.includes("secrets."), "Preflight must not access release secrets");
           assert.ok(!body.includes("environment:"), "Preflight must not enter the signing environment");
           assert.ok(!body.includes("permissions:"), "Preflight inherits read-only permission");
+          if (name === "custom-release.yml") {
+            assert.match(body, /id: eligibility/);
+            assert.match(body, /EXPECTED_COMMIT: \$\{\{ github.event_name == 'workflow_run' && github.sha \|\| inputs.expected_commit \}\}/);
+            assert.match(body, /PROMOTION_RUN_ID: \$\{\{ github.event.workflow_run.id \}\}/);
+            assert.match(body, /run: node Custom\/verify-hosted-release.mjs --skip-ineligible/);
+            assert.equal((body.match(/if: steps.eligibility.outputs.eligible == 'true'/g) ?? []).length, 3);
+          }
         } else {
           assert.match(body, /^    needs: preflight$/m);
           assert.match(body, /^    environment: zlaunch-release$/m);
@@ -66,7 +78,10 @@ export function verifyWorkflowPolicy(workflows) {
           const importAt = body.indexOf("      - name: Import signing identity");
           assert.ok(importAt > body.indexOf("git rev-parse FETCH_HEAD"));
           if (job === "release") {
-            assert.match(body, /^    permissions:\n      contents: write$/m);
+            assert.match(body, /^    permissions:\n      contents: write\n    steps:/m);
+            assert.match(body, /PROMOTION_RUN_ID: \$\{\{ needs.preflight.outputs.promotion_run_id \}\}/);
+            assert.ok(body.indexOf("node Custom/verify-hosted-release.mjs") >= 0
+              && body.indexOf("node Custom/verify-hosted-release.mjs") < importAt);
             assert.match(body, /node Custom\/verify-release-state.mjs/);
             assert.ok(body.indexOf("node Custom/verify-release-state.mjs") < importAt);
             assert.match(body, /exit "\$CLEANUP_STATUS"/);
@@ -88,6 +103,11 @@ export function verifyWorkflowPolicy(workflows) {
           assert.match(body, /test "\$EXPECTED_COMMIT" = "\$GITHUB_SHA"/);
           assert.match(body, /test "\$\(git rev-parse FETCH_HEAD\)" = "\$EXPECTED_COMMIT"/);
         }
+      }
+      if (name === "custom-sync.yml" && job === "sync") {
+        assert.match(body, /VERIFY_CURRENT_RELEASE: \$\{\{ inputs.verify_current_release \}\}/);
+        assert.match(body, /EXPECTED_COMMIT: \$\{\{ inputs.expected_commit \}\}/);
+        assert.match(body, /if \[ "\$VERIFY_CURRENT_RELEASE" = true \]; then\n            node Custom\/prepare-custom-release.mjs\n            exit 0\n          fi/);
       }
       if (job === "promote") {
         assert.match(body, /^    needs: \[sync, checks\]$/m);

@@ -1,6 +1,15 @@
 name: ZLaunch release
 on:
   workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Full promoted custom/main commit SHA
+        type: string
+        required: true
+  workflow_run:
+    workflows: [ZLaunch upstream sync]
+    types: [completed]
+    branches: [custom/main]
 permissions:
   contents: read
 concurrency:
@@ -8,25 +17,38 @@ concurrency:
   cancel-in-progress: false
 jobs:
   preflight:
-    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true'
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main'))
     runs-on: macos-26
     timeout-minutes: 45
+    outputs:
+      eligible: ${{ steps.eligibility.outputs.eligible }}
+      commit: ${{ steps.eligibility.outputs.commit }}
+      promotion_run_id: ${{ steps.eligibility.outputs.promotion_run_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify successful stable promotion
+        id: eligibility
+        env:
+          EXPECTED_COMMIT: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_commit }}
+          PROMOTION_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node Custom/verify-hosted-release.mjs --skip-ineligible
       - name: Select Xcode 26
+        if: steps.eligibility.outputs.eligible == 'true'
         run: |
           XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
           test -n "$XCODE_PATH"
           echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
       - run: brew install swiftlint xcodegen
+        if: steps.eligibility.outputs.eligible == 'true'
       - run: ./Custom/check.sh
+        if: steps.eligibility.outputs.eligible == 'true'
   release:
     needs: preflight
-    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && needs.preflight.result == 'success'
+    if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main')) && needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true'
     environment: zlaunch-release
     runs-on: macos-26
     timeout-minutes: 60
@@ -41,6 +63,8 @@ jobs:
       - name: Confirm the tested commit is still current
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_COMMIT: ${{ needs.preflight.outputs.commit }}
+          PROMOTION_RUN_ID: ${{ needs.preflight.outputs.promotion_run_id }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -48,6 +72,7 @@ jobs:
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
           git switch -c custom/main "$GITHUB_SHA"
           node Custom/verify-config.mjs
+          node Custom/verify-hosted-release.mjs
           node Custom/verify-release-state.mjs
       - name: Select Xcode 26
         run: |

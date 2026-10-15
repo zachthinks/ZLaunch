@@ -25,6 +25,7 @@ NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
 if [ -n "${NOTARY_KEYCHAIN:-}" ]; then NOTARY_ARGS+=(--keychain "$NOTARY_KEYCHAIN"); fi
 xcrun notarytool submit build/notarize.zip "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$APP"
+xcrun stapler validate "$APP"
 spctl --assess --type execute --verbose "$APP"
 ./Custom/package.sh "$APP"
 VERSION="$(node -p 'require("./Custom/release.json").version')"

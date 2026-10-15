@@ -1,4 +1,4 @@
-# GitHub-hosted signing setup (not activated)
+# GitHub-hosted signing and publication setup
 
 Prepared against ZLaunch 0.1.9 at 8b47f73852132814356593bc2e6759bac024c1dd.
 This setup does not change app behavior, versions, schedules, or the updater.
@@ -90,8 +90,9 @@ without overriding the project's build number. It checks bundle/helper identitie
 the Developer ID team and signatures, sends a temporary ZIP to Apple's notary
 service, requires Accepted status, staples and validates the ticket, and asks
 Gatekeeper to assess the app. It does not run the publisher, create a tag/release,
-upload an Actions artifact, install or launch the app, or register the build with
-Launch Services. It can validate 0.1.9 without changing its published assets.
+upload an Actions artifact, or install or launch the app on the user's Mac. Xcode
+26.6 still invoked Launch Services registration on the disposable runner during
+validation despite the requested disabling build setting. It can validate 0.1.9 without changing its published assets.
 
 This is a real upload to Apple, not a simulation. An Apple submission may remain
 in progress after the runner's timeout; a timeout is not success or cancellation
@@ -110,11 +111,14 @@ The existing local publisher remains unchanged during this nonpublishing test.
 
 ## Publication and controlled switch
 
-The initial hosted release remains manual:
+Hosted publication entry point (disabled until coordinated cutover):
 https://github.com/zachthinks/ZLaunch/actions/workflows/custom-release.yml
 
-The hardened workflow accepts only a manual dispatch from custom/main in this
-repository and only with the explicit enable variable. A separate job tests the
+The workflow accepts a successful completed stable-sync run on custom/main, or a
+manual dispatch naming the exact promoted commit, only with the explicit enable
+variable. Both require bot-created exact-commit promotion evidence linked to a
+completed successful sync run. See [stable delivery](automatic-delivery.md) for
+trigger verification and the coordinated activation sequence. A separate job tests the
 exact dispatch commit without release secrets. The signing job waits for success
 and the protected environment's approval, then rejects a changed main or any
 existing version (including drafts), non-increasing stable version, or conflicting
@@ -122,8 +126,9 @@ remote tag before importing secrets. It uses a pinned
 checkout action and an ephemeral keychain for signing and notarization, with
 cleanup on failure too. PR code never receives these signing secrets.
 
-A first real hosted publication requires a separately approved, unused release
-version. Do not republish 0.1.9 or bump a version merely to test this setup.
+A first real hosted publication requires an approved, unused release version.
+The completed Window Layouts update is approved for this purpose; finalize its
+source and real stable version before invoking the custom-update promotion path. Do not republish 0.1.9 or bump a version merely to test this setup.
 The release workflow rejects an already-published version; use the separate
 signing-only workflow above for credential validation. A successful real run must verify signed bundle
 identity/team, notarization/stapling, assets and checksum agreement.
@@ -132,7 +137,8 @@ Keep the current parent-owned publisher schedule unchanged while preparing.
 At switch time the parent coordinates a pause of that publisher and confirms no
 publication is in flight before enabling hosted publication. A local lock and
 GitHub concurrency do not synchronize two different publishers. Keep the required
-reviewer gate. Do not enable an automatic hosted trigger in this initial setup.
+reviewer gate unless Zach separately approves unattended publication. Merging the
+automatic trigger does not activate it while the release flag is disabled.
 After a successful release, verify the existing updater; do not replace it.
 
 The publisher repeats the shared release-state check immediately before creating
