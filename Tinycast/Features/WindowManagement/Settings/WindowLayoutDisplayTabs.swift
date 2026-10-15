@@ -20,11 +20,12 @@ struct WindowLayoutDisplayTabs: View {
         return Button {
             draft.select(displayUUID: display.uuid)
         } label: {
-            Text("\(ordinal)")
+            Text("Display \(ordinal)")
                 .font(Theme.Typography.keyCap)
                 .monospacedDigit()
                 .foregroundStyle(isSelected ? Theme.Colors.textPrimary : Theme.Colors.textSecondary)
-                .frame(width: Theme.Size.layoutDisplayTab, height: Theme.Size.layoutDisplayTab)
+                .padding(.horizontal, Theme.Spacing.sm)
+                .frame(height: Theme.Size.layoutDisplayTab)
                 .background(shape.fill(Theme.Colors.controlSurface))
                 .overlay(shape.stroke(isSelected ? Color.accentColor : Theme.Colors.border))
                 .contentShape(shape)

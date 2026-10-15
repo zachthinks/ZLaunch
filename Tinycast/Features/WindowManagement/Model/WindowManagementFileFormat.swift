@@ -113,6 +113,8 @@ enum WindowManagementFileFormat {
             "name": .string(layout.name),
             "icon": text(layout.iconSymbol),
             "usesGap": .bool(layout.usesPreferredGap),
+            "arrangements": WindowLayoutArrangementFile.json(WindowLayoutArrangementFile.portable(layout.arrangements)),
+            "displaySnapshots": WindowLayoutArrangementFile.json(layout.displaySnapshots),
             "shortcut": text(shortcut),
             "alias": text(alias),
             "apps": .array(
@@ -186,11 +188,27 @@ enum WindowManagementFileFormat {
                     frontmostEntryID = entryID
                 }
             }
+            let arrangements: [WindowLayoutArrangement]
+            let snapshots: [WindowLayoutDisplaySnapshot]
+            if let field = item["arrangements"] {
+                guard let value = WindowLayoutArrangementFile.decode([WindowLayoutArrangement].self, from: field) else {
+                    decoded.problems.append("\(label): invalid arrangements")
+                    continue
+                }
+                arrangements = value
+            } else { arrangements = [] }
+            if let field = item["displaySnapshots"] {
+                guard let value = WindowLayoutArrangementFile.decode([WindowLayoutDisplaySnapshot].self, from: field) else {
+                    decoded.problems.append("\(label): invalid display snapshots")
+                    continue
+                }
+                snapshots = value
+            } else { snapshots = [] }
             decoded.records.append(
                 WindowLayout(
                     id: id, name: name, iconSymbol: item["icon"]?.string,
                     usesPreferredGap: item["usesGap"]?.bool ?? true, entries: entries,
-                    frontmostEntryID: frontmostEntryID))
+                    frontmostEntryID: frontmostEntryID, arrangements: arrangements, displaySnapshots: snapshots))
             texts(of: item, id: id, label: label, into: &decoded)
         }
         return decoded

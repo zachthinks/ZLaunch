@@ -103,6 +103,18 @@ enum WindowLayoutRunner {
         {
             AXWindowAccess.focus(frontmost.window, in: frontmost.application, of: frontmost.app)
         }
+        for placement in plan.placements {
+            guard !Task.isCancelled else { break }
+            guard let spaceID = placement.spaceID, let element = bound[placement.entryID],
+                let windowID = AXWindowAccess.windowID(of: element.window)
+            else { continue }
+            do {
+                try await WindowSpaceAccess.move(windowID: windowID, to: spaceID)
+                try await WindowSpaceAccess.verify(windowID: windowID, on: spaceID)
+            } catch {
+                outcome.spaceFailures.append(error.localizedDescription)
+            }
+        }
         return outcome
     }
 

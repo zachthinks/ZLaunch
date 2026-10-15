@@ -53,7 +53,8 @@ final class WindowLayoutStore {
         let copy = WindowLayout(
             name: Self.uniqueName(from: original.name, among: layouts),
             iconSymbol: original.iconSymbol, usesPreferredGap: original.usesPreferredGap,
-            entries: entries, frontmostEntryID: frontmost.map { entries[$0].id })
+            entries: entries, frontmostEntryID: frontmost.map { entries[$0].id },
+            arrangements: original.arrangements.map(\.copy), displaySnapshots: original.displaySnapshots)
         return try add(copy)
     }
 
@@ -83,7 +84,8 @@ final class WindowLayoutStore {
         value.sanitizeEntries()
         guard !value.name.isEmpty else { throw .emptyName }
         guard !value.name.contains("\0") else { throw .invalidCharacter }
-        guard !value.entries.isEmpty else { throw .noEntries }
+        guard !value.entries.isEmpty, value.arrangements.allSatisfy({ !$0.entries.isEmpty }) else { throw .noEntries }
+        guard !value.hasDuplicateArrangements else { throw .duplicateArrangement }
         guard
             !layouts.contains(where: {
                 $0.id != value.id

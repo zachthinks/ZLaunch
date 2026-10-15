@@ -60,9 +60,12 @@ final class WindowLayoutCoordinator {
         run = Task { [weak self] in
             await previous?.value
             guard !Task.isCancelled, let layout = self?.store.layout(id: id) else { return }
-            let outcome = await WindowLayoutRunner.run(layout, gap: gap)
+            let geometry = AXGeometry(screens: NSScreen.screens)
+            let connected = AXScreens.layoutScreens(geometry: geometry).map(\.display.uuid)
+            let selection = layout.selectingArrangement(connectedDisplayIDs: connected)
+            let outcome = await WindowLayoutRunner.run(selection.layout, gap: gap)
             if let restored = outcome.restoredLayout, self?.store.layout(id: id) == layout {
-                do { try self?.store.update(restored) } catch {
+                do { try self?.store.update(layout.restoringRuntime(restored, arrangementID: selection.arrangementID)) } catch {
                     self?.core.showMessage(error.localizedDescription, tone: .danger)
                 }
             }

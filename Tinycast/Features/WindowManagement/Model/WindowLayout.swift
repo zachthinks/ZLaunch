@@ -118,11 +118,14 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
     var entries: [WindowLayoutEntry]
     /// The one entry whose window ends a run frontmost; an ID rather than a flag, so it is one.
     var frontmostEntryID: UUID?
+    var arrangements: [WindowLayoutArrangement]
+    var displaySnapshots: [WindowLayoutDisplaySnapshot]
 
     init(
         id: UUID = UUID(), name: String, iconSymbol: String? = nil,
         usesPreferredGap: Bool = true, entries: [WindowLayoutEntry] = [],
-        frontmostEntryID: UUID? = nil
+        frontmostEntryID: UUID? = nil, arrangements: [WindowLayoutArrangement] = [],
+        displaySnapshots: [WindowLayoutDisplaySnapshot] = []
     ) {
         self.id = id
         self.name = name
@@ -130,6 +133,8 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
         self.usesPreferredGap = usesPreferredGap
         self.entries = entries
         self.frontmostEntryID = frontmostEntryID
+        self.arrangements = arrangements
+        self.displaySnapshots = displaySnapshots
     }
 
     func keepingRuntime(of previous: WindowLayout) -> WindowLayout {
@@ -141,6 +146,16 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
             else { continue }
             value.entries[index].terminalWindowID = saved.terminalWindowID
             value.entries[index].terminalSession = saved.terminalSession
+        }
+        for index in value.arrangements.indices {
+            guard let old = previous.arrangements.first(where: { $0.id == value.arrangements[index].id }) else { continue }
+            for entryIndex in value.arrangements[index].entries.indices {
+                let entry = value.arrangements[index].entries[entryIndex]
+                guard let saved = old.entries.first(where: { $0.id == entry.id && $0.bundleID == entry.bundleID
+                    && $0.argument == entry.argument }) else { continue }
+                value.arrangements[index].entries[entryIndex].terminalWindowID = saved.terminalWindowID
+                value.arrangements[index].entries[entryIndex].terminalSession = saved.terminalSession
+            }
         }
         return value
     }
@@ -160,6 +175,8 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
     /// Cleans every entry, then drops a frontmost mark whose entry did not survive.
     mutating func sanitizeEntries() {
         entries = WindowLayoutEntry.sanitized(entries)
+        displaySnapshots = displaySnapshots.filter(\.isValid)
+        for index in arrangements.indices { arrangements[index].sanitize() }
         if !entries.contains(where: { $0.id == frontmostEntryID }) { frontmostEntryID = nil }
     }
 
@@ -177,7 +194,7 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
 
     // Hand-written, so an added field keeps stored layouts and older backups readable.
     private enum CodingKeys: String, CodingKey {
-        case id, name, iconSymbol, usesPreferredGap, entries, frontmostEntryID
+        case id, name, iconSymbol, usesPreferredGap, entries, frontmostEntryID, arrangements, displaySnapshots
     }
 
     init(from decoder: Decoder) throws {
@@ -189,6 +206,8 @@ struct WindowLayout: Codable, Hashable, Identifiable, Sendable {
             try container.decodeIfPresent(Bool.self, forKey: .usesPreferredGap) ?? true
         entries = try container.decodeIfPresent([WindowLayoutEntry].self, forKey: .entries) ?? []
         frontmostEntryID = try container.decodeIfPresent(UUID.self, forKey: .frontmostEntryID)
+        arrangements = try container.decodeIfPresent([WindowLayoutArrangement].self, forKey: .arrangements) ?? []
+        displaySnapshots = try container.decodeIfPresent([WindowLayoutDisplaySnapshot].self, forKey: .displaySnapshots) ?? []
     }
 }
 
@@ -205,12 +224,14 @@ enum WindowLayoutValidationError: LocalizedError, Equatable {
     case duplicateName
     case noEntries
     case invalidCharacter
+    case duplicateArrangement
 
     var errorDescription: String? {
         switch self {
         case .emptyName: return "Enter a name for the layout."
         case .duplicateName: return "A window layout with this name already exists."
         case .noEntries: return "Add at least one app to the layout."
+        case .duplicateArrangement: return "Only one arrangement can match each connected display setup."
         case .invalidCharacter: return "Names cannot contain null characters."
         }
     }

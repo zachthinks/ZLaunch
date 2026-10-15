@@ -399,15 +399,20 @@ run window-preset-test     Tinycast/Features/WindowManagement/Model/WindowComman
                            Tinycast/Features/HotKeys/Service/KeyShortcut.swift
 run space-gesture-test     Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
                            Tinycast/Features/WindowManagement/Model/SpaceGesture.swift
-run window-layout-test     Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
+run window-space-test      Tinycast/Features/WindowManagement/Service/WindowSpaceAccess.swift
+run window-layout-test     Tests/window-layout-map-cases.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
                            Tinycast/Features/WindowManagement/Model/WindowCycle.swift \
                            Tinycast/Features/WindowManagement/Model/WindowPlacementEngine.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutAnchor.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutDisplay.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayout.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutArrangement.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutGeometry.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutPlan.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutStore.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutDraft.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutMapGeometry.swift \
                            Tinycast/Features/WindowManagement/Model/CustomWindowSize.swift \
                            Tinycast/Features/WindowManagement/Model/CustomWindowSizeStore.swift
 run window-room-test       Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
@@ -416,6 +421,7 @@ run window-room-test       Tinycast/Features/WindowManagement/Model/WindowComman
                            Tinycast/Features/WindowManagement/Model/WindowLayoutAnchor.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutDisplay.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayout.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutArrangement.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutGeometry.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutPlan.swift \
                            Tinycast/Features/WindowManagement/Model/RoomLayoutKind.swift \
@@ -436,6 +442,7 @@ run window-file-test       Tinycast/Features/WindowManagement/Model/WindowComman
                            Tinycast/Features/WindowManagement/Model/WindowLayoutAnchor.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutDisplay.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayout.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutArrangement.swift \
                            Tinycast/Features/WindowManagement/Model/WindowLayoutGeometry.swift \
                            Tinycast/Features/WindowManagement/Model/CustomWindowSize.swift \
                            Tinycast/Features/WindowManagement/Model/Room.swift \
@@ -444,6 +451,7 @@ run window-file-test       Tinycast/Features/WindowManagement/Model/WindowComman
                            Tinycast/Features/WindowManagement/Model/RoomGrid.swift \
                            Tinycast/Features/WindowManagement/Model/RoomLayoutEngine.swift \
                            Tinycast/Features/WindowManagement/Model/WindowManagementFileFormat.swift \
+                           Tinycast/Features/WindowManagement/Model/WindowLayoutArrangementFile.swift \
                            Tinycast/Features/Settings/Model/SettingsFileJSON.swift \
                            Tinycast/Features/Settings/Model/SettingsFileIdentity.swift
 run custom-command-test    Tinycast/Platform/PseudoTerminal.swift \
