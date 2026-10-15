@@ -5,7 +5,17 @@ import { validateHostedRelease } from "./hosted-release-policy.mjs";
 
 const run = (exe, ...args) => execFileSync(exe, args, { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }).trim();
 const git = (...args) => run("git", ...args);
-const api = path => JSON.parse(run("gh", "api", "--paginate", "--slurp", `repos/zachthinks/ZLaunch/${path}`));
+const api = path => {
+  const pages = [];
+  for (let page = 1; ; page++) {
+    const separator = path.includes("?") ? "&" : "?";
+    const result = JSON.parse(run("curl", "-q", "--fail", "--silent", "--show-error", "--location",
+      "--header", "Accept: application/vnd.github+json",
+      `https://api.github.com/repos/zachthinks/ZLaunch/${path}${separator}page=${page}`));
+    pages.push(result);
+    if (!Array.isArray(result) || result.length < 100) return pages;
+  }
+};
 assert.equal(process.env.GITHUB_REPOSITORY, "zachthinks/ZLaunch");
 assert.equal(process.env.GITHUB_REF, "refs/heads/custom/main");
 assert.ok(["workflow_dispatch", "workflow_run"].includes(process.env.GITHUB_EVENT_NAME));

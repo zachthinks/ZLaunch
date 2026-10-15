@@ -71,7 +71,6 @@ for (const guard of ["github.event.workflow_run.conclusion == 'success'", "githu
   "needs.preflight.outputs.eligible == 'true'"]) rejects("custom-release.yml", guard, "true");
 rejects("custom-release.yml", "workflows: [ZLaunch upstream sync]", "workflows: [ZLaunch checks]");
 rejects("custom-release.yml", "types: [completed]", "types: [requested]");
-rejects("custom-release.yml", "actions: read", "actions: write");
 rejects("custom-release.yml", "node Custom/verify-hosted-release.mjs", "echo skipped");
 rejects("custom-release.yml", "if: steps.eligibility.outputs.eligible == 'true'", "if: always()");
 

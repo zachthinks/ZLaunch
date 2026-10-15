@@ -62,6 +62,17 @@ if [ "$1 $2 $3 $4" = 'remote get-url origin ' ]; then echo https://github.com/za
   put(join(repo,'dirty'),'dirty');assert.notEqual(check().status,0,'dirty checkout blocks publication');rmSync(join(repo,'dirty'));
   checked=check(['--publish'],{ZLAUNCH_AUTOPUBLISH:'1',NOTARY_PROFILE:'ZLaunch-Local'});assert.equal(checked.status,0,checked.stderr);
   assert.equal(readFileSync(join(root,'published'),'utf8'),'published');
+  put(join(bin,'curl'),`#!/usr/bin/env node
+import fs from 'node:fs';
+const args=process.argv.slice(2);
+if (args[0] !== '-q' || args.some(arg=>/authorization/i.test(arg))) process.exit(3);
+const url=new URL(args.at(-1)); const page=Number(url.searchParams.get('page')); url.searchParams.delete('page');
+const endpoint=url.pathname.slice(1)+(url.search ? url.search : '');
+const data=JSON.parse(fs.readFileSync(process.env.FIXTURE_ROOT+'/responses.json'))[endpoint];
+if(data===undefined) process.exit(2);
+const result=Array.isArray(data) && Array.isArray(data[0]) ? data.flat() : data;
+console.log(JSON.stringify(Array.isArray(result) ? result.slice((page-1)*100,page*100) : result));
+`,0o755);
   const hosted=(extra={})=>{
     put(join(root,'responses.json'),JSON.stringify(responses));
     return spawnSync('node',['Custom/verify-hosted-release.mjs','--skip-ineligible'],{cwd:repo,
@@ -70,6 +81,9 @@ if [ "$1 $2 $3 $4" = 'remote get-url origin ' ]; then echo https://github.com/za
   };
   checked=hosted();assert.equal(checked.status,0,checked.stderr);
   assert.match(readFileSync(join(root,'outputs'),'utf8'),new RegExp(`eligible=true\\ncommit=${candidate}\\npromotion_run_id=123`));
+  responses[`repos/zachthinks/ZLaunch/commits/${candidate}/statuses?per_page=100`]=[...Array(100).fill({context:'other'}),status];
+  checked=hosted();assert.equal(checked.status,0,checked.stderr);
+  responses[`repos/zachthinks/ZLaunch/commits/${candidate}/statuses?per_page=100`]=[status];
   assert.notEqual(hosted({EXPECTED_COMMIT:base}).status,0,'wrong dispatch SHA must fail');
   run.status='in_progress';assert.notEqual(hosted().status,0,'unfinished source run must fail');run.status='completed';
   checked=hosted({PROMOTION_RUN_ID:'456'});assert.equal(checked.status,0,checked.stderr);

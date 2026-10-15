@@ -35,8 +35,10 @@ attestation. Scheduled runs retain the upstream-only selection path.
 Secret-free preflight repeats tests, lint and Debug bundle verification. Only an
 eligible successful preflight may enter `zlaunch-release`. After its required
 reviewer approves, fresh main/provenance/release checks repeat before importing
-signing secrets. Preflight has `contents: read`, `actions: read` and `statuses: read`; only the
-protected release job has `contents: write`, plus the same read-only Actions/status scopes for provenance.
+signing secrets. Preflight retains `contents: read`; only the protected release job has
+`contents: write`. Provenance is read from the public GitHub API without an
+authentication header or added token permissions. API failures/rate limits stop
+publication safely rather than bypassing checks.
 The existing four environment secrets and temporary keychain are used. The app is
 signed, notarized, stapled and checked by Gatekeeper; stapling validation is also
 explicit. DMG, signature-preserving ZIP and SHA256SUMS become GitHub release assets.

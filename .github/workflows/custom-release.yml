@@ -12,8 +12,6 @@ on:
     branches: [custom/main]
 permissions:
   contents: read
-  actions: read
-  statuses: read
 concurrency:
   group: zlaunch-release
   cancel-in-progress: false
@@ -35,7 +33,6 @@ jobs:
       - name: Verify successful stable promotion
         id: eligibility
         env:
-          GH_TOKEN: ${{ github.token }}
           EXPECTED_COMMIT: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_commit }}
           PROMOTION_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node Custom/verify-hosted-release.mjs --skip-ineligible
@@ -57,8 +54,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
-      actions: read
-      statuses: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

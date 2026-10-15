@@ -13,9 +13,7 @@ export function verifyWorkflowPolicy(workflows) {
     const source = workflows[name];
     const hosted = ["custom-release.yml", "custom-signing-validation.yml"].includes(name);
     if (hosted) {
-      assert.match(source, name === "custom-release.yml"
-        ? /^permissions:\n  contents: read\n  actions: read\n  statuses: read\nconcurrency:/m
-        : /^permissions:\n  contents: read\nconcurrency:/m);
+      assert.match(source, /^permissions:\n  contents: read\nconcurrency:/m);
       const events = source.slice(source.indexOf("\non:\n"), source.indexOf("\npermissions:"));
       assert.deepEqual([...events.matchAll(/^  ([\w-]+):/gm)].map(match => match[1]),
         name === "custom-release.yml" ? ["workflow_dispatch", "workflow_run"] : ["workflow_dispatch"]);
@@ -80,7 +78,7 @@ export function verifyWorkflowPolicy(workflows) {
           const importAt = body.indexOf("      - name: Import signing identity");
           assert.ok(importAt > body.indexOf("git rev-parse FETCH_HEAD"));
           if (job === "release") {
-            assert.match(body, /^    permissions:\n      contents: write\n      actions: read\n      statuses: read\n    steps:/m);
+            assert.match(body, /^    permissions:\n      contents: write\n    steps:/m);
             assert.match(body, /PROMOTION_RUN_ID: \$\{\{ needs.preflight.outputs.promotion_run_id \}\}/);
             assert.ok(body.indexOf("node Custom/verify-hosted-release.mjs") >= 0
               && body.indexOf("node Custom/verify-hosted-release.mjs") < importAt);
