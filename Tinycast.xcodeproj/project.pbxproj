@@ -619,6 +619,7 @@
 		BB4ED6E8BDDE27DE7815A226 /* ChatComposerTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C343C0FEA2652D8E82E04B /* ChatComposerTextView.swift */; };
 		BB62D7609D890578345C5BB5 /* NoteMarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E816B806F2103D0EF184E5 /* NoteMarkdownRenderer.swift */; };
 		BBAB44C0E70AABE70A048889 /* QuicklinkArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = F616D2EE62AEC6782E77364D /* QuicklinkArchive.swift */; };
+		BC54E1AA902F2F8690ECF8AF /* WindowLayoutInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5F915528FA4349A090787D /* WindowLayoutInteraction.swift */; };
 		BC755BD99ECA1F2D382D5C94 /* SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C845A6718CFBD1AFE93BA903 /* SettingsDetailView.swift */; };
 		BCA7E1C4BCF6F77634E54CA7 /* MeetingClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 474E6D9830E336752C79F461 /* MeetingClock.swift */; };
 		BD0B60F4203FD2D852377CD1 /* WindowSwitchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08BB552C55576C43EBC8177C /* WindowSwitchCoordinator.swift */; };
@@ -656,6 +657,7 @@
 		C7468FBE50BAEC5084D4DB17 /* AIProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848E14DE51403235A82BC287 /* AIProvider.swift */; };
 		C75868B7FBA96939089EDBA6 /* CustomWindowSizesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81A385A824D02C1466F8BF8 /* CustomWindowSizesSection.swift */; };
 		C785431D09E6A27D49C310C3 /* DictationInsertionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BF823C2A041D9F5F03A854 /* DictationInsertionContext.swift */; };
+		C7A033723EAF3B4A20B51B6C /* WindowLayoutMapTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DEC26531870376D9120A72A /* WindowLayoutMapTile.swift */; };
 		C890F517AA487C4C6CD25298 /* MathNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9E140AF0EE4548DDC4814D7 /* MathNode.swift */; };
 		C8D4DDD0DDA678429552E062 /* MCPOAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222F9EE432F608B5C907E7C2 /* MCPOAuth.swift */; };
 		C9A7290682E9D0881713C009 /* ExtensionGridGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F85C82C66132C7723272E873 /* ExtensionGridGeometry.swift */; };
@@ -1028,6 +1030,7 @@
 		2B629EC3B716FEE881BB0075 /* TinycastApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TinycastApp.swift; sourceTree = "<group>"; };
 		2BAC1D756594DA0FC63F9033 /* MCPSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPSettingsStore.swift; sourceTree = "<group>"; };
 		2BECF24B674F9458E4A876DA /* AppCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCore.swift; sourceTree = "<group>"; };
+		2C5F915528FA4349A090787D /* WindowLayoutInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutInteraction.swift; sourceTree = "<group>"; };
 		2C5FFE395B9164BDC77B3470 /* SettingsBackupCoverage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupCoverage.swift; sourceTree = "<group>"; };
 		2D303E193CFEFE455778C150 /* CommandsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsSettingsView.swift; sourceTree = "<group>"; };
 		2D34C13391E82AF6AD817FC7 /* ExtensionStoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionStoreScreen.swift; sourceTree = "<group>"; };
@@ -1352,6 +1355,7 @@
 		8D0371F4748011D45C185444 /* TextTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextTranslator.swift; sourceTree = "<group>"; };
 		8D7D18BE38D2CD54CE6AB6DC /* ClipboardTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardTextExtractor.swift; sourceTree = "<group>"; };
 		8DA2EC0303BFCB1212E69B54 /* AISettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISettingsView.swift; sourceTree = "<group>"; };
+		8DEC26531870376D9120A72A /* WindowLayoutMapTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutMapTile.swift; sourceTree = "<group>"; };
 		8E58EBB08450BA3426DF0565 /* AppIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIndex.swift; sourceTree = "<group>"; };
 		8E5F9675F2090C3AA9EEBF65 /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
 		8E822B51C86FD49ADF858784 /* ExtensionImageSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionImageSize.swift; sourceTree = "<group>"; };
@@ -2003,6 +2007,7 @@
 				A17C22B5CE1449E12331FA94 /* WindowLayoutEditorPanel.swift */,
 				E6F27259003BDECA2054FC67 /* WindowLayoutEntryPicker.swift */,
 				77A29ED24604BE67E562B07D /* WindowLayoutInspector.swift */,
+				8DEC26531870376D9120A72A /* WindowLayoutMapTile.swift */,
 				D245764DB29BFEEB47A024A1 /* WindowLayoutNumberField.swift */,
 				0AB691265C48648210F1F6D7 /* WindowLayoutPreview.swift */,
 				EF202236034AB044CA846B60 /* WindowLayoutsSection.swift */,
@@ -2785,6 +2790,7 @@
 				E1FB153A0D53D42771F1CA99 /* WindowLayoutDisplay.swift */,
 				4D9C37A9079B2BE573136DFF /* WindowLayoutDraft.swift */,
 				AFF7FC0E52E9082006614E0D /* WindowLayoutGeometry.swift */,
+				2C5F915528FA4349A090787D /* WindowLayoutInteraction.swift */,
 				C03ABE21E4308D378BD5AA37 /* WindowLayoutMapGeometry.swift */,
 				3A5D8DD69E6E38D96B13D1A6 /* WindowLayoutPlan.swift */,
 				112FAE46D58E17331C1CEEAF /* WindowLayoutStore.swift */,
@@ -4750,7 +4756,9 @@
 				D39C8F6535F028FF79A19AE4 /* WindowLayoutEntryPicker.swift in Sources */,
 				FF42AF572BA0BFEFCFCE5901 /* WindowLayoutGeometry.swift in Sources */,
 				2C9B845C83930B9EEA188C0C /* WindowLayoutInspector.swift in Sources */,
+				BC54E1AA902F2F8690ECF8AF /* WindowLayoutInteraction.swift in Sources */,
 				12ADD160E5E0B99E71384560 /* WindowLayoutMapGeometry.swift in Sources */,
+				C7A033723EAF3B4A20B51B6C /* WindowLayoutMapTile.swift in Sources */,
 				E0C75F1DD4F879772C04F8CA /* WindowLayoutNumberField.swift in Sources */,
 				A5BD706E3098CDA4F77CC8B6 /* WindowLayoutPlan.swift in Sources */,
 				576CE9CDD0E373C8FFEA5D1D /* WindowLayoutPreview.swift in Sources */,
