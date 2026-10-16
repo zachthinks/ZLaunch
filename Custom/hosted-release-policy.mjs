@@ -11,16 +11,22 @@ export function validateHostedRelease({ metadata, commit, remoteHead, status, wo
     return false;
   }
   validatePublication({ metadata, commit, status, workflowRun });
-  const existing = releases.find(release => release.tag_name === `v${metadata.version}`);
-  if (existing && allowSkip) {
-    assert.equal(existing.draft, false, "Existing draft requires inspection; never overwrite it.");
-    assert.equal(existing.prerelease, false);
-    for (const name of [`ZLaunch-${metadata.version}.dmg`, `ZLaunch-${metadata.version}.zip`, "SHA256SUMS"]) {
-      assert.ok(existing.assets?.some(asset => asset.name === name && asset.size > 0),
-        "Existing release is incomplete; inspect it before retrying.");
-    }
-    return false;
-  }
+  if (validateExistingHostedRelease({ metadata, releases, allowSkip })) return false;
   validateReleaseState({ metadata, commit, releases, tagRefs });
+  return true;
+}
+
+export function validateExistingHostedRelease({ metadata, releases, allowSkip }) {
+  assert.match(metadata.version, /^\d+\.\d+\.\d+$/);
+  const existing = releases.find(release => release.tag_name === `v${metadata.version}`);
+  if (!existing) return false;
+  assert.equal(existing.draft, false, "Existing draft requires inspection; never overwrite it.");
+  assert.equal(existing.prerelease, false);
+  for (const name of [`ZLaunch-${metadata.version}.dmg`, `ZLaunch-${metadata.version}.zip`, "SHA256SUMS"]) {
+    assert.ok(existing.assets?.some(asset => asset.name === name && asset.size > 0),
+      "Existing release is incomplete; inspect it before retrying.");
+  }
+  assert.ok(allowSkip, "Release already exists; never overwrite it.");
+  console.log(`Release v${metadata.version} is already complete; no publication needed.`);
   return true;
 }

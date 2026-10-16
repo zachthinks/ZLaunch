@@ -17,7 +17,7 @@ try {
   const base=git(repo,'rev-parse','HEAD'); git(repo,'push','origin','custom/main');
   const meta={repository:'zachthinks/ZLaunch',team:'FVY9AS28CU',version:'0.1.7',upstream_tag:'v0.11.19',upstream_commit:base,upstream_prerelease:false};
   put(join(repo,'Custom/release.json'),JSON.stringify(meta));
-  for(const file of ['promote.mjs','publish-verified.mjs','publication-policy.mjs','hosted-release-policy.mjs','verify-hosted-release.mjs','release-state.mjs','verify-release-state.mjs','prepare-custom-release.mjs']) cpSync(join(source,file),join(repo,'Custom',file));
+  for(const file of ['promote.mjs','publish-verified.mjs','publication-policy.mjs','hosted-release-policy.mjs','verify-hosted-release.mjs','github-release-api.mjs','release-state.mjs','verify-release-state.mjs','prepare-custom-release.mjs']) cpSync(join(source,file),join(repo,'Custom',file));
   put(join(repo,'Custom/publish.sh'),'#!/bin/sh\nprintf published > "$FIXTURE_ROOT/published"\n',0o755);
   git(repo,'add','.'); git(repo,'commit','-m','candidate'); const candidate=git(repo,'rev-parse','HEAD');
   put(join(bin,'gh'),`#!/usr/bin/env node
@@ -62,21 +62,23 @@ if [ "$1 $2 $3 $4" = 'remote get-url origin ' ]; then echo https://github.com/za
   put(join(repo,'dirty'),'dirty');assert.notEqual(check().status,0,'dirty checkout blocks publication');rmSync(join(repo,'dirty'));
   checked=check(['--publish'],{ZLAUNCH_AUTOPUBLISH:'1',NOTARY_PROFILE:'ZLaunch-Local'});assert.equal(checked.status,0,checked.stderr);
   assert.equal(readFileSync(join(root,'published'),'utf8'),'published');
-  put(join(bin,'curl'),`#!/usr/bin/env node
-import fs from 'node:fs';
-const args=process.argv.slice(2);
-if (args[0] !== '-q' || args.some(arg=>/authorization/i.test(arg))) process.exit(3);
-const url=new URL(args.at(-1)); const page=Number(url.searchParams.get('page')); url.searchParams.delete('page');
-const endpoint=url.pathname.slice(1)+(url.search ? url.search : '');
-const data=JSON.parse(fs.readFileSync(process.env.FIXTURE_ROOT+'/responses.json'))[endpoint];
-if(data===undefined) process.exit(2);
-const result=Array.isArray(data) && Array.isArray(data[0]) ? data.flat() : data;
-console.log(JSON.stringify(Array.isArray(result) ? result.slice((page-1)*100,page*100) : result));
-`,0o755);
+  put(join(root,'fetch-fixture.mjs'),`import fs from 'node:fs';
+globalThis.fetch=async (address, options)=>{
+ const url=new URL(address); const page=Number(url.searchParams.get('page')); url.searchParams.delete('page');
+ const endpoint=url.pathname.slice(1)+(url.search ? url.search : '');
+ if(options.headers.Authorization!=='Bearer fixture-token') throw new Error('Expected workflow token');
+ fs.appendFileSync(process.env.FIXTURE_ROOT+'/requests',endpoint+'\\n');
+ const data=JSON.parse(fs.readFileSync(process.env.FIXTURE_ROOT+'/responses.json'))[endpoint];
+ if(data===undefined) throw new Error('Unexpected endpoint');
+ if(data.fixtureHTTP) return new Response(JSON.stringify({message:'fixture API error'}),{status:data.fixtureHTTP});
+ const result=Array.isArray(data) && Array.isArray(data[0]) ? data.flat() : data;
+ return new Response(JSON.stringify(Array.isArray(result) ? result.slice((page-1)*100,page*100) : result));
+};`);
   const hosted=(extra={})=>{
     put(join(root,'responses.json'),JSON.stringify(responses));
-    return spawnSync('node',['Custom/verify-hosted-release.mjs','--skip-ineligible'],{cwd:repo,
-      env:{...env,GITHUB_EVENT_NAME:'workflow_run',GITHUB_REF:'refs/heads/custom/main',GITHUB_SHA:candidate,
+    rmSync(join(root,'outputs'),{force:true}); rmSync(join(root,'requests'),{force:true});
+    return spawnSync('node',["--import",join(root,'fetch-fixture.mjs'),'Custom/verify-hosted-release.mjs',...(extra.STRICT ? [] : ['--skip-ineligible'])],{cwd:repo,
+      env:{...env,GH_TOKEN:'fixture-token',GITHUB_EVENT_NAME:'workflow_run',GITHUB_REF:'refs/heads/custom/main',GITHUB_SHA:candidate,
         EXPECTED_COMMIT:candidate,PROMOTION_RUN_ID:'123',GITHUB_OUTPUT:join(root,'outputs'),...extra},encoding:'utf8'});
   };
   checked=hosted();assert.equal(checked.status,0,checked.stderr);
@@ -88,8 +90,35 @@ console.log(JSON.stringify(Array.isArray(result) ? result.slice((page-1)*100,pag
   run.status='in_progress';assert.notEqual(hosted().status,0,'unfinished source run must fail');run.status='completed';
   checked=hosted({PROMOTION_RUN_ID:'456'});assert.equal(checked.status,0,checked.stderr);
   assert.match(checked.stdout,/publication skipped/,'unrelated no-op sync must skip');
+  assert.ok(!readFileSync(join(root,'requests'),'utf8').includes('/actions/runs/'),
+    'No-op sync must not fetch an unrelated historical promotion');
   assert.notEqual(hosted({GITHUB_EVENT_NAME:'workflow_dispatch',PROMOTION_RUN_ID:'456'}).status,0,
     'manual dispatch must reject wrong provenance instead of silently skipping');
+  const statusKey=`repos/zachthinks/ZLaunch/commits/${candidate}/statuses?per_page=100`;
+  const releaseKey='repos/zachthinks/ZLaunch/releases?per_page=100';
+  const complete={tag_name:'v0.1.7',draft:false,prerelease:false,
+    assets:['ZLaunch-0.1.7.dmg','ZLaunch-0.1.7.zip','SHA256SUMS'].map(name=>({name,size:100}))};
+  responses[releaseKey][0].push(complete);
+  responses[statusKey]={fixtureHTTP:403};
+  checked=hosted({PROMOTION_RUN_ID:'456'});assert.equal(checked.status,0,checked.stderr);
+  assert.match(checked.stdout,/already complete/);
+  assert.match(readFileSync(join(root,'outputs'),'utf8'),/eligible=false/);
+  assert.ok(!readFileSync(join(root,'requests'),'utf8').includes('/statuses'),
+    'Already-current sync must skip before the failing statuses API');
+  assert.notEqual(hosted({STRICT:true}).status,0,'Protected verifier must reject an existing release');
+  complete.draft=true;assert.notEqual(hosted().status,0,'No-op cannot hide an existing draft');complete.draft=false;
+  complete.assets=[];assert.notEqual(hosted().status,0,'No-op cannot hide incomplete publication');
+  responses[releaseKey][0].pop();
+  for(const extra of [{},{STRICT:true}]) {
+    checked=hosted(extra);assert.notEqual(checked.status,0);assert.match(checked.stderr,/HTTP 403/);
+    assert.throws(()=>readFileSync(join(root,'outputs'),'utf8'));
+  }
+  responses[statusKey]=[status];
+  checked=hosted({STRICT:true});assert.equal(checked.status,0,checked.stderr);
+  checked=hosted({STRICT:true,GITHUB_EVENT_NAME:'workflow_dispatch'});assert.equal(checked.status,0,checked.stderr);
+  responses[releaseKey]={fixtureHTTP:403};
+  for(const extra of [{},{STRICT:true}]) assert.notEqual(hosted(extra).status,0,'API errors must never become a no-op');
+  responses[releaseKey]=[[{tag_name:'v0.1.6',draft:false,prerelease:false}]];
   put(join(repo,'dirty'),'dirty');assert.notEqual(hosted().status,0);rmSync(join(repo,'dirty'));
   responses['repos/zachthinks/ZLaunch/releases']=responses['repos/zachthinks/ZLaunch/releases?per_page=100'];
   const prepare=extra=>{
@@ -106,6 +135,6 @@ console.log(JSON.stringify(Array.isArray(result) ? result.slice((page-1)*100,pag
   responses['repos/zachthinks/ZLaunch/releases'][0].push({tag_name:'v0.1.7',draft:true,prerelease:false});
   assert.notEqual(prepare({}).status,0,'existing draft blocks custom release attestation');
   responses['repos/zachthinks/ZLaunch/releases'][0].pop();
-  console.log('Hosted CLI fixtures passed: real Git source/ancestry, paginated API responses, exact outputs, failed provenance and manual retry rejection.');
+  console.log('Hosted CLI fixtures passed: exact provenance, both verifier modes, authenticated reads, no-op/complete skips, incomplete-release and API error rejection.');
   console.log('Disposable delivery fixtures passed: exact SHA, fast-forward, stale base, provenance, activation, drafts, dirty source and publisher handoff.');
 } finally { rmSync(root,{recursive:true,force:true}); }
