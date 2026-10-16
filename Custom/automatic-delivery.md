@@ -19,9 +19,12 @@ source run, then checks the source run's repository, workflow path, event and
 successful terminal result. It verifies clean source, remote-main equality,
 stable metadata, upstream ancestry, monotonic version and remote tag target.
 
-No matching promotion is an automatic no-op. An already complete release is also
-an automatic no-op; a draft or incomplete release blocks for inspection. An
-explicit manual retry requires the full `expected_commit` input and valid
+Preflight checks the release list before requesting commit statuses or promotion
+run details. An already complete release is an automatic no-op, including a
+successful sync that reported “Already current” and skipped promotion. A draft or
+incomplete release blocks for inspection even when there is no matching promotion.
+For an unpublished version, no matching promotion is an automatic no-op; it does
+not fetch unrelated run details. An explicit manual retry requires the full `expected_commit` input and valid
 promotion evidence; it cannot bypass those checks or overwrite an existing release.
 
 A completed custom feature update can use the same pipeline without waiting for
@@ -36,9 +39,18 @@ Secret-free preflight repeats tests, lint and Debug bundle verification. Only an
 eligible successful preflight may enter `zlaunch-release`. After its required
 reviewer approves, fresh main/provenance/release checks repeat before importing
 signing secrets. Preflight retains `contents: read`; only the protected release job has
-`contents: write`. Provenance is read from the public GitHub API without an
-authentication header or added token permissions. API failures/rate limits stop
-publication safely rather than bypassing checks.
+`contents: write`. Both verifier invocations use the existing temporary
+`github.token` as `GH_TOKEN` for GitHub API reads; no token permissions are added. The repository and read
+endpoints remain public. The client sends the token only to the fixed GitHub API
+origin and refuses redirects. It retries transport failures, transient server
+errors and short rate limits at most three times, with a 20-second request timeout
+and at most 10 seconds between attempts. Longer rate-limit delays stop for later
+inspection rather than repeatedly hitting the API. Diagnostics name the endpoint,
+HTTP status, authentication mode, rate-limit headers and GitHub request ID without
+printing tokens or response bodies. API, authentication and malformed-response
+errors fail closed in both preflight and the protected verifier; they never become
+an eligibility skip. A permission denial is reported, never resolved by silently
+broadening permissions or dropping authentication.
 The existing four environment secrets and temporary keychain are used. The app is
 signed, notarized, stapled and checked by Gatekeeper; stapling validation is also
 explicit. DMG, signature-preserving ZIP and SHA256SUMS become GitHub release assets.

@@ -64,6 +64,7 @@ export function verifyWorkflowPolicy(workflows) {
           assert.ok(!body.includes("permissions:"), "Preflight inherits read-only permission");
           if (name === "custom-release.yml") {
             assert.match(body, /id: eligibility/);
+            assert.equal((body.match(/GH_TOKEN: \$\{\{ github.token \}\}/g) ?? []).length, 1);
             assert.match(body, /EXPECTED_COMMIT: \$\{\{ github.event_name == 'workflow_run' && github.sha \|\| inputs.expected_commit \}\}/);
             assert.match(body, /PROMOTION_RUN_ID: \$\{\{ github.event.workflow_run.id \}\}/);
             assert.match(body, /run: node Custom\/verify-hosted-release.mjs --skip-ineligible/);
@@ -78,6 +79,7 @@ export function verifyWorkflowPolicy(workflows) {
           const importAt = body.indexOf("      - name: Import signing identity");
           assert.ok(importAt > body.indexOf("git rev-parse FETCH_HEAD"));
           if (job === "release") {
+            assert.equal((body.match(/GH_TOKEN: \$\{\{ github.token \}\}/g) ?? []).length, 2);
             assert.match(body, /^    permissions:\n      contents: write\n    steps:/m);
             assert.match(body, /PROMOTION_RUN_ID: \$\{\{ needs.preflight.outputs.promotion_run_id \}\}/);
             assert.ok(body.indexOf("node Custom/verify-hosted-release.mjs") >= 0

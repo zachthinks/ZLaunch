@@ -33,6 +33,7 @@ jobs:
       - name: Verify successful stable promotion
         id: eligibility
         env:
+          GH_TOKEN: ${{ github.token }}
           EXPECTED_COMMIT: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_commit }}
           PROMOTION_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node Custom/verify-hosted-release.mjs --skip-ineligible

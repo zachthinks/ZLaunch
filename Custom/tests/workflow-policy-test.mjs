@@ -76,3 +76,5 @@ rejects("custom-release.yml", "if: steps.eligibility.outputs.eligible == 'true'"
 
 rejects("custom-sync.yml", "VERIFY_CURRENT_RELEASE: ${{ inputs.verify_current_release }}", "VERIFY_CURRENT_RELEASE: true");
 rejects("custom-sync.yml", "node Custom/prepare-custom-release.mjs", "echo skipped");
+
+rejects("custom-release.yml", "GH_TOKEN: ${{ github.token }}", "NO_TOKEN: unused");
