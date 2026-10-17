@@ -38,12 +38,24 @@ final class ExtensionCoordinator {
     var installedNames: Set<String> { Set(extensions.installed.map(\.manifest.name)) }
     var extensionsEnabled: Bool { settings.extensionsEnabled }
 
+    private(set) var storeScreenshot: NSImage?
+
+    func showStoreScreenshot(_ image: NSImage) {
+        storeScreenshot = image
+    }
+
+    func closeStoreScreenshot() {
+        storeScreenshot = nil
+    }
+
     func showStore() {
+        closeStoreScreenshot()
         paletteCoordinator.togglePalette(mode: .extensionStore)
         core.extensionStore.search(palette.query, debounce: false)
     }
 
     func showStoreDetail(_ listing: ExtensionListing) {
+        closeStoreScreenshot()
         core.extensionStore.showDetail(listing)
         palette.push(mode: .extensionStoreDetail)
     }

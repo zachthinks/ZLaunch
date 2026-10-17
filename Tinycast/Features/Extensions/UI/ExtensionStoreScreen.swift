@@ -38,14 +38,14 @@ struct ExtensionStoreScreen: PaletteScreen {
     }
 
     func hasPrimaryAction(at selection: Int) -> Bool {
-        guard rows.indices.contains(selection) else { return false }
+        guard coordinator.storeScreenshot == nil, rows.indices.contains(selection) else { return false }
         guard isDetail else { return true }
         let name = rows[selection].listing.name
         return session.installing[name] == nil
     }
 
     func activate(at selection: Int) {
-        guard rows.indices.contains(selection) else { return }
+        guard coordinator.storeScreenshot == nil, rows.indices.contains(selection) else { return }
         let listing = rows[selection].listing
         if isDetail {
             guard session.installing[listing.name] == nil else { return }
@@ -61,7 +61,7 @@ struct ExtensionStoreScreen: PaletteScreen {
     }
 
     func secondary(at selection: Int) -> Bool {
-        guard rows.indices.contains(selection) else { return false }
+        guard coordinator.storeScreenshot == nil, rows.indices.contains(selection) else { return false }
         let listing = rows[selection].listing
         guard coordinator.extensionsEnabled, !coordinator.installedNames.contains(listing.name),
             session.installing[listing.name] == nil else { return false }
@@ -80,7 +80,7 @@ struct ExtensionStoreScreen: PaletteScreen {
     func body(selection: Int, scroll: ScrollIntent) -> AnyView {
         if isDetail, let listing = session.detail {
             return AnyView(ExtensionStoreDetail(
-                listing: listing, loading: session.loadingDetail,
+                listing: listing, coordinator: coordinator, loading: session.loadingDetail,
                 progress: session.installing[listing.name],
                 installed: coordinator.installedNames.contains(listing.name),
                 failure: session.installFailures[listing.name] ?? session.detailFailure))
@@ -93,7 +93,7 @@ struct ExtensionStoreScreen: PaletteScreen {
     }
 
     func actions(at selection: Int) -> PopoverMenuContent? {
-        guard rows.indices.contains(selection) else { return nil }
+        guard coordinator.storeScreenshot == nil, rows.indices.contains(selection) else { return nil }
         let listing = rows[selection].listing
         var items: [PopoverMenuItem] = []
         if !isDetail {

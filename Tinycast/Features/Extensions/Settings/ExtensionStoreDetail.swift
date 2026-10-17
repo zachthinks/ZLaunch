@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExtensionStoreDetail: View {
     let listing: ExtensionListing
+    let coordinator: ExtensionCoordinator
     let loading: Bool
     let progress: String?
     let installed: Bool
@@ -53,7 +54,7 @@ struct ExtensionStoreDetail: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: metrics.spacing.xl) {
                             ForEach(listing.screenshots, id: \.self) { url in
-                                ExtensionStoreScreenshot(url: url)
+                                ExtensionStoreScreenshot(url: url, onPreview: coordinator.showStoreScreenshot)
                             }
                         }
                     }
@@ -110,6 +111,15 @@ struct ExtensionStoreDetail: View {
         }
         .edgeDissolve()
         .thinScrollbar()
+        .opacity(coordinator.storeScreenshot == nil ? 1 : 0)
+        .allowsHitTesting(coordinator.storeScreenshot == nil)
+        .accessibilityHidden(coordinator.storeScreenshot != nil)
+        .overlay {
+            if let image = coordinator.storeScreenshot {
+                ExtensionStoreScreenshotPreview(image: image, close: coordinator.closeStoreScreenshot)
+            }
+        }
+        .onDisappear { coordinator.closeStoreScreenshot() }
     }
 
     private func heading(_ text: String) -> some View {
@@ -119,22 +129,17 @@ struct ExtensionStoreDetail: View {
 }
 
 private struct ExtensionStoreScreenshot: View {
-    private struct Preview: Identifiable {
-        let id: URL
-        let image: NSImage
-    }
-
     let url: URL
+    let onPreview: (NSImage) -> Void
     @Environment(\.metrics) private var metrics
     @State private var loaded: NSImage?
     @State private var loading = true
-    @State private var preview: Preview?
     private static let width: CGFloat = 224
     private static let height: CGFloat = 140
 
     var body: some View {
         Button {
-            if let loaded { preview = Preview(id: url, image: loaded) }
+            if let loaded { onPreview(loaded) }
         } label: {
             thumbnail
         }
@@ -142,9 +147,6 @@ private struct ExtensionStoreScreenshot: View {
         .disabled(loaded == nil)
         .help("Enlarge screenshot")
         .accessibilityLabel("Enlarge extension screenshot")
-        .sheet(item: $preview) { preview in
-            ExtensionStoreScreenshotPreview(image: preview.image)
-        }
         .task(id: url) {
             loading = true
             loaded = nil
@@ -173,17 +175,15 @@ private struct ExtensionStoreScreenshot: View {
 
 private struct ExtensionStoreScreenshotPreview: View {
     let image: NSImage
-    @Environment(\.dismiss) private var dismiss
+    let close: () -> Void
     @Environment(\.metrics) private var metrics
-    private static let width: CGFloat = 900
-    private static let height: CGFloat = 600
 
     var body: some View {
         VStack(spacing: metrics.spacing.xl) {
             HStack {
                 Text("Screenshot").font(metrics.typography.rowTitle)
                 Spacer()
-                Button("Close", systemImage: "xmark") { dismiss() }
+                Button("Close", systemImage: "xmark") { close() }
                     .keyboardShortcut(.cancelAction)
             }
             Image(nsImage: image)
@@ -193,6 +193,7 @@ private struct ExtensionStoreScreenshotPreview: View {
                 .accessibilityLabel("Enlarged extension screenshot")
         }
         .padding(metrics.spacing.xxl)
-        .frame(width: Self.width, height: Self.height)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.Colors.controlSurface)
     }
 }

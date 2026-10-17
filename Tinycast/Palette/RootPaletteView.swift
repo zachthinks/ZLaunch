@@ -1513,6 +1513,10 @@ struct RootPaletteView: View {
     }
 
     private func handleEscape() -> KeyPress.Result {
+        if vm.mode == .extensionStoreDetail, core.extensionCoordinator.storeScreenshot != nil {
+            core.extensionCoordinator.closeStoreScreenshot()
+            return .handled
+        }
         if menuPanel.isClosing { return .handled }
         // An open control list owns Escape before the palette beneath it.
         if vm.isControlListOpen { return .ignored }

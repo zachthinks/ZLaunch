@@ -476,7 +476,8 @@ Settings → Extensions offers four routes, under **Install New**:
    launcher command. It follows Raycast v1's list layout, with live Featured, Trending and All Extensions,
    a searchable category picker (⌘P), and paginated search. Return opens details with screenshots,
    commands and source/README links; Return there installs, and ⌘Return installs from the list.
-   Click a loaded screenshot thumbnail for a larger preview; Close or Escape returns to details.
+   Click a loaded screenshot thumbnail for an in-palette preview; Close or Escape returns to details.
+   The preview keeps palette focus and blocks install/configure actions while open.
    `ExtensionStoreSession`, owned by `AppCore`, cancels stale requests and deduplicates pages by name.
    `ExtensionStoreScreen` owns the visible row order; section-qualified IDs keep featured entries
    distinct from their appearances in All Extensions. The native palette hosts the feature opaquely.
