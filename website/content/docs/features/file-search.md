@@ -22,7 +22,7 @@ If Spotlight hasn't indexed something, you get fewer results instead of a Full D
 
 ## The screen
 
-With nothing typed, the list shows **Recently Used**: files in your search scopes that you opened in
+With nothing typed, the list shows **Recent Files**: files in your search scopes that you opened in
 the last 30 days or changed in the last 3 days. This comes from macOS's own records; Tinycast doesn't
 keep its own history.
 
@@ -34,12 +34,17 @@ size and dates. You can play video and audio there. Nothing plays until you pres
 
 ### Filtering by type
 
-<kbd>⌘</kbd><kbd>P</kbd>, or the **All Types** button, narrows the search:
+<kbd>⌘</kbd><kbd>P</kbd>, or the **Useful Files** button, narrows the search:
 
-**All Types** · **Folders** · **Documents** · **Images** · **Audio** · **Videos** · **Archives**
+**Useful Files** · **Everything** · **Folders** · **Documents** · **Images** · **Audio** · **Videos** · **Archives**
 
 The filter changes what Tinycast asks Spotlight for, so it never hides matches that were already cut
-off by the result limit. It resets each time you open the palette.
+off by the result limit. Your selection is remembered, including after restarting the app.
+
+Useful Files is the default. It includes documents, media, folders, source code, Markdown and common
+project/configuration files. It hides generated artifacts, temporary files and logs. Everything includes
+unfamiliar types and those generated files; your ignore patterns and the existing folder rules still apply.
+The recent list in Useful Files omits source/configuration churn; typing searches project files normally.
 
 ## Actions
 
@@ -61,6 +66,9 @@ off by the result limit. It resets each time you open the palette.
 - **Copy Name** and **Copy Path** keep the palette open, so you can copy several in a row.
 - **Move to Trash** doesn't ask for confirmation, because you can always restore files from the
   Trash.
+
+**Exclude Enclosing Folder** (or **Exclude Contents of This Folder**) and **Exclude .extension Files**
+add ignore patterns. Remove those patterns in File Search settings to undo an exclusion.
 
 Copies made here appear in your [clipboard history](/docs/features/clipboard) like any other copy.
 
@@ -94,7 +102,8 @@ The list only shows patterns you add. Six built-in rules always apply as well.
 ## How search works
 
 Every word you type must appear in the file name, in any order. `annual report` finds
-"Report – annual 2025.pdf".
+"Report – annual 2025.pdf". Exact filename matches rank before prefixes and other matches.
+Documents, Desktop and Downloads win otherwise equal score ties.
 
 Spotlight returns at most **1,000** matches, and at most **200** rows are shown after filtering.
 Tinycast waits 120 ms after you stop typing before it searches, so it doesn't start a new search for

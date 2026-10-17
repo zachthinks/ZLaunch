@@ -32,15 +32,41 @@ final class FileSearchCoordinator {
         if palette.mode == .fileSearch { palette.prepare(mode: .launcher) }
     }
 
+    func selectFilter(_ filter: FileSearchFilter) {
+        settings.fileSearchFilter = filter.rawValue
+        palette.fileSearchFilter = filter
+    }
+
     func applyPolicy() {
+        palette.fileSearchFilter = FileSearchFilter(rawValue: settings.fileSearchFilter) ?? .useful
         session.apply(
             scopes: settings.fileSearchScopes, ignorePatterns: settings.fileSearchIgnorePatterns)
+        if palette.mode == .fileSearch && palette.isVisible {
+            session.search(palette.query, filter: palette.fileSearchFilter)
+        }
     }
 
     /// `query` is the fallback row's: the screen opens already narrowed to what was typed.
     func show(query: String = "") {
         guard settings.fileSearchEnabled else { return }
         paletteCoordinator.togglePalette(mode: .fileSearch, seeding: query.isEmpty ? nil : query)
+    }
+
+    func excludeFolder(_ result: FileSearchResult) {
+        let folder = result.isDirectory ? result.url : result.url.deletingLastPathComponent()
+        exclude(FileSearchIgnoreList.folderPattern(folder))
+    }
+
+    func excludeType(_ result: FileSearchResult) {
+        guard let pattern = FileSearchIgnoreList.typePattern(result.url) else { return }
+        exclude(pattern)
+    }
+
+    private func exclude(_ pattern: String) {
+        guard !settings.fileSearchIgnorePatterns.contains(pattern) else { return }
+        settings.fileSearchIgnorePatterns.append(pattern)
+        applyPolicy()
+        core.showMessage("Excluded from search. Undo in File Search settings.")
     }
 
     func open(_ result: FileSearchResult) {

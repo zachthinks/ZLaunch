@@ -40,9 +40,18 @@ enum FileSearchQuery {
         stamp: RecentStamp, excluding exclusions: [String] = [], filter: FileSearchFilter = .all
     ) -> String {
         let touched = "\(stamp.rawValue) > \(stamp.window)"
+        let projectNoise = filter == .useful
+            ? FileSearchFilter.projectExtensions.filter { !["md", "mdx"].contains($0) }
+                .map { "*." + $0 } : []
         let types = filter.spotlightClause.map { [$0] } ?? []
         let excludes = exclusions.map { "kMDItemFSName != \"\(escapeGlob($0))\"cd" }
-        return ([touched] + types + excludes).joined(separator: " && ")
+        let recentExcludes = projectNoise.map { "kMDItemFSName != \"\($0)\"cd" }
+        let sourceExclusion = filter == .useful
+            ? ["kMDItemContentTypeTree != \"public.source-code\""] : []
+        let folderExclusion = filter == .useful && stamp == .changed
+            ? ["kMDItemContentTypeTree != \"public.folder\""] : []
+        return ([touched] + types + excludes + recentExcludes + sourceExclusion + folderExclusion)
+            .joined(separator: " && ")
     }
 
     static func rank(
@@ -57,9 +66,14 @@ enum FileSearchQuery {
             let full = FuzzyMatch.score(whole, candidate: result.name)
             let termScore = folded.compactMap { FuzzyMatch.score($0, candidate: result.name) }
                 .reduce(0, +)
-            return (result, full, termScore)
+            let match = matchPriority(filename: result.name, query: query)
+            let location = ["~/Documents", "~/Desktop", "~/Downloads"].contains { root in
+                result.parentPath == root || result.parentPath.hasPrefix(root + "/")
+            }
+            return (result, full, termScore, match, location)
         }
         .sorted { left, right in
+            if left.3 != right.3 { return left.3 > right.3 }
             switch (left.1, right.1) {
             case let (leftScore?, rightScore?) where leftScore != rightScore:
                 return leftScore > rightScore
@@ -69,6 +83,7 @@ enum FileSearchQuery {
                 return false
             default:
                 if left.2 != right.2 { return left.2 > right.2 }
+                if left.4 != right.4 { return left.4 }
                 let nameOrder = left.0.name.localizedCaseInsensitiveCompare(right.0.name)
                 if nameOrder != .orderedSame { return nameOrder == .orderedAscending }
                 return left.0.id.localizedCaseInsensitiveCompare(right.0.id) == .orderedAscending
@@ -76,6 +91,15 @@ enum FileSearchQuery {
         }
         .prefix(resultLimit)
         .map(\.0)
+    }
+
+    private static func matchPriority(filename: String, query: String) -> Int {
+        let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+        let query = terms(in: query).joined(separator: " ")
+        let stem = (filename as NSString).deletingPathExtension
+        if filename.compare(query, options: options) == .orderedSame
+            || stem.compare(query, options: options) == .orderedSame { return 2 }
+        return filename.range(of: query, options: options.union(.anchored)) == nil ? 0 : 1
     }
 
     static func matches(filename: String, query: String) -> Bool {

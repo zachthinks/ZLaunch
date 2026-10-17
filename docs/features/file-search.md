@@ -16,7 +16,7 @@ feature is enabled in Settings.
   types with no environment of their own. `file-search-test` compiles the shipped files together with
   the existing pure fuzzy scorer.
 - **Search is filename-only, and every list comes from Spotlight.** Tinycast creates no content index,
-  history, query cache, watcher or search data — the blank screen's Recently Used rows are one more
+  history, query cache, watcher or search data — the blank screen's Recent Files rows are one more
   Spotlight query over the configured scopes, read from the system's own `kMDItemLastUsedDate` and
   `kMDItemFSContentChangeDate`, never from anything Tinycast recorded. The type filter narrows *which*
   files Spotlight is asked for; it never adds a second pass over the ones it returned.
@@ -65,7 +65,8 @@ overlapping queries. The session owns *when* a search runs and nothing else — 
 service's, built where the policy that shapes them already is. The service resolves the configured roots,
 then keeps every `MDQuery` reference inside one nonisolated synchronous function. Spotlight returns at
 most 1,000 candidates. `FileSearchQuery` removes hidden path components and app-bundle contents, applies
-the ignore list, then applies `FuzzyMatch` and publishes at most 200. Localized filename then path order
+the ignore list, then ranks exact filename/stem matches before prefixes and other matches, uses `FuzzyMatch` within
+each tier and publishes at most 200. Documents, Desktop and Downloads break otherwise equal score ties. Localized filename then path order
 makes ties deterministic.
 
 **`kMDItemPath` is the only attribute read from a result.** `MDQuery` hands the path back from its own
@@ -87,22 +88,30 @@ window: changed in the last 3 days, used in the last 30. Both are needed because
 shorter change window is what keeps a busy machine's matches under the candidate cap.
 
 Spotlight sorts on one attribute, so the service runs **one sorted query per stamp** and merges their heads
-by date, newest first, before publishing 20. Only the first 20 rows of each list are dated: no row past
+by date, newest first, before publishing 20. Useful Files recents omit source/configuration extensions,
+source-code types and modification-only folder matches to reduce background project churn; typing still searches those project files. The heading is Recent Files because modification
+dates do not prove the user opened a file. Only the first 20 non-excluded paths of each list are dated: no row past
 that can reach the merged list, and every date read costs a metadata fetch. The sort attribute has to be
 named in `MDQueryCreate`; set afterwards through `MDQuerySetSortOrder` it is ignored, which is what the
 first attempt at this measured.
 
 ## Type filter
 
-`FileSearchFilter` is the header's **All Types** pop-up: All Types, Folders, Documents, Images, Audio,
-Videos, Archives. Each case names the `UTType`s it admits, and everything else is derived from that list —
+`FileSearchFilter` is the header's **Useful Files** pop-up: Useful Files, Everything, Folders, Documents, Images, Audio,
+Videos, Archives. Useful Files admits document/media types, folders, source code and common project
+filenames/extensions, including when Spotlight cannot resolve their type. Everything has no type
+restriction. Useful Files additionally excludes generated artifacts, logs and temporary files; Everything
+bypasses those extra exclusions. The existing six folder exclusions and user rules apply to every filter.
+Each type category names the `UTType`s it admits. Useful Files also names project extensions and
+extensionless project files. Those lists drive
 the Spotlight clause (`kMDItemContentTypeTree == "public.image"`, parenthesized when a case names several)
-and `accepts(contentType:isDirectory:)`, which the home-root branch uses because it never reaches
+and `accepts(contentType:isDirectory:filename:)`, which the home-root branch uses because it never reaches
 Spotlight. A type resolved from disk answers both, so a `.pages` package files under Documents and a plain
 folder under Folders.
 
-The filter lives on `PaletteState` beside the clipboard's, is reset on every summon, and is never
-persisted. ⌘P and the header button open it through `PaletteFilterAction` and the one `PopoverMenu` path
+The filter lives on `PaletteState` and is persisted as `fileSearchFilter` in the app namespace,
+mirrored by `fileSearch.filter` and included in settings backups. New installs and unset preferences
+start with Useful Files; reopening preserves the selection. ⌘P and the header button open it through `PaletteFilterAction` and the one `PopoverMenu` path
 `RootPaletteView` uses for every in-window menu; changing it resets the selection, snaps the scroll and
 re-runs the query.
 
@@ -162,7 +171,7 @@ magnitude, not budgets; rerun the benchmark after query-policy work.
 `FileSearchScreen.rows` is the exact flat selection order rendered by `FileSearchList`. Results sit in a
 290pt column beside a preview pane, split by the same `Theme.Colors.separator` hairline the clipboard
 draws. The list uses the shared Results header, row metrics, edge dissolve, thin scrollbar and scroll
-intent; its header reads **Recently Used** on the blank screen and **Results** under a query. A row shows
+intent; its header reads **Recent Files** on the blank screen and **Results** under a query. A row shows
 a fitted native file icon and the full filename — a folder prefixed by its parent's name, dimmed, since
 half the folder hits on a developer machine are some `src` or `Tinycast`. The path itself is the preview's
 `Where` row rather than a second column the narrow list has no width for. A click selects and a double
@@ -275,3 +284,7 @@ keyed on the entry's `preferenceKey`. The entry behind it comes from
 `CommandCatalog.entry(for:)` rather than `AppIndex`, because the index drops the command entirely while
 the feature switch is off — exactly when the pane still has to draw the row. Hiding the command leaves
 the shortcut working, as it does for every other feature.
+
+Result actions can exclude the enclosing folder (or a selected folder’s contents) and a file extension.
+These write escaped, literal-safe patterns to the existing ignore list, re-run the active query and can
+be undone by removing the pattern in Settings → File Search.

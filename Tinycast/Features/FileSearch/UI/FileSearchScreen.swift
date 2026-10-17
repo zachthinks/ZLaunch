@@ -94,7 +94,7 @@ struct FileSearchScreen: PaletteScreen {
             let selected = result(at: selection)
             HStack(spacing: 0) {
                 FileSearchList(
-                    title: isShowingRecents ? "Recently Used" : "Results",
+                    title: isShowingRecents ? "Recent Files" : "Results",
                     results: rows,
                     selectedID: selected?.id,
                     scroll: scroll,
@@ -142,6 +142,21 @@ enum FileSearchPasteboardAction {
 
 @MainActor
 enum FileSearchActionsMenu {
+    private static func exclusions(
+        result: FileSearchResult, coordinator: FileSearchCoordinator
+    ) -> [PopoverMenuItem] {
+        var items = [PopoverMenuItem(
+            title: result.isDirectory ? "Exclude Contents of This Folder" : "Exclude Enclosing Folder",
+            systemImage: "folder.badge.minus", startsSection: true
+        ) { coordinator.excludeFolder(result) }]
+        if !result.isDirectory, !result.url.pathExtension.isEmpty {
+            items.append(PopoverMenuItem(
+                title: "Exclude .\(result.url.pathExtension) Files", systemImage: "doc.badge.minus"
+            ) { coordinator.excludeType(result) })
+        }
+        return items
+    }
+
     static func content(
         result: FileSearchResult, core: AppCore, vm: PaletteState, target: PasteTarget?
     ) -> PopoverMenuContent {
@@ -180,6 +195,6 @@ enum FileSearchActionsMenu {
                     title: "Move to Trash", systemImage: "trash", startsSection: true,
                     shortcut: "⌃X", isDestructive: true
                 ) { coordinator.trash(result) }
-            ])
+            ] + exclusions(result: result, coordinator: coordinator))
     }
 }

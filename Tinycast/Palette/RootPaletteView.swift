@@ -201,7 +201,7 @@ struct RootPaletteView: View {
         PopoverMenuContent(
             items: FileSearchFilter.allCases.map { filter in
                 PopoverMenuItem(title: filter.title, systemImage: filter.systemImage) {
-                    vm.fileSearchFilter = filter
+                    core.fileSearchCoordinator.selectFilter(filter)
                 }
             })
     }
@@ -442,12 +442,12 @@ struct RootPaletteView: View {
             .onChange(of: vm.clipboardFilter) { land() }
             // The filter is part of the query, so narrowing re-runs it rather than thinning rows.
             .onChange(of: vm.fileSearchFilter) {
+                guard vm.mode == .fileSearch else { return }
                 land()
                 fileSearch.search(vm.query, filter: vm.fileSearchFilter)
             }
             .onChange(of: vm.mode) {
                 vm.clipboardFilter = .all
-                vm.fileSearchFilter = .all
                 vm.emojiCategoryFilter = .all
                 vm.emojiGridColumnsOverride = nil
                 vm.fileSearchQuickLook = false

@@ -55,6 +55,13 @@ struct PaletteNavigationTests {
             vm.mode == .launcher && vm.query == "clipboard",
             "a refused back step leaves the screen untouched")
 
+        let files = PaletteState()
+        expect(files.fileSearchFilter == .useful, "file search starts with useful files")
+        files.fileSearchFilter = .all
+        files.prepare(mode: .launcher)
+        files.prepare(mode: .fileSearch)
+        expect(files.fileSearchFilter == .all, "reopening preserves the Everything selection")
+
         let freshEmoji = searchingLauncher()
         freshEmoji.emojiCategoryFilter = .category(.flags)
         freshEmoji.emojiGridColumnsOverride = .ten

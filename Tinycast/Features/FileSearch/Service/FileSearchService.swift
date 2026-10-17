@@ -14,6 +14,7 @@ enum FileSearchService {
     ) throws -> [FileSearchResult] {
         try Signposts.interval("FileSearchService.search") {
             let selection = resolveScopes(policy)
+            let ignore = policy.ignoreList(for: filter)
             guard !rawQuery.isEmpty else {
                 return try recent(scopes: selection.directories, policy: policy, filter: filter)
             }
@@ -21,13 +22,13 @@ enum FileSearchService {
             guard
                 !selection.directories.isEmpty,
                 let expression = FileSearchQuery.expression(
-                    for: rawQuery, excluding: policy.ignore.spotlightNameExclusions, filter: filter)
-            else { return FileSearchQuery.rank(results, for: rawQuery, ignoring: policy.ignore) }
+                    for: rawQuery, excluding: ignore.spotlightNameExclusions, filter: filter)
+            else { return FileSearchQuery.rank(results, for: rawQuery, ignoring: ignore) }
 
             var seen = Set(results.map(\.id))
             // Excluded before the stat: an ignored tree then costs a string test, not a file read.
             for path in try spotlightPaths(expression: expression, scopes: selection.directories)
-            where !FileSearchQuery.isExcludedPath(path, ignoring: policy.ignore)
+            where !FileSearchQuery.isExcludedPath(path, ignoring: ignore)
                 && seen.insert(path).inserted
             {
                 guard let result = resolve(path, homeDirectory: policy.homeDirectory) else {
@@ -35,7 +36,7 @@ enum FileSearchService {
                 }
                 results.append(result)
             }
-            return FileSearchQuery.rank(results, for: rawQuery, ignoring: policy.ignore)
+            return FileSearchQuery.rank(results, for: rawQuery, ignoring: ignore)
         }
     }
 
@@ -44,7 +45,8 @@ enum FileSearchService {
         scopes: [URL], policy: FileSearchPolicy, filter: FileSearchFilter
     ) throws -> [FileSearchResult] {
         guard !scopes.isEmpty else { return [] }
-        let exclusions = policy.ignore.spotlightNameExclusions
+        let ignore = policy.ignoreList(for: filter)
+        let exclusions = ignore.spotlightNameExclusions
         let limit = FileSearchQuery.recentLimit
         var dated: [String: Date] = [:]
         for stamp in FileSearchQuery.RecentStamp.allCases {
@@ -53,8 +55,8 @@ enum FileSearchService {
             // Only the head of a sorted list can reach the merged one, so only it is worth dating.
             for (path, date) in try spotlightPaths(
                 expression: expression, scopes: scopes,
-                sortedBy: stamp.rawValue as CFString, dating: limit)
-            where !FileSearchQuery.isExcludedPath(path, ignoring: policy.ignore) {
+                sortedBy: stamp.rawValue as CFString, dating: limit, ignoring: ignore)
+            where !FileSearchQuery.isExcludedPath(path, ignoring: ignore) {
                 dated[path] = max(dated[path] ?? .distantPast, date)
             }
         }
@@ -72,7 +74,8 @@ enum FileSearchService {
         selection.rootItems.compactMap { candidate in
             guard
                 filter.accepts(
-                    contentType: candidate.contentType, isDirectory: candidate.isDirectory),
+                    contentType: candidate.contentType, isDirectory: candidate.isDirectory,
+                    filename: candidate.url.lastPathComponent),
                 FileSearchQuery.matches(filename: candidate.url.lastPathComponent, query: query)
             else { return nil }
             return FileSearchResult(
@@ -92,17 +95,22 @@ enum FileSearchService {
 
     /// Paired with the sort stamp, which is read for the first `dating` results and no further.
     private nonisolated static func spotlightPaths(
-        expression: String, scopes: [URL], sortedBy stamp: CFString, dating: Int
+        expression: String, scopes: [URL], sortedBy stamp: CFString, dating: Int,
+        ignoring ignore: FileSearchIgnoreList
     ) throws -> [(path: String, date: Date)] {
         try execute(expression: expression, scopes: scopes, sortedBy: stamp) { query, count in
-            (0..<min(dating, count)).compactMap { index in
+            var dated: [(path: String, date: Date)] = []
+            for index in 0..<count {
                 guard let path = path(in: query, at: index),
+                    !FileSearchQuery.isExcludedPath(path, ignoring: ignore),
                     let raw = MDQueryGetResultAtIndex(query, index)
-                else { return nil }
+                else { continue }
                 let item = Unmanaged<MDItem>.fromOpaque(raw).takeUnretainedValue()
-                guard let date = MDItemCopyAttribute(item, stamp) as? Date else { return nil }
-                return (path, date)
+                guard let date = MDItemCopyAttribute(item, stamp) as? Date else { continue }
+                dated.append((path, date))
+                if dated.count == dating { break }
             }
+            return dated
         }
     }
 

@@ -44,6 +44,7 @@ struct SettingsBackupTest {
         check(
             naming("no two backup fields claim the same key", Array(doubleClaimed)),
             doubleClaimed.isEmpty)
+        check("file filter rides the settings backup", mirrored["fileSearchFilter"] == .fileSearchFilter)
         check(
             "fileSearchEnabled rides the settings backup",
             mirrored["fileSearchEnabled"] == .fileSearchEnabled)

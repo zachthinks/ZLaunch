@@ -6,6 +6,12 @@ struct FileSearchIgnoreList: Sendable, Equatable {
     /// Compiled in, not stored, so changing the shipped rules reaches existing installs.
     static let defaults = ["node_modules", "DerivedData", "build", "dist", "target", "Pods"]
 
+    static let clutter = [
+        "__pycache__", "coverage", "*.pyc", "*.o", "*.a", "*.dylib", "*.swiftmodule",
+        "*.swiftdoc", "*.swiftsourceinfo", "*.dSYM", "*.tmp", "*.temp", "*.log", "*.lock",
+        "*.map", "*.tsbuildinfo"
+    ]
+
     private let literalNames: Set<String>
     private let nameGlobs: [Glob]
     private let pathGlobs: [Glob]
@@ -29,6 +35,23 @@ struct FileSearchIgnoreList: Sendable, Equatable {
         self.literalNames = literalNames
         self.nameGlobs = nameGlobs
         self.pathGlobs = pathGlobs
+    }
+
+    static func folderPattern(_ url: URL) -> String {
+        escapedPattern(url.standardizedFileURL.path) + "/*"
+    }
+
+    static func typePattern(_ url: URL) -> String? {
+        let suffix = url.pathExtension
+        guard !suffix.isEmpty else { return nil }
+        return "*." + escapedPattern(suffix)
+    }
+
+    private static func escapedPattern(_ value: String) -> String {
+        value.reduce(into: "") { result, character in
+            if "\\*?[".contains(character) { result.append("\\") }
+            result.append(character)
+        }
     }
 
     func excludes(path: String) -> Bool {

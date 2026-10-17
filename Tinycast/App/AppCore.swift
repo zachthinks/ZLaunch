@@ -753,6 +753,7 @@ final class AppCore {
             }, reproject: { $0.calendarCoordinator.applyClock() })
         track(
             {
+                _ = $0.fileSearchFilter
                 _ = $0.fileSearchScopes
                 _ = $0.fileSearchIgnorePatterns
             }, reproject: { $0.fileSearchCoordinator.applyPolicy() })

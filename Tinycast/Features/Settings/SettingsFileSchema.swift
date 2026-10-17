@@ -78,6 +78,8 @@ enum SettingsFileSchema {
         case .aiCommands: return launcher.commandsBinding(for: key, owner: .ai)
         case .quickActionLanguage: return bind(quickActions, \.settings.targetLanguage)
         case .quickActionCommands: return launcher.commandsBinding(for: key, owner: .quickActions)
+        case .fileSearchFilter:
+            return bind(settings, \.fileSearchFilter) { FileSearchFilter(rawValue: $0) == nil ? nil : $0 }
         case .fileSearchEnabled: return bind(settings, \.fileSearchEnabled)
         case .fileSearchScopes: return bind(settings, \.fileSearchScopes)
         case .fileSearchIgnorePatterns: return bind(settings, \.fileSearchIgnorePatterns)

@@ -18,6 +18,7 @@ struct FileSearchTests {
     }
 
     static func main() {
+        usefulFiles()
         queryGrammar()
         recents()
         typeFilter()
@@ -31,6 +32,54 @@ struct FileSearchTests {
 
         print(failures == 0 ? "File search tests passed" : "\(failures) file search tests failed")
         exit(failures == 0 ? 0 : 1)
+    }
+
+    static func usefulFiles() {
+        for name in ["App.swift", "main.tsx", "config.yaml", "Cargo.toml", "Makefile", "notes.md"] {
+            expect(FileSearchFilter.useful.accepts(
+                contentType: nil, isDirectory: false, filename: name), "project file survives: \(name)")
+        }
+        expect(!FileSearchFilter.useful.accepts(
+            contentType: nil, isDirectory: false, filename: "opaque.weirdblob"),
+            "unknown binary files need Everything")
+        expect(FileSearchFilter.all.accepts(contentType: nil, isDirectory: false),
+               "Everything preserves unknown types")
+        expect(FileSearchFilter.useful.accepts(contentType: .pdf, isDirectory: false),
+               "Useful Files includes PDFs")
+        expect(FileSearchFilter.useful.accepts(contentType: nil, isDirectory: true),
+               "Useful Files includes project folders")
+        let policy = FileSearchPolicy(scopes: ["~"], ignorePatterns: ["*.private"], homeDirectory: home)
+        expect(policy.ignoreList(for: .useful).excludes(path: "/work/output.log"),
+               "Useful Files hides generated logs")
+        expect(!policy.ignoreList(for: .all).excludes(path: "/work/output.log"),
+               "Everything restores generated logs")
+        expect(policy.ignoreList(for: .all).excludes(path: "/work/notes.private"),
+               "Everything respects explicit exclusions")
+        let folder = home.appending(path: "Project [old]*")
+        let ignore = FileSearchIgnoreList(patterns: [FileSearchIgnoreList.folderPattern(folder)])
+        expect(ignore.excludes(path: folder.appending(path: "main.swift").path),
+               "folder exclusion treats glob characters literally")
+        expect(!ignore.excludes(path: home.appending(path: "Project o/main.swift").path),
+               "folder exclusion cannot spread to a similarly named project")
+        let ranked = FileSearchQuery.rank([
+            result("DEV/report-helper.swift"), result("Documents/report.pdf"),
+            result("DEV/my-report.swift"), result("DEV/report.swift")
+        ], for: "report", ignoring: policy.ignore)
+        expect(Set(ranked.prefix(2).map(\.name)) == Set(["report.pdf", "report.swift"]),
+               "exact names outrank prefixes and substring matches")
+        expect(ranked.last?.name == "my-report.swift", "prefix outranks substring")
+        let tied = FileSearchQuery.rank([
+            result("DEV/report.pdf"), result("Documents/report.pdf")
+        ], for: "report", ignoring: policy.ignore)
+        expect(tied.first?.parentPath == "~/Documents", "everyday folders break otherwise equal ties")
+        let recent = FileSearchQuery.recentExpression(stamp: .changed, filter: .useful)
+        expect(recent.contains("kMDItemFSName != \"*.swift\"cd"),
+               "recent useful files omit source churn")
+        let search = FileSearchQuery.expression(for: "App", filter: .useful) ?? ""
+        expect(search.contains("kMDItemFSName == \"*.swift\"cd"),
+               "typed search includes source even without a Spotlight type")
+        expect(!search.contains("kMDItemFSName != \"*.swift\"cd"),
+               "recent exclusions never leak into typed search")
     }
 
     static func queryGrammar() {

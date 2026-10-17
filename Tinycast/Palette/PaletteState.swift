@@ -21,8 +21,7 @@ final class PaletteState {
     var isComposing = false
     /// The clipboard screen's type filter, reset with the rest of the screen state on each summon.
     var clipboardFilter: ClipboardFilter = .all
-    /// The file search screen's type filter, reset on each summon like the clipboard's.
-    var fileSearchFilter: FileSearchFilter = .all
+    var fileSearchFilter: FileSearchFilter = .useful
     /// The emoji picker's visible category, reset with the rest of a freshly opened screen.
     var emojiCategoryFilter: EmojiCategoryFilter = .all
     /// Nil means the configured default; zoom only overrides it for this picker session.
@@ -155,7 +154,6 @@ final class PaletteState {
         pendingArgumentEntryID = nil
         argumentEntryID = nil
         clipboardFilter = .all
-        fileSearchFilter = .all
         emojiCategoryFilter = .all
         emojiGridColumnsOverride = nil
         fileSearchQuickLook = false
