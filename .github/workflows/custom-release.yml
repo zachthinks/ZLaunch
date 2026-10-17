@@ -18,8 +18,8 @@ concurrency:
 jobs:
   preflight:
     if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main'))
-    runs-on: macos-26
-    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       eligible: ${{ steps.eligibility.outputs.eligible }}
       commit: ${{ steps.eligibility.outputs.commit }}
@@ -37,16 +37,6 @@ jobs:
           EXPECTED_COMMIT: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_commit }}
           PROMOTION_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node Custom/verify-hosted-release.mjs --skip-ineligible
-      - name: Select Xcode 26
-        if: steps.eligibility.outputs.eligible == 'true'
-        run: |
-          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
-          test -n "$XCODE_PATH"
-          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
-      - run: brew install swiftlint xcodegen
-        if: steps.eligibility.outputs.eligible == 'true'
-      - run: ./Custom/check.sh
-        if: steps.eligibility.outputs.eligible == 'true'
   release:
     needs: preflight
     if: github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main')) && needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true'

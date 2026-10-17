@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 
 const policy = {
-  "custom-checks.yml": { verify: "macos-26" },
-  "custom-release.yml": { preflight: "macos-26", release: "macos-26" },
+  "custom-checks.yml": { reuse: "ubuntu-latest", verify: "macos-26" },
+  "custom-release.yml": { preflight: "ubuntu-latest", release: "macos-26" },
   "custom-signing-validation.yml": { preflight: "macos-26", validate: "macos-26" },
   "custom-sync.yml": { sync: "ubuntu-latest", checks: null, promote: "ubuntu-latest" },
 };
@@ -40,6 +40,10 @@ export function verifyWorkflowPolicy(workflows) {
         ? "github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_VALIDATION_ENABLED == 'true' && inputs.confirm_signing_validation == true" + (job === "validate" ? " && needs.preflight.result == 'success'" : "")
         : name === "custom-release.yml"
         ? "github.event.repository.private == false && github.repository == 'zachthinks/ZLaunch' && github.ref == 'refs/heads/custom/main' && vars.ZLAUNCH_HOSTED_RELEASE_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'custom/main'))" + (job === "release" ? " && needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true'" : "")
+        : name === "custom-checks.yml"
+        ? job === "reuse"
+          ? "github.event.repository.private == false && inputs.reuse_push_checks == true"
+          : "github.event.repository.private == false && !cancelled() && (needs.reuse.result == 'skipped' || (needs.reuse.result == 'success' && needs.reuse.outputs.reused != 'true'))"
         : job === "checks"
         ? "github.event.repository.private == false && needs.sync.outputs.candidate != ''"
         : job === "promote"
@@ -68,7 +72,8 @@ export function verifyWorkflowPolicy(workflows) {
             assert.match(body, /EXPECTED_COMMIT: \$\{\{ github.event_name == 'workflow_run' && github.sha \|\| inputs.expected_commit \}\}/);
             assert.match(body, /PROMOTION_RUN_ID: \$\{\{ github.event.workflow_run.id \}\}/);
             assert.match(body, /run: node Custom\/verify-hosted-release.mjs --skip-ineligible/);
-            assert.equal((body.match(/if: steps.eligibility.outputs.eligible == 'true'/g) ?? []).length, 3);
+            assert.ok(!body.includes("Custom/check.sh"), "Release preflight reuses the verified promotion.");
+            assert.ok(!body.includes("brew install") && !body.includes("Select Xcode"));
           }
         } else {
           assert.match(body, /^    needs: preflight$/m);
@@ -105,6 +110,25 @@ export function verifyWorkflowPolicy(workflows) {
           assert.match(body, /test "\$EXPECTED_COMMIT" = "\$GITHUB_SHA"/);
           assert.match(body, /test "\$\(git rev-parse FETCH_HEAD\)" = "\$EXPECTED_COMMIT"/);
         }
+      }
+      if (name === "custom-checks.yml") {
+        assert.match(source, /^permissions:\n  contents: read\n  actions: read\njobs:/m);
+        assert.match(body, /ref: \$\{\{ inputs.ref \|\| github.sha \}\}/);
+        if (job === "reuse") {
+          assert.match(body, /run: node Custom\/reuse-push-checks.mjs/);
+          assert.match(body, /GH_TOKEN: \$\{\{ github.token \}\}/);
+          assert.match(body, /EXPECTED_CHECK_COMMIT: \$\{\{ inputs.ref \|\| github.sha \}\}/);
+          assert.ok(!body.includes("secrets.") && !body.includes("environment:"));
+        } else {
+          assert.match(body, /^    needs: reuse$/m);
+          assert.match(body, /name: Confirm checkout identity/);
+          assert.match(body, /run: test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_CHECK_COMMIT"/);
+          assert.match(body, /run: \.\/Custom\/check.sh/);
+        }
+      }
+      if (name === "custom-sync.yml" && job === "checks") {
+        assert.match(body, /reuse_push_checks: \$\{\{ inputs.verify_current_release == true \}\}/);
+        assert.match(body, /^      actions: read$/m);
       }
       if (name === "custom-sync.yml" && job === "sync") {
         assert.match(body, /VERIFY_CURRENT_RELEASE: \$\{\{ inputs.verify_current_release \}\}/);

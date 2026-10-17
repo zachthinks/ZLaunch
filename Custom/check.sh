@@ -8,6 +8,7 @@ node Custom/tests/release-state-test.mjs
 node Custom/tests/signing-validation-test.mjs
 node Custom/tests/release-notes-test.mjs
 node Custom/tests/github-release-api-test.mjs
+node Custom/tests/check-reuse-test.mjs
 node Custom/tests/hosted-release-test.mjs
 node Custom/tests/publication-policy-test.mjs
 node Custom/tests/delivery-test.mjs

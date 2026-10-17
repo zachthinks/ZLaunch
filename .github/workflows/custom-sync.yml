@@ -75,8 +75,10 @@ jobs:
     uses: ./.github/workflows/custom-checks.yml
     with:
       ref: ${{ needs.sync.outputs.candidate }}
+      reuse_push_checks: ${{ inputs.verify_current_release == true }}
     permissions:
       contents: read
+      actions: read
   promote:
     needs: [sync, checks]
     if: github.event.repository.private == false && needs.checks.result == 'success' && needs.sync.outputs.candidate != ''

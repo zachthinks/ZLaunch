@@ -35,7 +35,13 @@ version, stable metadata, upstream ancestry and current-main equality, then runs
 the same reusable checks and promotion job. It does not manufacture a version or
 attestation. Scheduled runs retain the upstream-only selection path.
 
-Secret-free preflight repeats tests, lint and Debug bundle verification. Only an
+Full source checks run once for the exact final commit. Custom-update promotion
+waits for and reuses successful push checks; upstream candidates without a push run
+still run the full reusable check job. Reuse requires the same repository, SHA,
+workflow, branch, run attempt, pinned checkout and successful full check step.
+Failed or pending checks are never converted into a pass or hidden by a duplicate.
+Secret-free release preflight runs on Linux and verifies the successful promotion
+instead of repeating tests, lint and Debug compilation. Only an
 eligible successful preflight may enter `zlaunch-release`. After its required
 reviewer approves, fresh main/provenance/release checks repeat before importing
 signing secrets. Preflight retains `contents: read`; only the protected release job has

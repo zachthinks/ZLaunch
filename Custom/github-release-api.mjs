@@ -9,7 +9,7 @@ export function githubReleaseAPI({ token = process.env.GH_TOKEN, fetcher = fetch
   wait = sleep, warn = console.warn, now = Date.now } = {}) {
   const auth = token ? "workflow token" : "public unauthenticated";
   async function request(path) {
-    assert.match(path, /^(releases|commits\/[a-f0-9]{40}\/statuses|actions\/runs\/\d+)(\?|$)/);
+    assert.match(path, /^(releases|commits\/[a-f0-9]{40}\/statuses|actions\/runs\/\d+(?:\/attempts\/\d+\/jobs)?|actions\/workflows\/custom-checks\.yml\/runs)(\?|$)/);
     for (let attempt = 1; attempt <= attempts; attempt++) {
       let response;
       try {

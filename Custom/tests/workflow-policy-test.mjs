@@ -72,9 +72,20 @@ for (const guard of ["github.event.workflow_run.conclusion == 'success'", "githu
 rejects("custom-release.yml", "workflows: [ZLaunch upstream sync]", "workflows: [ZLaunch checks]");
 rejects("custom-release.yml", "types: [completed]", "types: [requested]");
 rejects("custom-release.yml", "node Custom/verify-hosted-release.mjs", "echo skipped");
-rejects("custom-release.yml", "if: steps.eligibility.outputs.eligible == 'true'", "if: always()");
+
 
 rejects("custom-sync.yml", "VERIFY_CURRENT_RELEASE: ${{ inputs.verify_current_release }}", "VERIFY_CURRENT_RELEASE: true");
 rejects("custom-sync.yml", "node Custom/prepare-custom-release.mjs", "echo skipped");
 
 rejects("custom-release.yml", "GH_TOKEN: ${{ github.token }}", "NO_TOKEN: unused");
+
+rejects("custom-checks.yml", "needs: reuse", "needs: []");
+rejects("custom-checks.yml", "inputs.reuse_push_checks == true", "true");
+rejects("custom-checks.yml", "needs.reuse.result == 'success'", "true");
+rejects("custom-checks.yml", "needs.reuse.outputs.reused != 'true'", "true");
+rejects("custom-checks.yml", "ref: ${{ inputs.ref || github.sha }}", "ref: custom/main");
+rejects("custom-checks.yml", "run: node Custom/reuse-push-checks.mjs", "run: echo reused=true");
+rejects("custom-checks.yml", "run: ./Custom/check.sh", "run: echo skipped");
+rejects("custom-checks.yml", 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_CHECK_COMMIT"', "run: true");
+rejects("custom-sync.yml", "reuse_push_checks: ${{ inputs.verify_current_release == true }}", "reuse_push_checks: true");
+console.log("Exact-commit check reuse, fresh full checks, and failure propagation mutations rejected.");

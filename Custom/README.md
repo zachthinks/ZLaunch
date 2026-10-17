@@ -308,3 +308,11 @@ See [the protected hosted-signing setup](github-hosted-signing.md) for the user-
 credential handoff, explicit environment approvals, and coordinated publisher
 switch. The preparation does not activate hosted publication or alter the current
 publisher schedule.
+
+## Efficient validation and release
+
+See [release efficiency](release-efficiency.md) before preparing a release. Use
+focused guest checks during iteration, one full hosted check for the final commit,
+then reuse its verified promotion in the lightweight release preflight. Keep the
+protected signing/notarization job and final installed-app smoke check. Reuse
+unchanged UI evidence; do not repeat the entire validation ladder at every step.

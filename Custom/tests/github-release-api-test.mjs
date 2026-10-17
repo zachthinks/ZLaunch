@@ -53,3 +53,17 @@ assert.match(result.error.message, /attempt 3\/3/);
 result = await scenario([new Response("not JSON", { status: 200 })]);
 assert.match(result.error.message, /invalid JSON/);
 console.log("GitHub release API: authentication, pagination, bounded retries, rate/permission diagnostics and token redaction passed.");
+for (const path of [
+  `actions/workflows/custom-checks.yml/runs?head_sha=${"a".repeat(40)}&per_page=100`,
+  "actions/runs/123/attempts/2/jobs?per_page=100",
+]) {
+  result = await scenario([response(200, { workflow_runs: [], jobs: [], total_count: 0 })], path);
+  assert.equal(result.error, undefined);
+  assert.equal(result.requests.length, 1);
+}
+for (const path of ["actions/workflows/other.yml/runs", "actions/runs/123/attempts/2/secrets", "../secrets"]) {
+  result = await scenario([], path);
+  assert.ok(result.error);
+  assert.equal(result.requests.length, 0);
+}
+console.log("Only the reviewed check-run and attempt-job metadata endpoints are accepted.");

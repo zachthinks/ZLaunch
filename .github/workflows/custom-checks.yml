@@ -5,21 +5,52 @@ on:
   pull_request:
     branches: [custom/main]
   workflow_dispatch:
+    inputs:
+      reuse_push_checks:
+        description: Reuse successful push checks for this exact commit
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       ref:
         type: string
         required: false
+      reuse_push_checks:
+        type: boolean
+        default: false
 permissions:
   contents: read
+  actions: read
 jobs:
+  reuse:
+    if: github.event.repository.private == false && inputs.reuse_push_checks == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      reused: ${{ steps.existing.outputs.reused }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Reuse exact-commit push checks
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_CHECK_COMMIT: ${{ inputs.ref || github.sha }}
+        run: node Custom/reuse-push-checks.mjs
   verify:
-    if: github.event.repository.private == false
+    needs: reuse
+    if: github.event.repository.private == false && !cancelled() && (needs.reuse.result == 'skipped' || (needs.reuse.result == 'success' && needs.reuse.outputs.reused != 'true'))
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Confirm checkout identity
+        env:
+          EXPECTED_CHECK_COMMIT: ${{ inputs.ref || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_CHECK_COMMIT"
       - name: Select Xcode 26
         run: |
           XCODE_PATH="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)"
