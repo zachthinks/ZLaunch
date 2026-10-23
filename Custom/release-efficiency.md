@@ -47,6 +47,35 @@ No Actions artifacts, persistent caches or additional publisher were introduced.
 
 ## Measured opportunity
 
+### Next real release timing
+
+Keep the separate Linux eligibility gate. On the next actual release, use existing
+GitHub run/job/step timestamps and publication logs to record a concise timing
+receipt alongside that release's validation evidence. Do not launch a release,
+extra build, test suite, or monitoring job just to collect these measurements.
+
+- Record the exact commit, release version, workflow run IDs and attempts.
+- Separate full source checks, check-reuse waiting, promotion, Linux preflight,
+  Mac checkout/setup, signed Release compilation, signing, Apple notarization,
+  stapling/verification, packaging/upload and final publication where logs permit.
+- Distinguish active execution from dependency waiting, reviewer approval and
+  runner queue/startup. Mark timing that cannot be separated as unknown rather
+  than attributing it to Linux, macOS or GitHub queues without evidence.
+- Report end-to-end elapsed time and the critical path separately from summed
+  runner time; overlapping jobs are not additive wall-clock savings. Confirm that
+  the full source checks executed once for the final commit.
+- Standard hosted runners are free for this public repository under the current
+  policy; verify billing policy if discussing monetary savings. Do not infer cost
+  savings merely from using Linux.
+- Identify the largest actionable delay and recommend a change only if the
+  expected benefit warrants its complexity. One release is an initial observation,
+  not proof of typical queue times. Preserve approval and signing safeguards.
+
+Retrieve completed metadata/logs once after publication, using the normal bounded
+watcher during the release. Use existing log timestamps; add instrumentation only
+if a meaningful bottleneck cannot otherwise be resolved. Carry these instructions
+with the next source push rather than creating an extra CI run for timing docs.
+
 The 0.1.12 promotion checks ran from 00:14:43 to approximately 00:22 UTC; release
 preflight ran from 00:22:29 to approximately 00:28 UTC. Push checks also ran the
 same suite and Debug build, including an explicit retry after a streamed-command
