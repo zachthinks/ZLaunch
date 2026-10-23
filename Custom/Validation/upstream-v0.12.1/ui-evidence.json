@@ -1,0 +1,380 @@
+{
+  "store_list": {
+    "target": {
+      "process_start_identity": 1792727579065331,
+      "pid": 80247,
+      "window_id": 395,
+      "process_start_identity_decimal": "1792727579065331"
+    },
+    "snapshot": "ps1_1b8d8f25b023a6b7662daab33d898bb2",
+    "focus": {
+      "windowID": 395,
+      "role": "AXTextField",
+      "frame": [
+        [
+          187,
+          247
+        ],
+        [
+          561.5,
+          24
+        ]
+      ],
+      "processIdentifier": 80247
+    },
+    "elements": [
+      {
+        "role": "button",
+        "label": "Back"
+      },
+      {
+        "role": "button",
+        "label": "All Categories"
+      },
+      {
+        "role": "button"
+      },
+      {
+        "role": "button",
+        "label": "Show Details, \u21b5"
+      },
+      {
+        "role": "button",
+        "label": "Actions, \u2318, K"
+      },
+      {
+        "role": "textField",
+        "label": "Search Store for extensions\u2026",
+        "value": ""
+      },
+      {
+        "role": "other",
+        "label": "Search Store for extensions\u2026",
+        "value": "Search Store for extensions\u2026"
+      },
+      {
+        "role": "other",
+        "label": "Featured",
+        "value": "Featured"
+      },
+      {
+        "role": "other",
+        "label": "Kaomoji Search, Search and copy to the clipboard different kaomoji (ascii/unicode emotes)., 8k",
+        "value": "Kaomoji Search, Search and copy to the clipboard different kaomoji (ascii/unicode emotes)., 8k"
+      },
+      {
+        "role": "other",
+        "label": "Can I Use, Can I Use provides up-to-date browser support for front-end web technologies on desktop and mobile web browsers., 13k",
+        "value": "Can I Use, Can I Use provides up-to-date browser support for front-end web technologies on desktop and mobile web browsers., 13k"
+      },
+      {
+        "role": "other",
+        "label": "Mole, Deep clean and optimize your Mac, 22k",
+        "value": "Mole, Deep clean and optimize your Mac, 22k"
+      },
+      {
+        "role": "other",
+        "label": "Trending",
+        "value": "Trending"
+      },
+      {
+        "role": "other",
+        "label": "Google Translate, Simple translation using Google Translate, 505k",
+        "value": "Google Translate, Simple translation using Google Translate, 505k"
+      },
+      {
+        "role": "other",
+        "label": "Coffee, Prevent the sleep function on your computer, 156k",
+        "value": "Coffee, Prevent the sleep function on your computer, 156k"
+      },
+      {
+        "role": "other",
+        "label": "GitHub, Work with issues, pull requests, manage workflows, search repositories and stay on top of notifications, 213k",
+        "value": "GitHub, Work with issues, pull requests, manage workflows, search repositories and stay on top of notifications, 213k"
+      },
+      {
+        "role": "other",
+        "label": "All Extensions",
+        "value": "All Extensions"
+      },
+      {
+        "role": "other",
+        "label": "Google Translate, Simple translation using Google Translate, 505k",
+        "value": "Google Translate, Simple translation using Google Translate, 505k"
+      },
+      {
+        "role": "other",
+        "label": "Spotify Player, Spotify's most common features, now at your fingertips. Search for music and podcasts, browse your library, and control the playback. Glance at what's currently playing directly from the menu bar., 497k",
+        "value": "Spotify Player, Spotify's most common features, now at your fingertips. Search for music and podcasts, browse your library, and control the playback. Glance at what's currently playing directly from the menu bar., 497k"
+      },
+      {
+        "role": "other",
+        "label": "Visual Studio Code, Control VS Code and compatible editors directly from Raycast, 418k",
+        "value": "Visual Studio Code, Control VS Code and compatible editors directly from Raycast, 418k"
+      },
+      {
+        "role": "other",
+        "label": "Brew, Search, install and manage Homebrew formulae and casks, 299k",
+        "value": "Brew, Search, install and manage Homebrew formulae and casks, 299k"
+      },
+      {
+        "role": "other",
+        "label": "Linear, Bring Linear to every corner of your Mac. Create, search, and modify your issues. Stay on top of your notifications in the menu bar., 407k",
+        "value": "Linear, Bring Linear to every corner of your Mac. Create, search, and modify your issues. Stay on top of your notifications in the menu bar., 407k"
+      },
+      {
+        "role": "other",
+        "label": "Slack, Search for chats, see unread messages, snooze notifications, and set your presence status., 340k",
+        "value": "Slack, Search for chats, see unread messages, snooze notifications, and set your presence status., 340k"
+      }
+    ]
+  },
+  "store_detail": {
+    "target": {
+      "pid": 80247,
+      "process_start_identity": 1792727579065331,
+      "process_start_identity_decimal": "1792727579065331",
+      "window_id": 395
+    },
+    "snapshot": "ps1_12e7ab8407800e6a54a6232da8259784",
+    "focus": {
+      "title": "",
+      "frame": [
+        [
+          137,
+          227
+        ],
+        [
+          750,
+          475
+        ]
+      ],
+      "processIdentifier": 80247,
+      "role": "AXWindow",
+      "windowID": 395
+    },
+    "elements": [
+      {
+        "role": "button",
+        "label": "Back"
+      },
+      {
+        "role": "button"
+      },
+      {
+        "role": "button",
+        "label": "Enable Extensions, \u21b5"
+      },
+      {
+        "role": "button",
+        "label": "Actions, \u2318, K"
+      },
+      {
+        "role": "button",
+        "label": "Enlarge extension screenshot"
+      },
+      {
+        "role": "button",
+        "label": "Enlarge extension screenshot"
+      },
+      {
+        "role": "link",
+        "label": "Open README \u2197"
+      },
+      {
+        "role": "link",
+        "label": "View Code \u2197"
+      },
+      {
+        "role": "other",
+        "label": "Kaomoji Search",
+        "value": "Kaomoji Search"
+      },
+      {
+        "role": "other",
+        "label": "Alexander Ignatov",
+        "value": "Alexander Ignatov"
+      },
+      {
+        "role": "other",
+        "label": "8,657 Installs",
+        "value": "8,657 Installs"
+      },
+      {
+        "role": "other",
+        "label": "Description",
+        "value": "Description"
+      },
+      {
+        "role": "other",
+        "label": "README",
+        "value": "README"
+      },
+      {
+        "role": "other",
+        "label": "Search and copy to the clipboard different kaomoji (ascii/unicode emotes).",
+        "value": "Search and copy to the clipboard different kaomoji (ascii/unicode emotes)."
+      },
+      {
+        "role": "other",
+        "label": "Commands",
+        "value": "Commands"
+      },
+      {
+        "role": "other",
+        "label": "Last update",
+        "value": "Last update"
+      },
+      {
+        "role": "other",
+        "label": "Search Kaomoji",
+        "value": "Search Kaomoji"
+      },
+      {
+        "role": "other",
+        "label": "1 mth, 11 days",
+        "value": "1 mth, 11 days"
+      },
+      {
+        "role": "other",
+        "label": "Search for kaomoji by a keyword description.",
+        "value": "Search for kaomoji by a keyword description."
+      },
+      {
+        "role": "other",
+        "label": "Contributors",
+        "value": "Contributors"
+      },
+      {
+        "role": "other",
+        "label": "Mark Wiseman",
+        "value": "Mark Wiseman"
+      },
+      {
+        "role": "other",
+        "label": "ZLaunch compatibility",
+        "value": "ZLaunch compatibility"
+      },
+      {
+        "role": "other",
+        "label": "Per Nielsen Tik\u00e6r",
+        "value": "Per Nielsen Tik\u00e6r"
+      },
+      {
+        "role": "other",
+        "label": "Raycast AI, browser and window services, and its OAuth proxy, are not supported.",
+        "value": "Raycast AI, browser and window services, and its OAuth proxy, are not supported."
+      },
+      {
+        "role": "other",
+        "label": "xmok",
+        "value": "xmok"
+      },
+      {
+        "role": "other",
+        "label": "Source Code",
+        "value": "Source Code"
+      }
+    ]
+  },
+  "reopened_search": {
+    "target": {
+      "pid": 80247,
+      "process_start_identity_decimal": "1792727579065331",
+      "process_start_identity": 1792727579065331,
+      "window_id": 395
+    },
+    "snapshot": "ps1_f2dd0f7a8adbc1a13ef9287ed04763d3",
+    "focus": {
+      "processIdentifier": 80247,
+      "role": "AXTextField",
+      "frame": [
+        [
+          187,
+          247.5
+        ],
+        [
+          684,
+          23
+        ]
+      ],
+      "windowID": 395
+    },
+    "elements": [
+      {
+        "role": "button",
+        "label": "gearshape"
+      },
+      {
+        "role": "button"
+      },
+      {
+        "role": "button",
+        "label": "Open Application, \u21b5"
+      },
+      {
+        "role": "button",
+        "label": "Actions, \u2318, K"
+      },
+      {
+        "role": "textField",
+        "label": "Search for apps and commands\u2026",
+        "value": "x"
+      },
+      {
+        "role": "menu",
+        "label": "menu bar"
+      },
+      {
+        "role": "other",
+        "label": "Results",
+        "value": "Results"
+      },
+      {
+        "role": "other",
+        "label": "Xcode",
+        "value": "Xcode"
+      },
+      {
+        "role": "other",
+        "label": "Application",
+        "value": "Application"
+      },
+      {
+        "role": "other",
+        "label": "Use \u201cx\u201d with\u2026",
+        "value": "Use \u201cx\u201d with\u2026"
+      },
+      {
+        "role": "other",
+        "label": "Search Files",
+        "value": "Search Files"
+      },
+      {
+        "role": "other",
+        "label": "Command",
+        "value": "Command"
+      },
+      {
+        "role": "other",
+        "label": "Run Shell Command",
+        "value": "Run Shell Command"
+      },
+      {
+        "role": "other",
+        "label": "Command",
+        "value": "Command"
+      },
+      {
+        "role": "other",
+        "label": "Define Word",
+        "value": "Define Word"
+      },
+      {
+        "role": "other",
+        "label": "Command",
+        "value": "Command"
+      }
+    ]
+  }
+}

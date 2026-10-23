@@ -1,0 +1,53 @@
+{
+  "upstream_tag": "v0.12.1",
+  "upstream_commit": "ead1f770401b34f69065e279704a119d04609986",
+  "base": "5a5f20af",
+  "build": {
+    "job": "4efda8329f66",
+    "source_digest": "d2da5b8bd897e21a321d",
+    "result": "passed",
+    "swift_warnings": 0,
+    "appintents_metadata_warnings": 2
+  },
+  "harnesses": {
+    "job": "4930fba11f79",
+    "source_digest": "32cbbad2713de4438905",
+    "passed": 107,
+    "failed": 0
+  },
+  "extra_checks": {
+    "guest_path": "/Users/zlaunch-qa/QA-Projects/zlaunch/jobs/upstream-v0121-extra",
+    "custom_policy_tests": "passed",
+    "project_consistency": "passed",
+    "bundle_identity_and_helpers": "passed",
+    "lint": "passed",
+    "runtime_fixtures": "passed"
+  },
+  "runtime_test_overlays": {
+    "Scripts/raycast-runtime/fixtures.mjs": "dd1148125d5d284194ade638d4c0741e2d7d6a6e17626dc1294048cdb9bb16f1",
+    "Scripts/raycast-runtime/test.mjs": "0917f5ef1f9d0b7eae73592108a995cfd0295d8bbda1ff3627d30a42d751ea54"
+  },
+  "ui_smoke": {
+    "result": "passed for launcher and Store navigation",
+    "guest_pid": 80247,
+    "window_id": 395,
+    "checks": [
+      "launcher search focus",
+      "Store query and Return navigation",
+      "catalog loaded",
+      "Return opens Kaomoji Search detail",
+      "screenshot preview renders in palette",
+      "Escape returns through detail and catalog to launcher",
+      "Escape dismisses launcher",
+      "Dev URL reopens with focused empty search",
+      "typing x yields Xcode result"
+    ],
+    "limitations": [
+      "Full Disk Access and real indexing not tested",
+      "Extensions not enabled or installed",
+      "Global shortcut and keypad Enter not tested",
+      "Peekaboo multi-character typing stopped after St on stale AX receipt; reconciled by observation and direct value replacement. Single-character input verified by fresh observation."
+    ]
+  },
+  "host_production_changed": false
+}
