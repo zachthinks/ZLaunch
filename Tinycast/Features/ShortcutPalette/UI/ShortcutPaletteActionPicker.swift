@@ -45,7 +45,7 @@ struct ShortcutPaletteActionPicker: View {
     ) -> [(kind: AppEntry.Kind, entries: [AppEntry])] {
         let terms = search.split(whereSeparator: \.isWhitespace).map(String.init)
         let filtered = actions.filter { entry in
-            let fields = [entry.name, entry.kindLabel, entry.kind.descriptor.sectionTitle]
+            let fields = [entry.name, entry.kindLabel, String(localized: entry.kind.descriptor.sectionTitle)]
             return type.includes(entry.kind) && terms.allSatisfy { term in
                 fields.contains { $0.localizedCaseInsensitiveContains(term) }
             }
@@ -57,8 +57,8 @@ struct ShortcutPaletteActionPicker: View {
             return (kind: kind, entries: entries)
         }
         .sorted {
-            $0.kind.descriptor.sectionTitle.localizedCaseInsensitiveCompare(
-                $1.kind.descriptor.sectionTitle) == .orderedAscending
+            String(localized: $0.kind.descriptor.sectionTitle).localizedCaseInsensitiveCompare(
+                String(localized: $1.kind.descriptor.sectionTitle)) == .orderedAscending
         }
     }
 

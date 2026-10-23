@@ -21,7 +21,8 @@ assert.equal(helperInfo.CFBundleIdentifier, `${id}.dictation`);
 assert.equal(helperInfo.CFBundleExecutable, helperName);
 assert.equal(helperInfo.CFBundleDisplayName, helperName);
 for (const executable of [join(app, `Contents/MacOS/${name}`),
-  join(app, "Contents/Helpers/ClipboardTextHelper"), join(helper, `Contents/MacOS/${helperName}`)]) {
+  join(app, "Contents/Helpers/ClipboardTextHelper"),
+  join(app, "Contents/Helpers/FileIndexHelper"), join(helper, `Contents/MacOS/${helperName}`)]) {
   assert.ok(existsSync(executable), `Missing embedded executable: ${executable}`);
   assert.equal(execFileSync("lipo", ["-archs", executable], { encoding: "utf8" }).trim(), "arm64");
 }

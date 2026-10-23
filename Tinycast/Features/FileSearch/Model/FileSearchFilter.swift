@@ -69,18 +69,6 @@ enum FileSearchFilter: String, CaseIterable, Sendable {
         }
     }
 
-    /// Filtering in the predicate keeps the rejected types from consuming the candidate cap.
-    var spotlightClause: String? {
-        var clauses = contentTypes.map { "kMDItemContentTypeTree == \"\($0.identifier)\"" }
-        if self == .useful {
-            clauses += Self.projectExtensions.map { "kMDItemFSName == \"*.\($0)\"cd" }
-            clauses += Self.projectNames.map { "kMDItemFSName == \"\($0)\"cd" }
-        }
-        guard let first = clauses.first else { return nil }
-        guard clauses.count > 1 else { return first }
-        return "(" + clauses.joined(separator: " || ") + ")"
-    }
-
     static let projectExtensions = [
         "swift", "m", "mm", "h", "c", "cpp", "rs", "go", "py", "js", "jsx", "ts", "tsx",
         "sh", "rb", "php", "java", "kt", "cs", "html", "css", "scss", "sql", "graphql",
@@ -89,7 +77,6 @@ enum FileSearchFilter: String, CaseIterable, Sendable {
     ]
     static let projectNames = ["makefile", "dockerfile", "gemfile", "rakefile", "license", "readme"]
 
-    /// The home-root branch never reaches Spotlight, so it answers the same question locally.
     func accepts(contentType: UTType?, isDirectory: Bool, filename: String = "") -> Bool {
         guard self != .all else { return true }
         if self == .useful {
@@ -100,5 +87,14 @@ enum FileSearchFilter: String, CaseIterable, Sendable {
         // An unresolved type is only ever a plain directory: everything else carries one.
         guard let contentType else { return self == .folders && isDirectory }
         return contentTypes.contains { contentType.conforms(to: $0) }
+    }
+
+    /// The index records no type, and a stat per row would cost more than the extension.
+    static func contentType(extension pathExtension: String, isDirectory: Bool) -> UTType? {
+        guard !pathExtension.isEmpty else { return isDirectory ? .folder : nil }
+        guard isDirectory else { return UTType(filenameExtension: pathExtension) }
+        // A folder named `v1.2` is still a folder; only a declared package is a document.
+        let package = UTType(filenameExtension: pathExtension, conformingTo: .package)
+        return package.flatMap { $0.isDeclared ? $0 : nil } ?? .folder
     }
 }

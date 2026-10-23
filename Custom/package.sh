@@ -8,7 +8,7 @@ APP="${1:-$PWD/build/ZLaunchDerivedData/Build/Products/Release/ZLaunch.app}"
 node Custom/verify-bundle.mjs "$APP" Release
 ./Scripts/verify-signature.sh "$APP"
 codesign -v -R '=anchor apple generic and certificate leaf[subject.OU] = "FVY9AS28CU" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists' "$APP"
-for BIN in "$APP/Contents/MacOS/ZLaunch" "$APP/Contents/Helpers/ClipboardTextHelper" "$APP/Contents/Helpers/ZLaunch Dictation.app/Contents/MacOS/ZLaunch Dictation"; do
+for BIN in "$APP/Contents/MacOS/ZLaunch" "$APP/Contents/Helpers/ClipboardTextHelper" "$APP/Contents/Helpers/FileIndexHelper" "$APP/Contents/Helpers/ZLaunch Dictation.app/Contents/MacOS/ZLaunch Dictation"; do
   [ "$(lipo -archs "$BIN")" = arm64 ]
 done
 mkdir -p dist

@@ -60,7 +60,6 @@ struct ExtensionBootConfig: Sendable {
     }
 }
 
-/// Everything one command needs at mount: environment, preferences, caches, arguments.
 struct ExtensionLaunchContext: Sendable {
     var extensionName: String
     var extensionTitle: String

@@ -128,7 +128,7 @@ struct ExtensionStoreScreen: PaletteScreen {
         let items = filtered.content.items.map { item in
             let symbol: String
             if case .symbol(let name) = item.icon { symbol = name } else { symbol = "arrow.up.right.square" }
-            return ExtensionActionItem(title: item.title, icon: .init(source: .symbol(symbol)), shortcut: item.shortcut)
+            return ExtensionActionItem(title: item.title, icon: .init(source: .symbol(symbol)), shortcutCaps: item.shortcut.map { Array($0).map(String.init) } ?? [])
         }
         return PaletteMenuContent(
             rowCount: items.count, preferredSelection: filtered.bestMatch,
@@ -141,7 +141,7 @@ struct ExtensionStoreScreen: PaletteScreen {
             activate: { filtered.content.items[$0].action() },
             clipPath: { bounds, metrics, _ in
                 RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath
-            }, motion: ExtensionMenuMotion.panel)
+            })
     }
 
     func categoryMenu(
@@ -163,7 +163,7 @@ struct ExtensionStoreScreen: PaletteScreen {
             },
             clipPath: { bounds, metrics, _ in
                 RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath
-            }, motion: ExtensionMenuMotion.panel)
+            })
     }
 }
 

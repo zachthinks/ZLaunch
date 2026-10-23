@@ -93,7 +93,7 @@ export function createHarness({ onRender, onFail, verbose = false, stubs = {} } 
 
   function settle(callId, ok, value) {
     runInContext(
-      `__tinycast.settle(${JSON.stringify(String(callId))}, ${ok}, ${JSON.stringify(value === undefined ? "" : JSON.stringify(value))})`,
+      `__tinycast.settle(${JSON.stringify(String(callId))}, ${ok}, ${JSON.stringify(value === undefined ? "" : ok ? JSON.stringify(value) : String(value))})`,
       context,
     );
   }

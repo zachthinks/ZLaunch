@@ -150,8 +150,8 @@ export const raycastApi = {
   captureException: system.captureException,
   launchCommand: system.launchCommand,
   updateCommandMetadata: system.updateCommandMetadata,
-
   OAuth,
+
 
   // Unimplemented namespaces
   AI,
