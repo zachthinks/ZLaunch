@@ -334,7 +334,7 @@ struct ClipboardTextTests {
         store.close()
     }
 
-    enum WaitFailure: Error { case timedOut }
+    enum WaitFailure: Error { case timedOut(file: String, line: UInt) }
 
     static func waitUntil(
         file: StaticString = #filePath, line: UInt = #line, _ condition: () -> Bool
@@ -345,7 +345,7 @@ struct ClipboardTextTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         expect(false, "scheduler completed before timeout at \(file):\(line)")
-        throw WaitFailure.timedOut
+        throw WaitFailure.timedOut(file: String(describing: file), line: line)
     }
 
     static func makeImage() -> CGImage {
