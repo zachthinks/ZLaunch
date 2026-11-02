@@ -95,9 +95,12 @@ struct ClipboardTextTests {
             expect(false, "cancelled extraction throws")
         } catch is CancellationError { expect(true, "cancelled extraction throws") }
 
-        try await searchAndLifetime(in: directory)
-        try await scheduling(in: directory)
-        try await retryFailures(in: directory)
+        for iteration in 0..<5 {
+            let fixture = directory.appendingPathComponent("iteration-\(iteration)")
+            try await searchAndLifetime(in: fixture)
+            try await scheduling(in: fixture)
+            try await retryFailures(in: fixture)
+        }
         print("\(passes)/\(passes + failures) passed")
         if failures > 0 { exit(1) }
     }
