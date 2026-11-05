@@ -46,6 +46,11 @@ enum SettingsBackupCoverage {
         "menuSearchShowsAppleMenu": .menuSearchShowsAppleMenu,
         "windowManagementEnabled": .windowManagementEnabled,
         "windowManagementShowInLauncher": .windowManagementShowInLauncher,
+        "mouseWindowTriggers": .mouseWindowTriggers,
+        "mouseWindowQuadrants": .mouseWindowQuadrants,
+        "mouseWindowFocus": .mouseWindowFocus,
+        "mouseWindowSnap": .mouseWindowSnap,
+        "mouseWindowExcludedApps": .mouseWindowExcludedApps,
         "windowGap": .windowGap,
         "windowCycle": .windowCycle,
         "windowLayoutsShowInLauncher": .windowLayoutsShowInLauncher,
@@ -78,6 +83,8 @@ enum SettingsBackupCoverage {
 
     /// Keys kept out of a backup on purpose, each with the reason it has to stay out.
     static let deliberatelyExcluded: [String: String] = [
+        AppSettingsKey.mouseWindowEnabled.rawValue:
+            "Global input interception requires explicit local activation.",
         AppSettingsKey.dictationEnabled.rawValue:
             "Microphone capture is an opt-in capability on this Mac; a backup must not enable it.",
         AppSettingsKey.dictationMode.rawValue: "Dictation preferences stay local until backup supports them.",

@@ -41,10 +41,19 @@ final class HotKeyManager {
     var allowsAction: ((HotKeyAction) -> Bool)?
 
     /// The recorder currently capturing, which also pauses both engines.
+    var externalShortcutRecording = false {
+        didSet {
+            let paused = externalShortcutRecording || recordingAction != nil
+            center.isPaused = paused
+            modifierTapMonitor.isPaused = paused
+            if paused { onDictationCancelled?() }
+        }
+    }
+
     var recordingAction: HotKeyAction? {
         didSet {
             guard recordingAction != oldValue else { return }
-            let recording = recordingAction != nil
+            let recording = recordingAction != nil || externalShortcutRecording
             if recording, dictationEnabled, dictationHoldToTalk { onDictationCancelled?() }
             if recording { secureInputPressedActions.removeAll(keepingCapacity: true) }
             center.isPaused = recording
@@ -322,7 +331,7 @@ final class HotKeyManager {
     }
 
     /// A hold reserves its physical modifier across both tap gestures.
-    func conflictOwner(of binding: HotKeyBinding, excluding action: HotKeyAction) -> String? {
+    func conflictOwner(of binding: HotKeyBinding, excluding action: HotKeyAction? = nil) -> String? {
         for candidate in candidateActions where candidate != action {
             guard let other = self.binding(for: candidate) else { continue }
             let holdsModifier =

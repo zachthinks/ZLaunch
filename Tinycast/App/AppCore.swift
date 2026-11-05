@@ -32,6 +32,8 @@ final class AppCore {
         settings: settings, hotKeys: hotKeys)
     @ObservationIgnored private lazy var dictationKey = DictationKeyManager(hotKeys: hotKeys)
     let windowMover = WindowMover()
+    @ObservationIgnored private(set) lazy var mouseWindowCoordinator = MouseWindowCoordinator(
+        settings: settings, hotKeys: hotKeys)
     let spaceSwitcher = SpaceSwitcher()
     let inputSourceSwitcher = InputSourceSwitcher()
     let settings: AppSettings
@@ -387,6 +389,8 @@ final class AppCore {
             }
             updateCoordinator.applyAutomaticChecking()
 
+            mouseWindowCoordinator.healthTicker = healthTicker
+            mouseWindowCoordinator.start()
             hyperKey.healthTicker = healthTicker
             hotKeys.modifierTapMonitor.healthTicker = healthTicker
             snippetListener.healthTicker = healthTicker
@@ -607,6 +611,7 @@ final class AppCore {
     }
 
     func prepareForTermination() {
+        mouseWindowCoordinator.stop()
         extensionStore.stop()
         if settings.dictationEnabled { dictationCoordinator.prepareForTermination() }
         settingsFile?.flush()

@@ -103,6 +103,10 @@ run() {
     printf '%s %s %s %s\n' "$pri" "$name" "$opt" "$*" >> "$QUEUE"
 }
 
+run mouse-window-test Tinycast/Features/WindowManagement/Model/MouseWindow*.swift
+run mouse-window-session-test Tinycast/Features/WindowManagement/Model/MouseWindowGeometry.swift \
+    Tinycast/Features/WindowManagement/Service/MouseWindowSession.swift
+
 run shortcut-palette-test Tinycast/Features/ShortcutPalette/Model/*.swift \
     Tinycast/Features/ShortcutPalette/Service/ShortcutPaletteRepository.swift
 

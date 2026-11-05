@@ -432,6 +432,13 @@ enum SettingsSearchCatalog {
     ]
 
     private static let windowManagement: [SettingsSearchEntry] = [
+        .init(.windowManagementMouse, "Enable mouse controls"),
+        .init(group: .windowManagementMouse, "Move window", keywords: ["mouse", "drag", "shortcut"]),
+        .init(group: .windowManagementMouse, "Resize window", keywords: ["mouse", "corner", "shortcut"]),
+        .init(.windowManagementMouse, "Use quadrants"),
+        .init(.windowManagementMouse, "Focus on window"),
+        .init(.windowManagementMouse, "Snap to nearby windows"),
+        .init(group: .windowManagementMouseExcluded, "Excluded apps"),
         .init(
             pane: .windowManagement,
             keywords: ["tile", "halves", "thirds", "maximize", "snap", "layouts", "arrangement"]),
