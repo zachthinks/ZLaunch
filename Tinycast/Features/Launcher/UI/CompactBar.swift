@@ -35,8 +35,8 @@ struct CompactBarGeometry {
     }
 }
 
-/// The compact bar's glass: a capsule the buttons bead off, with their glyphs drawn above it.
 struct CompactBar: View {
+    let style: PaletteStyle
     let commands: [CommandID]
     let selection: CommandID?
     let onRun: (CommandID) -> Void
@@ -48,22 +48,14 @@ struct CompactBar: View {
     var body: some View {
         let geometry = CompactBarGeometry(metrics: metrics, count: commands.count)
         let revealed = isRevealed
-        let capsule = Capsule(style: .continuous)
-        // One container, or the buttons could never bead off the capsule they come out of.
-        GlassEffectContainer(spacing: metrics.scaled(BarMotion.blend)) {
-            ZStack(alignment: .topLeading) {
-                capsule.fill(.clear)
-                    .frame(width: geometry.capsuleWidth(revealed: revealed))
-                    .frame(maxHeight: .infinity)
-                    .glassEffect(.regular, in: capsule)
-                    .animation(
-                        reduceMotion ? nil : BarMotion.capsule.delay(BarMotion.revealDelay),
-                        value: revealed)
-                ForEach(Array(commands.enumerated()), id: \.element) { index, command in
-                    button(command, at: index, geometry: geometry, revealed: revealed)
+        Group {
+            if style == .classic {
+                surfaces(geometry: geometry, revealed: revealed)
+            } else {
+                GlassEffectContainer(spacing: metrics.scaled(BarMotion.blend)) {
+                    surfaces(geometry: geometry, revealed: revealed)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         // Above the glass rather than inside it, where a morph would smear them.
         .overlay(alignment: .topLeading) {
@@ -74,15 +66,63 @@ struct CompactBar: View {
         .task(id: palette.isVisible) { await followVisibility() }
     }
 
+    private func surfaces(geometry: CompactBarGeometry, revealed: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            searchSurface
+                .frame(width: geometry.capsuleWidth(revealed: revealed))
+                .frame(maxHeight: .infinity)
+                .animation(
+                    reduceMotion ? nil : BarMotion.capsule.delay(BarMotion.revealDelay),
+                    value: revealed)
+            ForEach(Array(commands.enumerated()), id: \.element) { index, command in
+                button(command, at: index, geometry: geometry, revealed: revealed)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private var searchSurface: some View {
+        if style == .classic {
+            RoundedRectangle(cornerRadius: metrics.scaled(Theme.Radius.classicPanel), style: .continuous)
+                .fill(Theme.Colors.classicBarSurface)
+                .overlay {
+                    RoundedRectangle(cornerRadius: metrics.scaled(Theme.Radius.classicPanel), style: .continuous)
+                        .strokeBorder(Theme.Colors.border, lineWidth: Theme.Size.hairline)
+                }
+        } else {
+            Capsule(style: .continuous).fill(.clear)
+                .glassEffect(.regular, in: Capsule(style: .continuous))
+        }
+    }
+
+    @ViewBuilder
+    private func shortcutSurface(_ content: some View, selected: Bool) -> some View {
+        if style == .classic {
+            content.background {
+                let shape = RoundedRectangle(cornerRadius: metrics.radius.barControl, style: .continuous)
+                shape.fill(Theme.Colors.classicBarSurface)
+                    .overlay { shape.fill(selected ? Theme.Colors.selection : .clear) }
+                    .overlay { shape.strokeBorder(Theme.Colors.border, lineWidth: Theme.Size.hairline) }
+            }
+        } else {
+            content.glassEffect(
+                .regular.tint(selected ? Theme.Colors.compactShortcutSelectionTint : nil)
+                    .interactive(), in: .circle)
+        }
+    }
+
     private func button(
         _ command: CommandID, at index: Int, geometry: CompactBarGeometry, revealed: Bool
     ) -> some View {
-        Button {
+        let content = Button {
             onRun(command)
         } label: {
             Color.clear
                 .frame(width: geometry.diameter, height: geometry.diameter)
-                .contentShape(.circle)
+                .contentShape(RoundedRectangle(
+                    cornerRadius: style == .classic ? metrics.radius.barControl : geometry.diameter / 2,
+                    style: .continuous))
         }
         .buttonStyle(.plain)
         .focusable(false)
@@ -90,10 +130,7 @@ struct CompactBar: View {
         .accessibilityLabel(command.name)
         .accessibilityAddTraits(selection == command ? [.isSelected] : [])
         .accessibilityHidden(!revealed)
-        .glassEffect(
-            .regular.tint(selection == command ? Theme.Colors.compactShortcutSelectionTint : nil)
-                .interactive(), in: .circle
-        )
+        return shortcutSurface(content, selected: selection == command)
         .scaleEffect(revealed ? 1 : BarMotion.parkedScale)
         .position(revealed ? geometry.center(of: index) : geometry.parked)
         .allowsHitTesting(revealed)
@@ -109,7 +146,9 @@ struct CompactBar: View {
         )
         .environment(\.symbolVariants, .none)
         .foregroundStyle(
-            selection == command ? Theme.Colors.compactShortcutSelectedInk : Theme.Colors.textSecondary
+            selection == command
+                ? (style == .classic ? Theme.Colors.textPrimary : Theme.Colors.compactShortcutSelectedInk)
+                : Theme.Colors.textSecondary
         )
         .animation(fade(index)) {
             $0.opacity(revealed ? 1 : 0).blur(radius: revealed ? 0 : BarMotion.glyphBlur)

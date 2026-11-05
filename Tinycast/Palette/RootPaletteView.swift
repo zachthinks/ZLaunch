@@ -730,7 +730,7 @@ struct RootPaletteView: View {
             .background(alignment: .topLeading) {
                 if isCollapsed {
                     CompactBar(
-                        commands: compactCommands, selection: compactSelection.command,
+                        style: settings.paletteStyle, commands: compactCommands, selection: compactSelection.command,
                         onRun: runCompactCommand)
                 }
             }

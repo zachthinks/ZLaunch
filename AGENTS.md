@@ -151,6 +151,12 @@ Each item is explained in [testing.md](docs/testing.md#definition-of-done).
 
 ## ZLaunch fork
 
+All ZLaunch themes must expose the same launcher features and behavior. Themes
+change presentation only: compact shortcuts, commands, keyboard navigation and
+future upstream launcher features must work in every theme. Keep behavior shared
+and verify feature parity across themes when integrating upstream UI changes.
+
+
 Read `Custom/README.md` before changing identity, release automation or migration.
 This is Zach's custom fork: upstream contribution approval applies only when
 sending changes to upstream, not when implementing requested custom features.
