@@ -150,7 +150,7 @@ export class PKCEClient {
     if (!url) {
       throw new Error("authorize requires a valid authorization URL");
     }
-    const state = typeof request === "object" ? request?.state : undefined;
+    const state = new URL(url).searchParams.get("state") ?? undefined;
 
     let res = await hostCall("oauth", "authorize", [url, state]);
 
@@ -160,8 +160,13 @@ export class PKCEClient {
       } catch {}
     }
 
+    if (state !== undefined && res?.state !== state) {
+      throw new Error(`${this.providerName} sign-in returned a mismatched state.`);
+    }
+    const authorizationCode = res?.authorizationCode ?? res?.code;
+    if (!authorizationCode) throw new Error(`${this.providerName} sign-in returned no authorization code.`);
     return {
-      authorizationCode: res?.authorizationCode ?? res?.code ?? "",
+      authorizationCode,
       accessToken: res?.accessToken,
       state: res?.state,
     };

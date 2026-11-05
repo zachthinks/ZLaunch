@@ -47,6 +47,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
       - name: Confirm checkout identity
         env:
           EXPECTED_CHECK_COMMIT: ${{ inputs.ref || github.sha }}

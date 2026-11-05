@@ -49,6 +49,8 @@ The recent list in Useful Files omits source/configuration churn; typing searche
 | ----------------------- | ------------------------------------ |
 | Open File / Open Folder | <kbd>return</kbd>                    |
 | Show in Finder          | <kbd>⌘</kbd><kbd>return</kbd>        |
+| Share…                  |                                      |
+| Add to Favorites / Remove from Favorites | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd> |
 | Copy File               | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd> |
 | Paste File to …         | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
 | Copy Name               | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> |
@@ -58,6 +60,8 @@ The recent list in Useful Files omits source/configuration churn; typing searche
 - **Copy File** copies the file itself to the clipboard, so you can paste it into Finder or Mail.
 - **Paste File to …** pastes the file into the app you opened the palette over.
 - **Copy Name** and **Copy Path** keep the palette open, so you can copy several in a row.
+- **Add to Favorites** puts the file or folder in the launcher's
+  [Favorites](/docs/launcher/favorites), next to your apps.
 - **Move to Trash** doesn't ask for confirmation, because you can always restore files from the
   Trash.
 
@@ -66,6 +70,9 @@ add ignore patterns. Remove those patterns in File Search settings to undo an ex
 
 Copies made here appear in your [clipboard history](/docs/features/clipboard) like any other copy.
 
+You can also **drag any row** into another app, like a Finder window or an upload field. Dragging
+always copies, so the original file stays where it is.
+
 ## In the launcher
 
 Turn on **Show in launcher**, under the File Search switch, to see files in launcher searches too.
@@ -73,36 +80,59 @@ It's **off** by default.
 
 When your search has three or more characters, a **Files** section lists up to five matches. It sits
 below the apps and commands, so <kbd>return</kbd> still opens the top result. Each row shows the
-name, the folder it's in, and whether it's a file or a folder.
+name, the folder it's in, and whether it's a file or a folder. Matching favorite files come first.
 
-The rows have the same actions as this screen. To see every match, choose the
-**Search Files** row under "Use … with".
+The rows have the same actions as this screen. To see every match, choose the **Search Files** row
+under "Use … with".
 
 ## Search scopes
 
-Set these in **Settings → File Search → Search Scopes**. By default, ZLaunch searches your home
-folder.
+Set these in **Settings → File Search → Search Scopes**. **Only the folders listed here are
+indexed.** By default, that's your home folder.
 
-The index crawls only your configured roots. Hidden files are ranked below ordinary
-home files, and default ignore patterns omit common caches and private app stores.
+Everything inside a scope is indexed, including hidden files and the contents of app bundles. Those
+rank below your own files, and [ignore patterns](#ignore-patterns) leave out what you never want.
 
-**An empty scope list searches nothing.** ZLaunch doesn't fall back to your home folder.
+**An empty scope list indexes nothing.** ZLaunch doesn't fall back to your home folder. A folder
+inside another scope is already covered, so you don't need to add it. Other disks are never entered
+unless you add them as a scope.
 
 Scopes are saved with your home folder written as `~`, so a backup still works on another Mac.
 
 ## Ignore patterns
 
-Set these in **Settings → File Search → Ignore Patterns**. There are three kinds:
+Set these in **Settings → File Search → Ignore Patterns**. A matching folder, and everything in it,
+is skipped while indexing. There are three kinds:
 
-| Pattern          | Checked against    | Example          |
-| ---------------- | ------------------ | ---------------- |
-| Plain word       | Any folder or name | `node_modules`   |
-| With `*` `?` `[` | Any folder or name | `*.tmp`          |
-| Containing `/`   | The whole path     | `**/[Cc]ache/**` |
+| Pattern                       | Checked against    | Example        |
+| ----------------------------- | ------------------ | -------------- |
+| Plain word                    | Any folder or name | `node_modules` |
+| With `*` `?` `[`              | Any folder or name | `*.tmp`        |
+| Containing `/`, or `~/` first | The whole path     | `~/Movies`     |
 
 Matching isn't case-sensitive, and `*` also matches `/`, so a `**/…/**` pattern works as written.
+**Add Folder…** adds a folder you pick as a path pattern.
 
-The list includes shipped defaults and your additions. Defaults can be removed and restored.
+The list starts with built-in rules that skip what a search for your own files rarely wants:
+
+- Build and dependency folders, like `node_modules`, `.git`, `build` and `DerivedData`.
+- The Photos library, the Trash, and the `~/.cache` and `~/.npm` caches.
+- The busiest parts of `~/Library`: `Application Support`, `Caches`, `Containers`, `Developer`,
+  `Group Containers` and `Mail`.
+
+You can remove any of them. **Restore Defaults** brings them all back.
+
+Changing a scope or a pattern rebuilds the index. Search keeps using the old index until the new one
+is ready.
+
+## The index
+
+**Settings → File Search → Indexed Items** shows how many items are indexed and when the index was
+built. **Rebuild Index** builds it again from scratch.
+
+The first build reads every folder in your scopes once. After that, ZLaunch watches those folders
+and updates only what changed. The build runs in a separate helper process, so it uses extra memory
+only while it runs.
 
 ## How search works
 

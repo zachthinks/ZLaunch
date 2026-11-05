@@ -18,6 +18,12 @@ final class ExtensionOAuthSession {
     private var continuation: CheckedContinuation<[String: String], Error>?
     private var expectedState: String?
     private var timeoutTimer: Timer?
+    private var operationID: UUID?
+    private let openURL: (URL) -> Bool
+
+    init(openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) }) {
+        self.openURL = openURL
+    }
 
     private static weak var activeSession: ExtensionOAuthSession?
 
@@ -81,26 +87,37 @@ final class ExtensionOAuthSession {
         url: URL,
         expectedState: String? = nil
     ) async throws -> [String: String] {
+        try Task.checkCancellation()
         if continuation != nil {
             cancel()
         }
 
+        let operationID = UUID()
+        self.operationID = operationID
         self.expectedState = expectedState
         Self.activeSession = self
 
-        return try await withCheckedThrowingContinuation { continuation in
-            self.continuation = continuation
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                self.continuation = continuation
 
-            self.timeoutTimer?.invalidate()
-            self.timeoutTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: false) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.finish(error: OAuthError.failed("Authentication timed out."))
+                self.timeoutTimer?.invalidate()
+                self.timeoutTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: false) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        guard self?.operationID == operationID else { return }
+                        self?.finish(error: OAuthError.failed("Authentication timed out."))
+                    }
+                }
+
+                let opened = openURL(url)
+                if !opened {
+                    self.finish(error: OAuthError.failed("Failed to open authorization URL in default browser."))
                 }
             }
-
-            let opened = NSWorkspace.shared.open(url)
-            if !opened {
-                self.finish(error: OAuthError.failed("Failed to open authorization URL in default browser."))
+        } onCancel: {
+            Task { @MainActor in
+                guard self.operationID == operationID else { return }
+                self.finish(error: CancellationError())
             }
         }
     }
@@ -113,8 +130,9 @@ final class ExtensionOAuthSession {
             return
         }
 
-        if let expected = expectedState, !expected.isEmpty {
-            guard let received = params["state"], !received.isEmpty, received == expected else {
+        if let expected = expectedState {
+            let states = Self.callbackItems(url: url).filter { $0.name == "state" }
+            guard states.count == 1, states[0].value == expected else {
                 finish(error: OAuthError.stateMismatch)
                 return
             }
@@ -126,6 +144,7 @@ final class ExtensionOAuthSession {
     private func finish(result: [String: String]? = nil, error: Error? = nil) {
         timeoutTimer?.invalidate()
         timeoutTimer = nil
+        operationID = nil
 
         if Self.activeSession === self {
             Self.activeSession = nil
@@ -150,27 +169,21 @@ final class ExtensionOAuthSession {
     // MARK: - URL Parsing
 
     static func parseCallback(url: URL) -> [String: String] {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            return [:]
-        }
         var result: [String: String] = [:]
-        if let queryItems = components.queryItems {
-            for item in queryItems {
-                result[item.name] = item.value ?? ""
-            }
-        }
-        // Implicit and hash callbacks arrive as `raycast://oauth#code=…`.
-        if let fragment = components.fragment, !fragment.isEmpty {
-            let pairs = fragment.split(separator: "&")
-            for pair in pairs {
-                let parts = pair.split(separator: "=", maxSplits: 1)
-                if parts.count == 2 {
-                    let key = String(parts[0])
-                    let val = String(parts[1]).removingPercentEncoding ?? String(parts[1])
-                    result[key] = val
-                }
-            }
+        for item in callbackItems(url: url) {
+            result[item.name] = item.value ?? ""
         }
         return result
+    }
+
+    private static func callbackItems(url: URL) -> [URLQueryItem] {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return []
+        }
+        var items = components.queryItems ?? []
+        if let fragment = components.percentEncodedFragment, !fragment.isEmpty {
+            items += URLComponents(string: "?" + fragment)?.queryItems ?? []
+        }
+        return items
     }
 }

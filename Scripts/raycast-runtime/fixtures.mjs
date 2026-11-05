@@ -56,8 +56,10 @@ export default async function Command() {
 //   node fixtures.mjs
 
 import { createHarness, bootConfig, describeTree } from "./test.mjs";
+import { statSync } from "node:fs";
 import { transformSync } from "esbuild";
 import { runModuleFixtures } from "./modules-fixtures.mjs";
+import { runOAuthFixtures } from "./oauth-fixtures.mjs";
 
 let passes = 0;
 let failures = 0;
@@ -276,6 +278,29 @@ export default function Command() {
     }
   };
   const cpu = os.cpus()[0];
+  const errorMessage = (fn) => {
+    try {
+      fn();
+      return "none";
+    } catch (error) {
+      return error.message;
+    }
+  };
+  const gcmKey = Buffer.alloc(32, 7);
+  const gcmSeal = (iv, aad) => {
+    const cipher = crypto.createCipheriv("aes-256-gcm", gcmKey, iv);
+    if (aad) cipher.setAAD(aad);
+    const ciphertext = Buffer.concat([cipher.update("hello gcm"), cipher.final()]);
+    return { ciphertext, tag: cipher.getAuthTag() };
+  };
+  const gcmOpen = (iv, sealed, aad) => {
+    const decipher = crypto.createDecipheriv("aes-256-gcm", gcmKey, iv);
+    if (aad) decipher.setAAD(aad);
+    decipher.setAuthTag(sealed.tag);
+    return Buffer.concat([decipher.update(sealed.ciphertext), decipher.final()]).toString("utf8");
+  };
+  const shortNonce = gcmSeal(Buffer.from("gcm-nonce-12"));
+  const longNonce = gcmSeal(Buffer.alloc(16, 9), Buffer.from("header"));
   const parts = [
     path.join("/a/b", "../c", "d.txt"),
     path.extname("x/y/file.tar.gz"),
@@ -286,9 +311,16 @@ export default function Command() {
     String(os.freemem() > 0),
     String(os.uptime() > 0),
     String(os.loadavg().length === 3 && os.loadavg().every(Number.isFinite)),
+    String(Object.values(os.networkInterfaces()).flat().some((entry) => entry.internal && entry.address === "127.0.0.1")),
+    String(Object.values(os.networkInterfaces()).flat().every((entry) => !Object.hasOwn(entry, "name"))),
     new URL("/next?q=1", "https://example.com/base/page").href,
     new URLSearchParams({ a: "1", b: "two words" }).toString(),
     crypto.createHash("sha256").update("abc").digest("hex").slice(0, 8),
+    shortNonce.tag.toString("hex") + ":" + shortNonce.ciphertext.toString("hex"),
+    longNonce.tag.toString("hex") + ":" + longNonce.ciphertext.toString("hex"),
+    gcmOpen(Buffer.alloc(16, 9), longNonce, Buffer.from("header")),
+    errorMessage(() => gcmOpen(Buffer.alloc(16, 9), longNonce)),
+    errorCode(() => crypto.createCipheriv("aes-256-gcm", gcmKey, Buffer.alloc(11))),
     Buffer.from("hello").toString("base64"),
     Buffer.from("aGVsbG8=", "base64").toString("utf8"),
     new TextDecoder().decode(new TextEncoder().encode("héllo")),
@@ -385,6 +417,44 @@ module.exports.default = () => {
 };
 `;
 
+// isexe v3's POSIX check, which `which` runs on every PATH candidate.
+const isexeSource = `
+const fs = require("fs");
+
+module.exports.default = () => {
+  const checkMode = (stat) => {
+    const myUid = process.getuid?.();
+    const myGroups = process.getgroups?.() ?? [];
+    const myGid = process.getgid?.() ?? myGroups[0];
+    if (myUid === undefined || myGid === undefined) throw new Error("cannot get uid or gid");
+    const groups = new Set([myGid, ...myGroups]);
+    const mod = stat.mode;
+    return !!(
+      mod & 0o001 ||
+      (mod & 0o010 && groups.has(stat.gid)) ||
+      (mod & 0o100 && stat.uid === myUid) ||
+      (mod & 0o110 && myUid === 0)
+    );
+  };
+  const isexe = (path) => {
+    try {
+      const stat = fs.statSync(path);
+      return stat.isFile() && checkMode(stat);
+    } catch (error) {
+      return error.message;
+    }
+  };
+  const stat = fs.statSync("/etc/hosts");
+  globalThis.__isexe = {
+    ids: [process.getuid(), process.getgid(), process.geteuid(), process.getegid(), process.getgroups()],
+    userInfo: [require("os").userInfo().uid, require("os").userInfo().gid],
+    owner: [stat.uid, stat.gid],
+    executable: isexe("/bin/sh"),
+    plain: isexe("/etc/hosts"),
+  };
+};
+`;
+
 // apple-passwords lazily requires `@raycast/api` through `createRequire`, so it must resolve
 // through the same registry as a top-level require.
 const createRequireSource = `
@@ -443,6 +513,7 @@ export default async function Command() {
   const request = await client.authorizationRequest({ endpoint: "https://auth.example.test/authorize?prompt=consent", clientId: "id-1", scope: "repo user" });
   const url = new URL(request.toURL());
   const { authorizationCode } = await client.authorize(request);
+  await client.authorize({ url: "https://auth.example.test/authorize?state=url-state", state: "stale-state" });
   await client.setTokens({ access_token: "token-1", refresh_token: "refresh-1", expires_in: 3600, scope: ["repo", "user"] });
   const stored = await client.getTokens();
   const shortLived = new OAuth.PKCEClient({ redirectMethod: OAuth.RedirectMethod.AppURI, providerName: "Other", providerId: "other" });
@@ -1049,6 +1120,17 @@ export async function runFixtures() {
     check("ordinary listeners retain their receiver and repeated delivery", JSON.stringify(result?.ordinary) === "[[true,1],[true,2]]");
   });
 
+  await run("which/isexe sees the user's ids and file owners", isexeSource, "no-view", async (harness) => {
+    const result = harness.call("globalThis.__isexe");
+    const hostIds = [process.getuid(), process.getgid(), process.geteuid(), process.getegid(), process.getgroups()];
+    const hosts = statSync("/etc/hosts");
+    check("process reports the booted ids", JSON.stringify(result?.ids) === JSON.stringify(hostIds), JSON.stringify(result?.ids));
+    check("os.userInfo agrees with process", JSON.stringify(result?.userInfo) === JSON.stringify(hostIds.slice(0, 2)), JSON.stringify(result?.userInfo));
+    check("stat carries the file owner", JSON.stringify(result?.owner) === JSON.stringify([hosts.uid, hosts.gid]), JSON.stringify(result?.owner));
+    check("an executable is found", result?.executable === true, String(result?.executable));
+    check("a plain file is not executable", result?.plain === false, String(result?.plain));
+  });
+
   // A plist's binary <data> must decode without aborting the host read.
   await run("Malformed UTF-8 decodes the way Node does", malformedUtf8Source, "view", async (harness) => {
     const lines = findNode(harness.state.trees.at(-1), "Detail").props.markdown.split("\n");
@@ -1080,9 +1162,16 @@ export async function runFixtures() {
       "true",
       "true",
       "true",
+      "true",
+      "true",
       "https://example.com/next?q=1",
       "a=1&b=two+words",
       "ba7816bf",
+      "875a7af65e66ba29298577f2c937c48b:589dd2d6d2696c5310",
+      "749e7f715a23139cbfa9b3259ab594e1:aaefe159005653143a",
+      "hello gcm",
+      "Unsupported state or unable to authenticate data",
+      "ERR_CRYPTO_INVALID_IV",
       "aGVsbG8=",
       "hello",
       "héllo",
@@ -1190,6 +1279,7 @@ export async function runFixtures() {
       check("uses Raycast's web redirect", query.redirect_uri === "https://raycast.com/redirect?packageName=Extension", String(query.redirect_uri));
       check("the challenge hashes the verifier", result?.challengeMatches === true);
       check("passes expected state to the native session", signIns[0]?.[1] === query.state);
+      check("validates the state actually sent in the URL", signIns[1]?.[1] === "url-state");
       check("state encodes the isolated callback scheme", JSON.parse(Buffer.from(query.state, "base64url").toString()).scheme === "zlaunch-dev");
       check("returns the redirect's code", result?.authorizationCode === "code-1", String(result?.authorizationCode));
       check("stores a token response as a token set", result?.accessToken === "token-1", String(result?.accessToken));
@@ -1625,6 +1715,7 @@ export async function runFixtures() {
   harness.stop("s1");
 
   await runModuleFixtures(check);
+  await runOAuthFixtures(check);
 
   console.log(failures === 0 ? "\nAll runtime fixtures passed." : `\n${failures} check(s) failed.`);
   if (import.meta.url === `file://${process.argv[1]}`) process.exit(failures === 0 ? 0 : 1);

@@ -122,6 +122,7 @@ export function verifyWorkflowPolicy(workflows) {
         } else {
           assert.match(body, /^    needs: reuse$/m);
           assert.match(body, /name: Confirm checkout identity/);
+          assert.match(body, /^          fetch-depth: 0$/m);
           assert.match(body, /run: test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_CHECK_COMMIT"/);
           assert.match(body, /run: \.\/Custom\/check.sh/);
         }

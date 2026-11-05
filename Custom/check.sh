@@ -5,6 +5,7 @@ node Custom/verify-config.mjs
 node Custom/tests/sync-test.mjs
 node Custom/tests/workflow-policy-test.mjs
 node Custom/tests/release-state-test.mjs
+node Custom/tests/migration-policy-test.mjs
 node Custom/tests/signing-validation-test.mjs
 node Custom/tests/release-notes-test.mjs
 node Custom/tests/github-release-api-test.mjs

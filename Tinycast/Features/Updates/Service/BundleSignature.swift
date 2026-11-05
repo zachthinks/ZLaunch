@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Proves a staged bundle is ours: the custom Developer ID chain.
+/// Proves a staged bundle is ours: sealed, and signed by the ZLaunch team under Developer ID.
 enum BundleSignature {
     /// The team, not the certificate — a leaf is reissued on renewal and on a rename.
     static let developerID = """
@@ -11,25 +11,17 @@ enum BundleSignature {
         and certificate leaf[field.1.2.840.113635.100.6.1.13] exists
         """
 
+    /// No `notarized`: its ticket lookup can hit the network, and the chain already proves ownership.
     static func isTrusted(_ bundleURL: URL) -> Bool {
         var staticCode: SecStaticCode?
+        var requirement: SecRequirement?
         guard SecStaticCodeCreateWithPath(bundleURL as CFURL, [], &staticCode) == errSecSuccess,
-            let staticCode
+            let staticCode,
+            SecRequirementCreateWithString(developerID as CFString, [], &requirement) == errSecSuccess,
+            let requirement
         else { return false }
         // An unsealed bundle can claim any identity, and a nested helper is where one hides.
         let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
-        guard SecStaticCodeCheckValidity(staticCode, flags, nil) == errSecSuccess else { return false }
-        return satisfiesDeveloperID(staticCode, flags: flags)
+        return SecStaticCodeCheckValidity(staticCode, flags, requirement) == errSecSuccess
     }
-
-    /// No `notarized`: its ticket lookup can hit the network, and the chain already proves ownership.
-    private static func satisfiesDeveloperID(_ code: SecStaticCode, flags: SecCSFlags) -> Bool {
-        var requirement: SecRequirement?
-        guard
-            SecRequirementCreateWithString(developerID as CFString, [], &requirement)
-                == errSecSuccess, let requirement
-        else { return false }
-        return SecStaticCodeCheckValidity(code, flags, requirement) == errSecSuccess
-    }
-
 }

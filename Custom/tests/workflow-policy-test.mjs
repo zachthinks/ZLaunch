@@ -86,6 +86,7 @@ rejects("custom-checks.yml", "needs.reuse.outputs.reused != 'true'", "true");
 rejects("custom-checks.yml", "ref: ${{ inputs.ref || github.sha }}", "ref: custom/main");
 rejects("custom-checks.yml", "run: node Custom/reuse-push-checks.mjs", "run: echo reused=true");
 rejects("custom-checks.yml", "run: ./Custom/check.sh", "run: echo skipped");
+rejects("custom-checks.yml", "fetch-depth: 0", "fetch-depth: 1");
 rejects("custom-checks.yml", 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_CHECK_COMMIT"', "run: true");
 rejects("custom-sync.yml", "reuse_push_checks: ${{ inputs.verify_current_release == true }}", "reuse_push_checks: true");
 console.log("Exact-commit check reuse, fresh full checks, and failure propagation mutations rejected.");
