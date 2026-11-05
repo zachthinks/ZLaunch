@@ -496,6 +496,9 @@ recorders, permission recovery and session changes. `MouseWindowMonitor` owns th
 event tap with synchronous input decisions. `MouseWindowSession` coalesces updates
 on one serial worker and bounds AX calls; cancellation is monotonic and pending
 input replay is serialized. App shutdown awaits outstanding writes/restoration.
+Held keys and buttons are reconciled against HID state, before event-tap suppression;
+the filtered session state omits consumed presses and would cancel a held gesture.
+Modifier flags retain session semantics for remapped modifiers.
 
 The enable flag remains local and is excluded from backup/settings imports. The
 move/resize triggers are stored as one atomic pair, each either empty (unassigned)
@@ -509,4 +512,9 @@ snapping, native minimum-size correction, trigger validation, atomic pair swaps,
 ordinary clicks, chord replay decisions, modifier release and cancellation.
 Interactive feel, app-specific AX behavior and mixed physical displays need a
 manual regression pass; pure fixtures alone do not establish live SwiftShift parity.
+`Scripts/test-mouse-live.sh` is an opt-in isolated-desktop regression using the shipped
+monitor and worker against a disposable native window. It covers sustained moving,
+all four corner resizes, minimum-size clamping, keyboard and both-button triggers,
+health checks during held gestures, and no movement after release. It logs measured
+frames and process resource use; it does not establish physical-display or every-app parity.
 The SwiftShift MIT notice is included in `NOTICE.md` and the app's resources.

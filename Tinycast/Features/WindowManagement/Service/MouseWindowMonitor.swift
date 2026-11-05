@@ -44,10 +44,10 @@ final class MouseWindowMonitor: @unchecked Sendable {
     func healthCheck() -> Bool {
         lock.lock(); defer { lock.unlock() }
         let heldKeys = Set(input.trackedKeys.filter {
-            CGEventSource.keyState(.combinedSessionState, key: CGKeyCode($0))
+            CGEventSource.keyState(.hidSystemState, key: CGKeyCode($0))
         })
-        let heldButtons = (CGEventSource.buttonState(.combinedSessionState, button: .left) ? 1 : 0)
-            | (CGEventSource.buttonState(.combinedSessionState, button: .right) ? 2 : 0)
+        let heldButtons = (CGEventSource.buttonState(.hidSystemState, button: .left) ? 1 : 0)
+            | (CGEventSource.buttonState(.hidSystemState, button: .right) ? 2 : 0)
         if input.reconcile(heldKeys: heldKeys, heldButtons: heldButtons) { cancel() }
         if let active = input.active {
             let trigger = active == .move ? move : resize
