@@ -32,8 +32,6 @@ final class AppCore {
         settings: settings, hotKeys: hotKeys)
     @ObservationIgnored private lazy var dictationKey = DictationKeyManager(hotKeys: hotKeys)
     let windowMover = WindowMover()
-    @ObservationIgnored private(set) lazy var mouseWindowCoordinator = MouseWindowCoordinator(
-        settings: settings, hotKeys: hotKeys)
     let spaceSwitcher = SpaceSwitcher()
     let inputSourceSwitcher = InputSourceSwitcher()
     let settings: AppSettings
@@ -80,6 +78,7 @@ final class AppCore {
     @ObservationIgnored private(set) lazy var mcp = MCPServerManager(oauth: mcpOAuth)
     let quickActionSettings = QuickActionSettingsStore()
     let customQuickActions = CustomQuickActionStore()
+    let chatPresets = ChatPresetStore()
     let chatGPTSubscription = ChatGPTSubscriptionManager()
     let installedAI = InstalledAIManager()
     @ObservationIgnored private var appliedLaunchRevisions: [InstalledAIKind: Int] = [:]
@@ -391,13 +390,9 @@ final class AppCore {
             Task { await appIndex.refresh() }
             Task { await emojiIndex.load(languages: SystemLanguages.preferred) }
             currencyRates.start()
-            updateChecker.onUpdateAvailable = { [weak self] release in
-                self?.updateCoordinator.presentIfAvailable(release) ?? true
-            }
+            updateChecker.onUpdateAvailable = { [weak self] in self?.updateCoordinator.offer($0) }
             updateCoordinator.applyAutomaticChecking()
 
-            mouseWindowCoordinator.healthTicker = healthTicker
-            mouseWindowCoordinator.start()
             hyperKey.healthTicker = healthTicker
             dictationKey.healthTicker = healthTicker
             hotKeys.modifierTapMonitor.healthTicker = healthTicker
@@ -499,11 +494,26 @@ final class AppCore {
             } else if launchedByUser {
                 paletteCoordinator.showPalette(mode: .launcher)
             }
-            if let version = updateChecker.takeInstalledVersion() {
-                showMessage(String(localized: "Updated to ZLaunch \(version.description)"))
-            }
+            reportInstall(updateChecker.takeInstallReport())
         }
         openPendingURLs()
+    }
+
+    private func reportInstall(_ report: UpdateCheckStore.InstallReport?) {
+        switch report {
+        case .installed(let version):
+            showMessage(String(localized: "Updated to ZLaunch \(version.description)"))
+        case .notInstalled(let version):
+            showMessage(
+                String(
+                    localized: """
+                        ZLaunch \(version.description) could not be installed. \
+                        Check for updates to try again.
+                        """),
+                tone: .danger)
+        case nil:
+            break
+        }
     }
 
     private func openPendingURLs() {
@@ -516,7 +526,6 @@ final class AppCore {
         if settingsCoordinator.focusExisting() { return }
         if aiChatCoordinator.focusExisting() { return }
         if onboardingCoordinator.focusExisting() { return }
-        if updateCoordinator.focusExisting() { return }
         if customCommandCoordinator.focusOutputWindow() { return }
         paletteCoordinator.showPalette(mode: .launcher, restoreAnyMode: true)
     }
@@ -641,7 +650,6 @@ final class AppCore {
     }
 
     func prepareForTermination() {
-        mouseWindowCoordinator.stop()
         extensionStore.stop()
         if settings.dictationEnabled { dictationCoordinator.prepareForTermination() }
         settingsFile?.flush()
@@ -660,6 +668,7 @@ final class AppCore {
         mcpOAuth.stop()
         mcp.stop()
         installedAI.stop()
+        updateCoordinator.installStagedUpdate()
         if relaunchRequested { RelaunchRunner.relaunchAfterExit(Bundle.main.bundleURL) }
     }
 

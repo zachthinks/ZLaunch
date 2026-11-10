@@ -52,6 +52,7 @@ extension SettingsAnchor {
     static let aiChat = Self(tab: .ai, title: "Chat")
     static let aiConversations = Self(tab: .ai, title: "Conversations")
     static let aiSystemPrompt = Self(tab: .ai, title: "System prompt")
+    static let aiChatPresets = Self(tab: .ai, title: "Chat Presets")
     static let aiMCPServers = Self(tab: .ai, title: "MCP Servers")
     static let aiCommands = Self(tab: .ai, title: "Commands")
 
@@ -91,8 +92,6 @@ extension SettingsAnchor {
     static let windowManagementRooms = Self(tab: .windowManagement, title: "Rooms")
     static let windowManagementLayoutCommands = Self(
         tab: .windowManagement, title: "Layout and Room Commands")
-    static let windowManagementMouse = Self(tab: .windowManagement, title: "Mouse Controls")
-    static let windowManagementMouseExcluded = Self(tab: .windowManagement, title: "Mouse Control Exclusions")
     static let windowManagementOptions = Self(tab: .windowManagement, title: "Options")
     static let windowManagementCustomSizes = Self(tab: .windowManagement, title: "Custom Sizes")
 

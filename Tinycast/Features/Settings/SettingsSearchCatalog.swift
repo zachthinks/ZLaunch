@@ -313,6 +313,12 @@ enum SettingsSearchCatalog {
             .aiSystemPrompt, "Send a system prompt",
             keywords: ["instructions", "persona"]),
         .init(
+            group: .aiChatPresets, "Chat Presets",
+            keywords: ["persona", "instructions", "system prompt"]),
+        .init(
+            .aiChatPresets, "Add Chat Preset",
+            keywords: ["new", "persona", "instructions", "system prompt"]),
+        .init(
             .aiMCPServers, "Enable MCP servers",
             keywords: ["tools", "model context protocol"]),
         .init(
@@ -443,13 +449,6 @@ enum SettingsSearchCatalog {
     ]
 
     private static let windowManagement: [SettingsSearchEntry] = [
-        .init(.windowManagementMouse, "Enable mouse controls"),
-        .init(group: .windowManagementMouse, "Move window", keywords: ["mouse", "drag", "shortcut"]),
-        .init(group: .windowManagementMouse, "Resize window", keywords: ["mouse", "corner", "shortcut"]),
-        .init(.windowManagementMouse, "Use quadrants"),
-        .init(.windowManagementMouse, "Focus on window"),
-        .init(.windowManagementMouse, "Snap to nearby windows"),
-        .init(group: .windowManagementMouseExcluded, "Excluded apps"),
         .init(
             pane: .windowManagement,
             keywords: ["tile", "halves", "thirds", "maximize", "snap", "layouts", "arrangement"]),

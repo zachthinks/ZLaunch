@@ -599,40 +599,6 @@ final class AppSettings {
     }
 
     /// Points between tiled windows and the screen edge; `WindowPlacementEngine` caps it.
-    var mouseWindowEnabled: Bool {
-        didSet { defaults.set(mouseWindowEnabled, forKey: Key.mouseWindowEnabled.rawValue) }
-    }
-
-    var mouseWindowTriggers: [[Int]] {
-        didSet { defaults.set(mouseWindowTriggers, forKey: Key.mouseWindowTriggers.rawValue) }
-    }
-
-    var mouseWindowMoveTrigger: [Int] {
-        get { mouseWindowTriggers.first ?? [] }
-        set { mouseWindowTriggers = [newValue, mouseWindowResizeTrigger] }
-    }
-
-    var mouseWindowResizeTrigger: [Int] {
-        get { mouseWindowTriggers.count == 2 ? mouseWindowTriggers[1] : [] }
-        set { mouseWindowTriggers = [mouseWindowMoveTrigger, newValue] }
-    }
-
-    var mouseWindowQuadrants: Bool {
-        didSet { defaults.set(mouseWindowQuadrants, forKey: Key.mouseWindowQuadrants.rawValue) }
-    }
-
-    var mouseWindowFocus: Bool {
-        didSet { defaults.set(mouseWindowFocus, forKey: Key.mouseWindowFocus.rawValue) }
-    }
-
-    var mouseWindowSnap: Bool {
-        didSet { defaults.set(mouseWindowSnap, forKey: Key.mouseWindowSnap.rawValue) }
-    }
-
-    var mouseWindowExcludedApps: [String] {
-        didSet { defaults.set(mouseWindowExcludedApps, forKey: Key.mouseWindowExcludedApps.rawValue) }
-    }
-
     var windowGap: Int {
         didSet { defaults.set(windowGap, forKey: Key.windowGap.rawValue) }
     }
@@ -933,16 +899,6 @@ final class AppSettings {
             defaults.object(forKey: Key.windowManagementShowInLauncher.rawValue) == nil
             || defaults.bool(forKey: Key.windowManagementShowInLauncher.rawValue)
         // Unset reads as 0, which is the intended default anyway — no gap.
-        mouseWindowEnabled = defaults.object(forKey: Key.mouseWindowEnabled.rawValue) as? Bool ?? false
-        let mouseTriggers = defaults.array(forKey: Key.mouseWindowTriggers.rawValue) as? [[Int]] ?? [[], []]
-        mouseWindowTriggers = MouseWindowTrigger.acceptsPair(mouseTriggers) ? mouseTriggers : [[], []]
-        mouseWindowQuadrants = defaults.object(forKey: Key.mouseWindowQuadrants.rawValue) as? Bool ?? true
-        mouseWindowFocus = defaults.object(forKey: Key.mouseWindowFocus.rawValue) as? Bool ?? true
-        mouseWindowSnap = defaults.object(forKey: Key.mouseWindowSnap.rawValue) as? Bool ?? true
-        mouseWindowExcludedApps = defaults.stringArray(forKey: Key.mouseWindowExcludedApps.rawValue) ?? [
-            "pl.maketheweb.cleanshotx", "pl.maketheweb.cleanshotx-setapp",
-            "com.pointum.hazeover", "com.pointum.hazeover-setapp"
-        ]
         windowGap = defaults.integer(forKey: Key.windowGap.rawValue)
         windowCycle =
             defaults.string(forKey: Key.windowCycle.rawValue).flatMap(WindowCycle.init) ?? .off

@@ -138,10 +138,7 @@ struct ExtensionStoreScreen: PaletteScreen {
                     guard key == .return, modifiers == .command else { return nil }
                     return filtered.content.items.firstIndex { $0.shortcut == "⌘↵" }
                 })) },
-            activate: { filtered.content.items[$0].action() },
-            clipPath: { bounds, metrics, _ in
-                RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath
-            })
+            activate: { filtered.content.items[$0].action() })
     }
 
     func categoryMenu(
@@ -160,9 +157,6 @@ struct ExtensionStoreScreen: PaletteScreen {
                 session.category = choices[index] == "All Categories" ? nil : choices[index]
                 vm.selection = 0
                 session.search(vm.query, debounce: false)
-            },
-            clipPath: { bounds, metrics, _ in
-                RoundedRectangle(cornerRadius: metrics.radius.menuPanel).path(in: bounds).cgPath
             })
     }
 }

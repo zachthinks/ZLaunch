@@ -77,7 +77,7 @@ struct RelaunchTests {
         check(
             "repeated termination runs cleanup and teardown once",
             first == [
-                "first.start", "first.request-returned", "first.mouse-cleanup", "first.cleanup-start", "first.repeat-deferred",
+                "first.start", "first.request-returned", "first.cleanup-start", "first.repeat-deferred",
                 "first.heartbeat", "first.cleanup-end", "first.flush-start", "first.flush-end",
                 "first.teardown"
             ])
@@ -124,7 +124,6 @@ struct RelaunchTests {
 final class AppCore {
     static let shared = AppCore()
     let activationPolicy = ActivationPolicy()
-    lazy var mouseWindowCoordinator = MouseWindowCoordinator { self.record("mouse-cleanup") }
     private let root: URL
     private var stage = "first"
 
@@ -209,11 +208,4 @@ final class AppCore {
 final class ActivationPolicy {
     let hasOpenWindows = false
     func closeAll() {}
-}
-
-@MainActor
-final class MouseWindowCoordinator {
-    let cleanup: () -> Void
-    init(cleanup: @escaping () -> Void) { self.cleanup = cleanup }
-    func prepareForTermination() async { cleanup() }
 }

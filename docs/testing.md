@@ -33,23 +33,6 @@ TINYCAST_TEST_APPLE_INTELLIGENCE=1 ./Scripts/run-tests.sh apple-intelligence-tes
 
 The opt-in check still skips with a reason if the Mac cannot run the on-device model.
 
-Mouse-control integration checks require an isolated unlocked desktop and Accessibility:
-
-```sh
-ZLAUNCH_LIVE_MOUSE_TEST=1 ./Scripts/test-mouse-live.sh
-```
-
-This posts real input events and moves/resizes a disposable native window. Run it in
-the QA guest, without another mouse-control test or launcher intercepting the same
-shortcuts. The printed evidence directory retains the optimized executable and logs;
-the script terminates only the target process it launched. It is intentionally outside
-the ordinary harness suite. A failure to obtain Accessibility is a failed prerequisite,
-not a passing integration test.
-
-`onboarding-test` briefly opens native windows and checks focus; run it in an unlocked desktop session.
-The runner waits for all parallel harnesses to finish before running it alone, so other harnesses
-cannot steal its keyboard focus.
-
 Two runtime areas also have standalone checks:
 
 ```sh
@@ -85,8 +68,7 @@ interleave into nonsense.
 A `run` line takes optional markers before the harness name. `-O` compiles that harness optimised,
 which is worth it only where the run dominates the compile — `raycast-test` spends 47 seconds in
 scrypt at `-Onone` and one second at `-O`. `slow` dispatches it in the first wave, so the longest
-harnesses are not still running after everything else has finished. `exclusive` runs a harness alone
-after the parallel queue completes; use it when a harness needs exclusive desktop focus.
+harnesses are not still running after everything else has finished.
 
 The script is the **only** place the harness set is written down. Nothing runs it for you, so run it
 before you open a PR. Adding a harness means adding one `run` line.
@@ -136,7 +118,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `app-name-test` | `Platform/AppDisplayName.swift` — every path that names a scanned bundle |
 | `language-test` | `AppLanguage` and both string catalogs — compile every language, load privacy prompts, and select plural forms and independent counts at runtime |
 | `localized-resource-test` | `Platform/LocalizedResource.swift` — `resolved()` matches `String(localized:)` in every language, for plain, contextual, interpolated, plural and missing keys |
-| `onboarding-test` | Onboarding's handoff to the palette keeps focus; ordinary windows retain their Dock ownership |
 | `relaunch-test` | The shipped app delegate and relaunch helper — asynchronous cleanup, repeated quit requests, and a responsive replacement process |
 | `calc-test` | all of `Calculator/Model/` |
 | `calendar-test` | all of `Calendar/Model/` plus `EventEditorSession` — links, join window, day buckets, draft and form focus |
@@ -206,7 +187,7 @@ If a change touches anything in the right column, the harness on the left is man
 | `launcher-settings-file-test` | Launcher settings application — invalid records, partial edits, deferred bundles, shortcut moves and records outside search scopes; isolated preferences and in-memory scan/Carbon effects |
 | `backup-archive-test` | all of `Backup/Model/`, plus `Backup/Service/BackupStaging.swift` |
 | `updates-test` | `Updates/Model/` — version precedence, channel filtering, install route, readiness |
-| `update-check-test` | `UpdateCheckStore` — stopping, in-flight cancellation, cached prompt suppression, restart and independent manual checking |
+| `update-check-test` | `UpdateCheckStore` — stopping, in-flight cancellation, cached offer suppression, restart and independent manual checking |
 | `ai-provider-test` | `AI/Model/` and `AISettingsStore` — instruction composition, provider requests and streams, route settings, protocol framing, CLI launch encodings and queued Codex writes across cancellation, timeout and Stop |
 | `opencode-mcp-test` | OpenCode's per-turn MCP bridge and installed CLI launch, authentication, scoped catalog, consent dispatch, serial calls, result budgets and cancellation |
 | `apple-intelligence-test` | On-device status, snapshot deltas, transcript assembly and error mapping; real generation is opt-in |
@@ -992,7 +973,7 @@ Debug answers `tinycast-dev://`; use that scheme for every link below.
 ### Settings and backup
 
 - General → Automatically check for updates defaults on; turn it off and relaunch: it stays off,
-  no background check or update prompt occurs, and Check for Updates still works. Re-enable it:
+  no background check or update offer occurs, and Check for Updates still works. Re-enable it:
   checks resume. Settings search for "updates" reveals the toggle; settings.json edits and a backup
   round trip preserve the choice.
 - Every pane renders and the sidebar switches without flicker
