@@ -128,12 +128,6 @@ enum SettingsFileSchema {
         case .windowManagementEnabled: return bind(settings, \.windowManagementEnabled)
         case .windowManagementShowInLauncher:
             return bind(settings, \.windowManagementShowInLauncher)
-        case .mouseWindowTriggers:
-            return bind(settings, \.mouseWindowTriggers) { MouseWindowTrigger.acceptsPair($0) ? $0 : nil }
-        case .mouseWindowQuadrants: return bind(settings, \.mouseWindowQuadrants)
-        case .mouseWindowFocus: return bind(settings, \.mouseWindowFocus)
-        case .mouseWindowSnap: return bind(settings, \.mouseWindowSnap)
-        case .mouseWindowExcludedApps: return bind(settings, \.mouseWindowExcludedApps)
         case .windowGap:
             return bind(settings, \.windowGap) {
                 WindowPlacementEngine.gapRange.contains($0) ? $0 : nil

@@ -91,8 +91,6 @@ extension SettingsAnchor {
     static let windowManagementRooms = Self(tab: .windowManagement, title: "Rooms")
     static let windowManagementLayoutCommands = Self(
         tab: .windowManagement, title: "Layout and Room Commands")
-    static let windowManagementMouse = Self(tab: .windowManagement, title: "Mouse Controls")
-    static let windowManagementMouseExcluded = Self(tab: .windowManagement, title: "Mouse Control Exclusions")
     static let windowManagementOptions = Self(tab: .windowManagement, title: "Options")
     static let windowManagementCustomSizes = Self(tab: .windowManagement, title: "Custom Sizes")
 

@@ -33,19 +33,6 @@ TINYCAST_TEST_APPLE_INTELLIGENCE=1 ./Scripts/run-tests.sh apple-intelligence-tes
 
 The opt-in check still skips with a reason if the Mac cannot run the on-device model.
 
-Mouse-control integration checks require an isolated unlocked desktop and Accessibility:
-
-```sh
-ZLAUNCH_LIVE_MOUSE_TEST=1 ./Scripts/test-mouse-live.sh
-```
-
-This posts real input events and moves/resizes a disposable native window. Run it in
-the QA guest, without another mouse-control test or launcher intercepting the same
-shortcuts. The printed evidence directory retains the optimized executable and logs;
-the script terminates only the target process it launched. It is intentionally outside
-the ordinary harness suite. A failure to obtain Accessibility is a failed prerequisite,
-not a passing integration test.
-
 `onboarding-test` briefly opens native windows and checks focus; run it in an unlocked desktop session.
 The runner waits for all parallel harnesses to finish before running it alone, so other harnesses
 cannot steal its keyboard focus.

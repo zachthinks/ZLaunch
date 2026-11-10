@@ -69,11 +69,6 @@ struct SettingsBackup: Codable {
         var menuSearchShowsAppleMenu: Bool?
         var windowManagementEnabled: Bool?
         var windowManagementShowInLauncher: Bool?
-        var mouseWindowTriggers: [[Int]]?
-        var mouseWindowQuadrants: Bool?
-        var mouseWindowFocus: Bool?
-        var mouseWindowSnap: Bool?
-        var mouseWindowExcludedApps: [String]?
         var windowGap: Int?
         var windowCycle: String?
         var windowWrapsDisplays: Bool?
@@ -191,11 +186,6 @@ extension SettingsBackup {
             menuSearchShowsAppleMenu: s.menuSearchShowsAppleMenu,
             windowManagementEnabled: s.windowManagementEnabled,
             windowManagementShowInLauncher: s.windowManagementShowInLauncher,
-            mouseWindowTriggers: s.mouseWindowTriggers,
-            mouseWindowQuadrants: s.mouseWindowQuadrants,
-            mouseWindowFocus: s.mouseWindowFocus,
-            mouseWindowSnap: s.mouseWindowSnap,
-            mouseWindowExcludedApps: s.mouseWindowExcludedApps,
             windowGap: s.windowGap,
             windowCycle: s.windowCycle.rawValue,
             windowWrapsDisplays: s.windowWrapsDisplays,
@@ -513,26 +503,6 @@ extension SettingsBackup {
         }
         if let flag = s.windowManagementShowInLauncher {
             settings.windowManagementShowInLauncher = flag
-            count += 1
-        }
-        if let value = s.mouseWindowTriggers, MouseWindowTrigger.acceptsPair(value) {
-            settings.mouseWindowTriggers = value
-            count += 1
-        }
-        if let value = s.mouseWindowQuadrants {
-            settings.mouseWindowQuadrants = value
-            count += 1
-        }
-        if let value = s.mouseWindowFocus {
-            settings.mouseWindowFocus = value
-            count += 1
-        }
-        if let value = s.mouseWindowSnap {
-            settings.mouseWindowSnap = value
-            count += 1
-        }
-        if let value = s.mouseWindowExcludedApps {
-            settings.mouseWindowExcludedApps = value
             count += 1
         }
         if let gap = s.windowGap {
