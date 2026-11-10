@@ -1,4 +1,4 @@
-# Stable delivery and hosted cutover
+# Stable delivery and release approval
 
 Daily GitHub sync runs at 13:17 UTC. It selects official stable Tinycast releases,
 merges into a candidate while preserving custom changes, and increments ZLaunch's
@@ -70,38 +70,74 @@ release. It never edits an existing release or force-updates a tag. A failed or
 interrupted attempt requires inspection of the existing release, tag and Apple
 submission before retrying; a timeout does not cancel Apple's remote submission.
 
-## Activation remains a separate decision
+## Current delivery configuration
 
-Signing-only validation succeeded on commit `3703f0e40a3851242e052ba710bbb2864944cad5`
-in run https://github.com/zachthinks/ZLaunch/actions/runs/38679039596.
-This is signing evidence, not a hosted publication. Validation is off again.
-Hosted release remains absent/disabled. The hourly local automation **Publish
-verified ZLaunch updates** remains enabled until an approved coordinated cutover.
+Verified against GitHub settings on November 2, 2026:
 
-1. Review and merge the wiring with CI passing on the final commit; do not change
-   marketing versions merely to test publication.
-2. Approve pausing local automation `6acdd873bc7c819181f245984c88ef82`. Confirm its
-   publisher task is idle and its dedicated checkout has no in-flight publication
-   or unresolved lock. A local filesystem lock and GitHub concurrency do not lock
-   one another. Do not reclaim a stale lock automatically.
-3. Separately approve `ZLAUNCH_HOSTED_RELEASE_ENABLED=true`. Keep validation false,
-   the branch restriction `custom/main`, and the existing reviewer unless the user
-   explicitly approves changing that security setting. Keep one publisher owner.
-4. Retaining reviewer `zachthinks` permits release approval from GitHub on any
-   device; compilation/publication no longer needs the Mac. Fully unattended
-   publication additionally requires explicit approval to remove that reviewer
-   gate. It is not part of merging the trigger code or enabling the release flag.
-5. Prepare a legitimate unused stable version. The completed/tested Window
-   Layouts feature update is approved as the first hosted release; its actual
-   release commit can use the explicit custom-update path above. At preparation
-   time it is unfinished, upstream remains `v0.11.19`, and current `0.1.9` is
-   published. `0.1.10` is the next unused numerical version, subject to fresh
-   release/tag checks. Never republish `0.1.9` or bump for a test.
-6. Verify the first hosted release's exact source, Apple acceptance, stapling,
-   Gatekeeper, assets/checksums and updater offer. Installation remains the user's
-   updater-button action; this automation never installs or restarts production.
+- `ZLAUNCH_HOSTED_RELEASE_ENABLED=true`: hosted publication is enabled.
+- `ZLAUNCH_HOSTED_VALIDATION_ENABLED=false`: signing-only validation is disabled.
+- `zlaunch-release` allows branch `custom/main` and requires reviewer `zachthinks`.
+- Prevent self-review is off, so the owner can approve a manually dispatched run.
 
-The separate notification monitor remains unchanged. If hosted delivery is
-blocked, preserve the published release and report the specific blocker. Rollback
-of publisher ownership requires disabling and draining hosted publication before
-re-enabling the sole local owner; do not run both publishers as a fallback.
+Successful candidate checks automatically permit promotion into `custom/main`;
+publication still waits for environment approval. Approval is not permission to
+install or restart the production app. A completed release becomes available
+through the existing updater, whose Update button remains the user's action.
+
+## Notifications and approval
+
+The cloud scheduled task **ZLaunch update status** checks at 10 a.m. and 6 p.m.
+America/New_York time, including daylight-saving changes. It continues in the
+[same monitoring chat](https://chatgpt.com/c/6ae8d274-1c68-83ea-a052-1226ceaed213),
+available through ChatGPT's Scheduled view. It does not require this Mac or the
+desktop app to be running. Cloud task ID: `6ae8d27f64688191a8642fb7c2fcd5e3`.
+
+Its instructions request alerts only for candidates needing human review, pending
+release approvals, actionable merge/build/test/release blockages, new releases,
+or persistent access failures. Alerts include direct GitHub links and the next
+action, with deduplication by candidate/run/attempt/release identity. Unchanged,
+healthy states should stay quiet. Notification delivery depends on the user's
+ChatGPT notification settings; the migration did not change those preferences.
+
+Migration was verified on November 2, 2026, using the actual task's Run now action.
+The GitHub connector's general `fetch` action accepts repository REST API URLs,
+including workflow-run collections and per-run `pending_deployments`. The prompt
+specifies that route, pagination, a dedicated waiting-run query, active-run
+inspection, and release/open-candidate checks. Do not substitute the PR-only
+`fetch_commit_workflow_runs` action or mistake blocked web/shell access for a
+connector failure. The first unsuccessful setup check missed the general fetch
+capability; the corrected run retrieved current results successfully. It found
+no waiting workflows or open sync candidates, with v0.1.14 unchanged and the
+latest sync, checks, and release runs successful. This verifies current read
+access, not delivery of a future approval notification or the installed app.
+
+The former local heartbeat `zlaunch-update-status` is paused, with its prompt and
+schedule retained for recovery. Do not enable both as the normal configuration.
+
+For a waiting release, open the linked [ZLaunch release workflow](https://github.com/zachthinks/ZLaunch/actions/workflows/custom-release.yml)
+run and approve the pending `zlaunch-release` deployment as `zachthinks` after
+reviewing the checks and any required hands-on evidence. GitHub email and other
+notification delivery depend on the account's notification settings; this
+repository does not configure or verify those personal preferences.
+
+For a merge conflict, the sync run records the upstream tag, commit, and affected
+files in its log and summary. Promotion stops; the installed app and published
+release are unchanged. Resolve the conflict while preserving custom features,
+then run checks on the exact new candidate before promotion. A failed check or
+release likewise needs inspection; the monitor does not resolve, merge, publish,
+or install anything itself.
+
+## Publisher ownership and recovery
+
+Hosted GitHub publication is the configured delivery path. Do not enable or run
+the former local publisher in parallel. Before changing ownership, disable and
+drain the active publisher, inspect in-flight publication and unresolved locks,
+and explicitly coordinate activation of the replacement. A local filesystem
+lock and GitHub concurrency do not lock one another. Do not reclaim a stale lock
+automatically or use a local publisher as an automatic fallback.
+
+Keep reviewer `zachthinks` unless the user explicitly authorizes changing that
+protection. Fully unattended publication requires separate approval to remove
+the reviewer requirement. Keep signing-only validation disabled except for an
+explicitly approved diagnostic run. No new release version should be created
+merely to test signing; use the separate validation workflow for that purpose.

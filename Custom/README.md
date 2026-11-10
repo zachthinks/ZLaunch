@@ -135,22 +135,28 @@ own version, and opens an update proposal. Build, lint, identity-isolation check
 and the complete upstream test suite run against the exact candidate commit.
 An existing candidate can be resumed after an interrupted run.
 
-The local Codex update monitor (`zlaunch-update-status`) checks at **10am and
-6pm local time**. It stays quiet while nothing needs attention and reports an
-actionable change or required action. These checks need this Mac available and
-the Codex app open; they are separate from GitHub's daily checks. No LaunchAgent
-or separate daily worker is installed.
+The cloud **ZLaunch update status** monitor checks at **10am and 6pm Eastern**.
+It reports actionable changes in its
+[monitoring chat](https://chatgpt.com/c/6ae8d274-1c68-83ea-a052-1226ceaed213)
+and is configured to stay quiet while nothing needs attention. It uses the
+connected GitHub API and does not require this Mac or Codex to be open. The
+former local monitor is paused. See
+[notifications and approval](automatic-delivery.md#notifications-and-approval)
+for scope, verification, and recovery. These checks are separate from GitHub's
+daily sync and never approve, merge, publish, or install anything themselves.
 
-At this initial stage, passing candidates wait for review and merging. They do
-not silently replace your working app. Routine updates can later auto-merge
-after we trust the tests and add branch protection. Changes to Store/UI,
-permissions, the runtime, or the updater need a quick hands-on check as well as
-a successful build. AI does not run automatically just because a merge failed.
+Passing candidates are automatically fast-forwarded into `custom/main` after
+exact-candidate checks pass, provided the base has not changed. Merge conflicts,
+failed checks, or a changed base stop promotion. Changes to Store/UI, permissions,
+the runtime, or the updater still need hands-on review before release approval.
+AI does not run automatically just because a merge failed.
 
-Publishing currently happens on this Mac after review. The local workflow checks
-the exact custom commit, builds and signs the release, notarizes it with Apple,
-verifies the result, and publishes a DMG and a signature-preserving ZIP to the
-fork's GitHub releases. This path has produced the published 0.1.0, 0.1.1 and 0.1.2 releases.
+Hosted publication is enabled. After a successful stable promotion, GitHub runs
+release preflight, then waits for `zachthinks` to approve the protected
+`zlaunch-release` environment. Approval allows GitHub to build, sign, notarize,
+verify, and publish the DMG and signature-preserving ZIP. Publication does not
+require this Mac; installation still requires the user's updater-button action.
+See [stable delivery](automatic-delivery.md) for approval and failure handling.
 No Homebrew tap, upstream website or Discord announcement is touched.
 
 Public release notes explain ZLaunch changes, include the official upstream
@@ -189,19 +195,18 @@ will be rare or automatically resolvable is made.
 
 ## Publishing and remaining verification
 
-Local signing and notarization are configured. `Custom/publish.sh` uses the
-`ZLaunch-Local` notarization profile stored in this Mac's Keychain. Signing secrets are now configured in GitHub's protected `zlaunch-release`
-environment and were verified by signing-only validation; none are committed
-to source control.
+GitHub is the configured publication path. As verified on November 2, 2026,
+`ZLAUNCH_HOSTED_RELEASE_ENABLED=true`, signing-only validation is disabled, and
+`zlaunch-release` requires approval from `zachthinks` on branch `custom/main`.
+Signing secrets belong to that protected environment, never source control.
+The trigger verifies exact successful promotion before requesting approval.
 
-Hosted signing and notarization have now passed using the configured GitHub
-`zlaunch-release` environment. Hosted publication is still disabled pending the
-coordinated cutover in [stable delivery](automatic-delivery.md). The prepared
-release trigger verifies exact successful promotion and retains GitHub's reviewer
-gate. The active local publisher remains the sole owner until that switch is
-approved; installing a published update remains the user's updater-button action.
+Local signing support and the `ZLaunch-Local` Keychain profile are retained for
+explicitly coordinated recovery. Do not run a local publisher alongside hosted
+publication. See [stable delivery](automatic-delivery.md) for ownership changes.
+Installing a published update remains the user's updater-button action.
 
-The regular 0.1.1 app is installed and running. The real updater successfully
+Historical 0.1.1 verification: the real updater successfully
 downloaded, verified, installed and relaunched 0.1.1 from 0.1.0. We then quit
 ZLaunch cleanly, restored the retained notarized 0.1.0 app bundle, verified it
 ran with the same setup, and used the in-app updater again to return to 0.1.1.
@@ -304,10 +309,10 @@ changes or irreversible cleanup. Keep the VM testing instructions in effect.
 
 ## Preparing GitHub-hosted signing
 
-See [the protected hosted-signing setup](github-hosted-signing.md) for the user-only
-credential handoff, explicit environment approvals, and coordinated publisher
-switch. The preparation does not activate hosted publication or alter the current
-publisher schedule.
+See [the protected hosted-signing setup](github-hosted-signing.md) for credential
+maintenance, environment approval, and publisher ownership rules. Hosted
+publication is enabled; changes to credentials or approval rules are separate
+authorized operations.
 
 ## Efficient validation and release
 

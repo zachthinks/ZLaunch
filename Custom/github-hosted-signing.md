@@ -1,7 +1,11 @@
 # GitHub-hosted signing and publication setup
 
-Prepared against ZLaunch 0.1.9 at 8b47f73852132814356593bc2e6759bac024c1dd.
-This setup does not change app behavior, versions, schedules, or the updater.
+Originally prepared against ZLaunch 0.1.9 at 8b47f73852132814356593bc2e6759bac024c1dd.
+Hosted publication is now enabled. Verified November 2, 2026: the release flag is
+`true`, signing-only validation is `false`, and `zlaunch-release` requires approval
+from `zachthinks` for branch `custom/main`. See [stable delivery](automatic-delivery.md)
+for the current flow. The setup instructions below are for authorized maintenance
+or recreation, not a request to change the active configuration.
 
 ## Approve the environment settings before changing them
 
@@ -9,7 +13,7 @@ Open https://github.com/zachthinks/ZLaunch/settings/environments while signed in
 Create or inspect `zlaunch-release`. Its existence and current protections must
 be verified through authenticated settings; the public page is not evidence.
 
-Proposed settings for explicit owner approval:
+Environment requirements (changes require explicit owner approval):
 - Selected deployment branches: branch `custom/main` only; no tag rules.
 - Required reviewer: `zachthinks` for a deliberate manual release approval.
 - For a sole maintainer who also dispatches runs, leave Prevent self-review off.
@@ -17,8 +21,9 @@ Proposed settings for explicit owner approval:
   Never choose or change this silently.
 - Disable administrator bypass of protection rules.
 - Store the four values below as environment secrets, not source files.
-- Keep repository variable `ZLAUNCH_HOSTED_RELEASE_ENABLED` absent or `false`
-  until the switch is approved. Repository variable settings:
+- The active repository variable `ZLAUNCH_HOSTED_RELEASE_ENABLED` is `true`.
+  For a replacement environment, keep publication disabled until the coordinated
+  ownership switch is approved. Repository variable settings:
   https://github.com/zachthinks/ZLaunch/settings/variables/actions
 
 GitHub documents these controls at
@@ -75,7 +80,8 @@ required by this workflow. The runner generates its temporary keychain password.
 The manual workflow is `.github/workflows/custom-signing-validation.yml`.
 It requires the separate repository variable `ZLAUNCH_HOSTED_VALIDATION_ENABLED`
 to equal `true`, an explicit confirmation input, and the full reviewed commit
-SHA in `expected_commit`. Keep `ZLAUNCH_HOSTED_RELEASE_ENABLED` absent or false.
+SHA in `expected_commit`. Coordinate any diagnostic run with the active hosted
+publisher; do not change either flag as part of ordinary documentation maintenance.
 
 Review and merge the amended setup before any validation dispatch. At action
 time, separately approve enabling the validation flag and running the reviewed
@@ -107,44 +113,41 @@ guarantee is made. Do not print credential values or entire private keychain dat
 After the approved run, return the validation flag to false and retain the
 nonsecret workflow result. A successful validation proves signing/notarization,
 not GitHub publication, updater installation, or user-facing app behavior.
-The existing local publisher remains unchanged during this nonpublishing test.
+This nonpublishing test does not transfer publisher ownership.
 
-## Publication and controlled switch
+## Publication and ownership
 
-Hosted publication entry point (disabled until coordinated cutover):
+Hosted publication entry point (enabled; environment approval required):
 https://github.com/zachthinks/ZLaunch/actions/workflows/custom-release.yml
 
 The workflow accepts a successful completed stable-sync run on custom/main, or a
 manual dispatch naming the exact promoted commit, only with the explicit enable
 variable. Both require bot-created exact-commit promotion evidence linked to a
 completed successful sync run. See [stable delivery](automatic-delivery.md) for
-trigger verification and the coordinated activation sequence. A separate job tests the
-exact dispatch commit without release secrets. The signing job waits for success
+trigger verification and publisher ownership rules. A secret-free preflight job
+verifies successful exact-commit checks and promotion evidence. The signing job waits for success
 and the protected environment's approval, then rejects a changed main or any
 existing version (including drafts), non-increasing stable version, or conflicting
 remote tag before importing secrets. It uses a pinned
 checkout action and an ephemeral keychain for signing and notarization, with
 cleanup on failure too. PR code never receives these signing secrets.
 
-A first real hosted publication requires an approved, unused release version.
-The completed Window Layouts update is approved for this purpose; finalize its
-source and real stable version before invoking the custom-update promotion path. Do not republish 0.1.9 or bump a version merely to test this setup.
-The release workflow rejects an already-published version; use the separate
-signing-only workflow above for credential validation. A successful real run must verify signed bundle
-identity/team, notarization/stapling, assets and checksum agreement.
+Every real publication requires a legitimate unused stable version and successful
+promotion. Do not bump a version merely to test signing or republish an existing
+version; use the separate signing-only workflow for credential validation. A
+successful real run verifies bundle identity/team, notarization/stapling, assets,
+and checksum agreement. After publication, verify the existing updater.
 
-Keep the current parent-owned publisher schedule unchanged while preparing.
-At switch time the parent coordinates a pause of that publisher and confirms no
-publication is in flight before enabling hosted publication. A local lock and
-GitHub concurrency do not synchronize two different publishers. Keep the required
-reviewer gate unless Zach separately approves unattended publication. Merging the
-automatic trigger does not activate it while the release flag is disabled.
-After a successful release, verify the existing updater; do not replace it.
+GitHub is the configured publisher. Do not run the former local publisher in
+parallel. Before any ownership change, disable and drain the active publisher and
+confirm no publication is in flight. A local lock and GitHub concurrency do not
+synchronize separate publishers. Keep the required reviewer unless Zach explicitly
+approves unattended publication.
 
 The publisher repeats the shared release-state check immediately before creating
 a release, including draft existence, monotonic stable version and remote tag
 target. This reduces races but is not an atomic lock across independent publishers;
-the coordinated cutover remains required. It never edits an existing release or
+coordinated ownership changes remain required. It never edits an existing release or
 force-updates a tag.
 
 Hosted publication uses `github.run_number` as its build number. That number is
