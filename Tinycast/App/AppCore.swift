@@ -59,6 +59,7 @@ final class AppCore {
     let pinnedEmoji = PinnedEmojiStore()
     let runningApps = RunningAppsMonitor()
     let palette = PaletteState()
+    @ObservationIgnored private(set) lazy var secureItemsCoordinator = SecureItemsCoordinator(core: self)
     let fileIndexer = FileIndexer()
     @ObservationIgnored private(set) lazy var fileSearch = FileSearchSession(index: fileIndexer.index)
     let dictionary = DictionarySession()
@@ -319,6 +320,7 @@ final class AppCore {
         reportFailure: { [unowned self] in showMessage($0, tone: .danger) })
 
     func start(launchedByUser: Bool) {
+        secureItemsCoordinator.start()
         Signposts.interval("AppCore.start") {
             // Shorten AppKit's ~2–3s tooltip delay; registration domain, so a user default wins.
             UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 250])
@@ -602,6 +604,7 @@ final class AppCore {
     }
 
     func flushNotesForTermination() async {
+        secureItemsCoordinator.lock(clearClipboard: true)
         await notesCoordinator.prepareForTermination()
     }
 

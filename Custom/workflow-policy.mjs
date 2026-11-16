@@ -81,6 +81,9 @@ export function verifyWorkflowPolicy(workflows) {
           assert.match(body, /git fetch origin custom\/main/);
           assert.match(body, /test "\$\(git rev-parse FETCH_HEAD\)" = "\$(?:GITHUB_SHA|EXPECTED_COMMIT)"/);
           assert.match(body, /test "\$\(git rev-parse HEAD\)" = "\$(?:GITHUB_SHA|EXPECTED_COMMIT)"/);
+          assert.match(body, /PROFILE_BASE64: \$\{\{ secrets.ZLAUNCH_PROVISIONING_PROFILE_BASE64 \}\}/);
+          assert.match(body, /run: node Custom\/install-provisioning-profile.mjs/);
+          assert.match(body, /rm -f "\$ZLAUNCH_PROFILE_PATH" \|\| CLEANUP_STATUS=1/);
           const importAt = body.indexOf("      - name: Import signing identity");
           assert.ok(importAt > body.indexOf("git rev-parse FETCH_HEAD"));
           if (job === "release") {

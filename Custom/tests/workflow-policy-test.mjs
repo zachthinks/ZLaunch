@@ -52,6 +52,8 @@ for (const name of ["custom-release.yml", "custom-signing-validation.yml"]) {
   rejects(name, "git fetch origin custom/main", "git status");
   rejects(name, "git rev-parse FETCH_HEAD", "git rev-parse HEAD");
   rejects(name, "security delete-keychain", "echo cleanup");
+  rejects(name, "run: node Custom/install-provisioning-profile.mjs", "run: echo skipped");
+  rejects(name, 'rm -f "$ZLAUNCH_PROFILE_PATH"', 'echo skipped');
   rejects(name, "needs.preflight.result == 'success'", "true");
   rejects(name, "if: always()", "if: success()");
 }

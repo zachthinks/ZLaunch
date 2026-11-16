@@ -22,6 +22,8 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case uninstall
     case quicklinks
     case quicklinkEditor
+    case secureItems
+    case secureItemEditor
     case snippets
     case snippetEditor
     case dictionary
@@ -32,7 +34,7 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var isNativeEditor: Bool {
-        self == .snippetEditor || self == .quicklinkEditor || self == .eventEditor
+        self == .secureItemEditor || self == .snippetEditor || self == .quicklinkEditor || self == .eventEditor
             || self == .customCommandEditor
     }
 
@@ -55,6 +57,7 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .meetingDetails: return "calendar"
         case .uninstall: return "trash"
         case .quicklinks, .quicklinkEditor: return Quicklink.sfSymbol
+        case .secureItems, .secureItemEditor: return "lock.shield"
         case .snippets, .snippetEditor: return "curlybraces"
         case .dictionary: return "book.closed"
         case .extensionCommand: return "puzzlepiece.extension"
@@ -83,6 +86,7 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .uninstall: return String(localized: "Filter files and folders by name…")
         case .quicklinks: return String(localized: "Search quicklinks…")
         case .quicklinkEditor: return String(localized: "Quicklink editor")
+        case .secureItems, .secureItemEditor: return String(localized: "Secure Items")
         case .snippets: return String(localized: "Search snippets…")
         case .snippetEditor: return String(localized: "Snippet editor")
         case .dictionary: return String(localized: "Look up a word…")

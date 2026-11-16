@@ -231,6 +231,8 @@ final class LauncherCoordinator {
             notesCoordinator.searchNotes()
         case .searchQuicklinks:
             paletteCoordinator.togglePalette(mode: .quicklinks)
+        case .secureItems:
+            core.secureItemsCoordinator.show()
         case .searchSnippets:
             snippetCoordinator.showSnippets()
         case .createSnippet:

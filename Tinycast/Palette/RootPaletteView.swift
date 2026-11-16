@@ -69,6 +69,8 @@ struct RootPaletteView: View {
             return QuicklinkEditorScreen(
                 coordinator: core.quicklinkCoordinator, openMenuCorner: menuCorner,
                 openInputMenu: openInputOptions)
+        case .secureItems, .secureItemEditor:
+            return SecureItemsScreen(coordinator: core.secureItemsCoordinator, vm: vm)
         case .snippets:
             return SnippetsScreen(
                 store: snippets, core: core, vm: vm, openActions: openActions)
@@ -442,7 +444,13 @@ struct RootPaletteView: View {
                 resetCompactSelection()
                 searchFocused = vm.isVisible && !screen.hidesSearchField
             }
-            .onChange(of: vm.isVisible) { resetCompactSelection() }
+            .onChange(of: vm.isVisible) {
+                resetCompactSelection()
+                if !vm.isVisible {
+                    core.secureItemsCoordinator.revealedID = nil
+                    if vm.mode == .secureItemEditor { core.secureItemsCoordinator.cancelEditing() }
+                }
+            }
             .onChange(of: vm.isComposing) {
                 if vm.isComposing { resetCompactSelection() }
             }
@@ -485,6 +493,7 @@ struct RootPaletteView: View {
                 fileSearch.search(vm.query, filter: vm.fileSearchFilter)
             }
             .onChange(of: vm.mode) {
+                if vm.mode != .secureItems && vm.mode != .secureItemEditor { core.secureItemsCoordinator.lock() }
                 vm.clipboardFilter = .all
                 vm.emojiCategoryFilter = .all
                 vm.emojiGridColumnsOverride = nil
@@ -1654,6 +1663,10 @@ struct RootPaletteView: View {
     }
 
     private func goBack() {
+        if vm.mode == .secureItemEditor {
+            core.secureItemsCoordinator.cancelEditing()
+            return
+        }
         if vm.mode == .customCommandEditor {
             core.customCommandCoordinator.cancelCustomCommandEditing()
             return

@@ -90,6 +90,10 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KPW" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN"
           security find-identity -v -p codesigning "$KEYCHAIN" | grep -F 'Developer ID Application: Zachary Linquist (FVY9AS28CU)'
+      - name: Install the app provisioning profile
+        env:
+          PROFILE_BASE64: ${{ secrets.ZLAUNCH_PROVISIONING_PROFILE_BASE64 }}
+        run: node Custom/install-provisioning-profile.mjs
       - name: Configure notarization in the temporary keychain
         env:
           APPLE_ID: ${{ secrets.ZLAUNCH_APPLE_ID }}
@@ -112,6 +116,9 @@ jobs:
           set -euo pipefail
           : "${RUNNER_TEMP:?}"
           CLEANUP_STATUS=0
+          if [ -n "${ZLAUNCH_PROFILE_PATH:-}" ]; then
+            rm -f "$ZLAUNCH_PROFILE_PATH" || CLEANUP_STATUS=1
+          fi
           rm -f "$RUNNER_TEMP/signing.p12" || CLEANUP_STATUS=1
           if [ -f "$RUNNER_TEMP/zlaunch.keychain-db" ]; then
             security delete-keychain "$RUNNER_TEMP/zlaunch.keychain-db" || CLEANUP_STATUS=1

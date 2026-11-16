@@ -97,8 +97,11 @@ targets:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
       configs:
+        Release:
+          PROVISIONING_PROFILE_SPECIFIER: ZLaunch Developer ID
         # Debug is its own channel, so a local build never corrupts the installed app's state.
         Debug:
+          PROVISIONING_PROFILE_SPECIFIER: ZLaunch Dev Developer ID
           ASSETCATALOG_COMPILER_APPICON_NAME: ZLaunchDevIcon
           PRODUCT_NAME: ZLaunch Dev
           ZLAUNCH_URL_SCHEME: zlaunch-dev

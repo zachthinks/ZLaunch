@@ -42,6 +42,7 @@ enum CommandID: String, CaseIterable, Sendable {
     case searchQuicklinks = "command:search-quicklinks"
     case importQuicklinks = "command:import-quicklinks"
     case exportQuicklinks = "command:export-quicklinks"
+    case secureItems = "command:secure-items"
     case searchSnippets = "command:search-snippets"
     case createSnippet = "command:create-snippet"
     case exportSettings = "command:export-settings"
@@ -121,6 +122,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .searchQuicklinks: return "Search Quicklinks"
         case .importQuicklinks: return "Import Quicklinks"
         case .exportQuicklinks: return "Export Quicklinks"
+        case .secureItems: return "Secure Items"
         case .searchSnippets: return "Search Snippets"
         case .createSnippet: return "Create Snippet"
         case .exportSettings: return "Export Backup"
@@ -175,6 +177,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .searchQuicklinks: return Quicklink.sfSymbol
         case .importQuicklinks: return "square.and.arrow.down"
         case .exportQuicklinks: return "square.and.arrow.up"
+        case .secureItems: return "lock.shield"
         case .searchSnippets: return "curlybraces"
         case .createSnippet: return "plus.rectangle.on.rectangle"
         case .exportSettings: return "square.and.arrow.up"

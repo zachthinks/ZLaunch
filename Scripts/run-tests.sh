@@ -112,6 +112,10 @@ run() {
     printf '%s %s %s %s\n' "$pri" "$name" "$opt" "$*" >> "$QUEUE"
 }
 
+run SecureItemsCoordinatorTests Tinycast/Features/SecureItems/Model/SecureItem.swift Tinycast/Features/SecureItems/Service/SecureItemsKeychain.swift Tinycast/Features/SecureItems/Service/SecureItemsClipboard.swift Tinycast/Features/SecureItems/UI/SecureItemsCoordinator.swift Tinycast/Platform/NotificationToken.swift Tests/SecureItemsCoordinatorFixtures.swift
+
+run SecureItemsTests Tinycast/Features/SecureItems/Model/SecureItem.swift Tinycast/Features/SecureItems/Service/SecureItemsClipboard.swift
+
 run shortcut-palette-test Tinycast/Features/ShortcutPalette/Model/*.swift \
     Tinycast/Features/ShortcutPalette/Service/ShortcutPaletteRepository.swift
 

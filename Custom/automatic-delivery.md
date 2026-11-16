@@ -57,7 +57,9 @@ printing tokens or response bodies. API, authentication and malformed-response
 errors fail closed in both preflight and the protected verifier; they never become
 an eligibility skip. A permission denial is reported, never resolved by silently
 broadening permissions or dropping authentication.
-The existing four environment secrets and temporary keychain are used. The app is
+The protected environment supplies the existing signing/notarization secrets and
+the ZLaunch provisioning profile. The temporary profile and keychain are removed
+after the run. The app is
 signed, notarized, stapled and checked by Gatekeeper; stapling validation is also
 explicit. DMG, signature-preserving ZIP and SHA256SUMS become GitHub release assets.
 No Actions artifacts or caches are uploaded. Temporary signing material cleanup

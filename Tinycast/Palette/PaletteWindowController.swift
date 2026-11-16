@@ -255,6 +255,7 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
     func windowDidResignKey(_ notification: Notification) {
         commandEscapeTap.disable()
         guard isVisible, !core.isShowingDialog else { return }
+        if core.palette.mode == .secureItems, core.secureItemsCoordinator.isBusy { return }
         if core.palette.menuOpen { return }
         // A file panel sets its own level under ours, so sink rather than dismiss.
         if NSApp.modalWindow != nil {
@@ -433,6 +434,10 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
                 core.quicklinkCoordinator.cancelQuicklinkEditing()
                 return true
             }
+            if core.palette.mode == .secureItemEditor, !core.palette.isComposing {
+                core.secureItemsCoordinator.cancelEditing()
+                return true
+            }
             if core.palette.mode == .snippetEditor, !core.palette.isComposing {
                 core.snippetCoordinator.cancelSnippetEditing()
                 return true
@@ -454,6 +459,8 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
                 switch core.palette.mode {
                 case .quicklinkEditor:
                     core.quicklinkCoordinator.saveQuicklink()
+                case .secureItemEditor:
+                    core.secureItemsCoordinator.save()
                 case .snippetEditor:
                     core.snippetCoordinator.requestSnippetSave()
                 case .eventEditor:

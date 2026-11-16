@@ -20,7 +20,7 @@ Environment requirements (changes require explicit owner approval):
   If independent approval is wanted, choose another trusted reviewer and enable it.
   Never choose or change this silently.
 - Disable administrator bypass of protection rules.
-- Store the four values below as environment secrets, not source files.
+- Store the five values below as environment secrets, not source files.
 - The active repository variable `ZLAUNCH_HOSTED_RELEASE_ENABLED` is `true`.
   For a replacement environment, keep publication disabled until the coordinated
   ownership switch is approved. Repository variable settings:
@@ -40,6 +40,7 @@ Team: `FVY9AS28CU`. Bundle: `com.zachthinks.zlaunch`.
 
 | Environment secret | User supplies |
 | --- | --- |
+| ZLAUNCH_PROVISIONING_PROFILE_BASE64 | Base64 of the approved ZLaunch Developer ID provisioning profile |
 | ZLAUNCH_SIGNING_P12_BASE64 | Base64 of a password-encrypted P12 containing this existing Developer ID certificate and its private key |
 | ZLAUNCH_SIGNING_P12_PASSWORD | The export password chosen for that P12 |
 | ZLAUNCH_APPLE_ID | Apple Account email with access to the stated developer team; do not infer it from GitHub email |
@@ -72,8 +73,12 @@ Official references:
 - https://developer.apple.com/documentation/security/customizing-the-notarization-workflow
 - https://support.apple.com/en-us/102654
 
-No new PAT, SSH key, provisioning profile or saved runner-keychain password is
-required by this workflow. The runner generates its temporary keychain password.
+No new PAT, SSH key or saved runner-keychain password is required by this workflow.
+Secure Items requires the approved `ZLaunch Developer ID` provisioning profile.
+Store its base64-encoded file as `ZLAUNCH_PROVISIONING_PROFILE_BASE64` in the same
+protected environment. This profile contains no private signing key. The workflow
+validates its identity, team, Keychain groups and expiration before installing it,
+and removes it during cleanup. Keep profile bytes out of source and logs. The runner generates its temporary keychain password.
 
 ## Signing-only validation (disabled until separately approved)
 
