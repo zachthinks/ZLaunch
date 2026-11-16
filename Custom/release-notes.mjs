@@ -55,6 +55,9 @@ export function renderReleaseNotes({ metadata, commit, upstream, previous = null
       : previous?.upstreamTag ? `This release updates the Tinycast base to ${metadata.upstream_tag}. The following notes come from the official upstream release.`
       : previous ? "The following inherited notes describe the included Tinycast base. The previous release did not record enough provenance to identify an upstream-base change."
       : "The following notes come from the official Tinycast release included in this first ZLaunch release.",
+    ...(summary.includes("com.abueammar.tinycast") ? [
+      "**ZLaunch keeps its existing app identity and data locations.** The Tinycast-only bundle-ID migration instructions below do not apply to ZLaunch: this update does not require resetting permissions, removing app entries, or re-entering credentials."
+    ] : []),
     summary,
     "## Matching source",
     `[ZLaunch source at ${commit}](https://github.com/${metadata.repository}/tree/${commit}).\n\n[Tinycast source at ${metadata.upstream_commit}](https://github.com/${upstreamRepository}/tree/${metadata.upstream_commit}).`

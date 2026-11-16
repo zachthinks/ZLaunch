@@ -43,3 +43,11 @@ assert.throws(() => renderReleaseNotes({ metadata: { ...betaMetadata, upstream_p
 assert.throws(() => renderReleaseNotes({ metadata: betaMetadata, commit: sha, upstream: { ...betaUpstream, isPrerelease: false } }));
 assert.throws(() => renderReleaseNotes({ metadata: { ...metadata, upstream_prerelease: true }, commit: sha, upstream }));
 console.log("Explicit beta provenance is preserved; unapproved or mismatched upstream channels are rejected.");
+
+const migrationBody = "## Tinycast migration\nMove to com.abueammar.tinycast and grant permissions again.";
+const migrationNotes = renderReleaseNotes({ metadata, commit: sha, upstream: { ...upstream, body: migrationBody } });
+assert.ok(migrationNotes.includes(migrationBody), "Keep the complete attributed upstream notes.");
+assert.match(migrationNotes, /Tinycast-only bundle-ID migration instructions below do not apply to ZLaunch/);
+assert.ok(migrationNotes.indexOf("ZLaunch keeps its existing app identity") < migrationNotes.indexOf(migrationBody));
+assert.ok(!initial.includes("migration instructions"), "Do not add unrelated migration guidance to other releases.");
+console.log("Upstream bundle migration guidance is explicitly scoped away from ZLaunch.");
