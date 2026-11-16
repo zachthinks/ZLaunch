@@ -1,6 +1,6 @@
 name: Tinycast
 options:
-  bundleIdPrefix: com.tinycast
+  bundleIdPrefix: com.abueammar.tinycast
   deploymentTarget:
     macOS: "26.0"
   createIntermediateGroups: true
@@ -46,6 +46,7 @@ targets:
           - Features/Clipboard/Service/ClipboardTextHelper.swift
           - Features/Dictation/Helper
           - Features/FileSearch/Helper
+          - Migrations/Handoff
           - Resources/EmojiKeywords
       # A folder reference keeps the packs in their own directory, which `EmojiIndex` lists.
       - path: Tinycast/Resources/EmojiKeywords

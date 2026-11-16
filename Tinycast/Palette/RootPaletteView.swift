@@ -74,7 +74,8 @@ struct RootPaletteView: View {
                 store: snippets, core: core, vm: vm, openActions: openActions)
         case .snippetEditor:
             return SnippetEditorScreen(
-                coordinator: core.snippetCoordinator, openInputMenu: openInputOptions)
+                coordinator: core.snippetCoordinator, openMenuCorner: menuCorner,
+                openInputMenu: openInputOptions)
         case .emoji:
             return EmojiScreen(
                 index: emojiIndex, frequent: frequentEmoji, pinned: core.pinnedEmoji, core: core, vm: vm,
@@ -746,7 +747,7 @@ struct RootPaletteView: View {
                 if isCollapsed {
                     CompactBar(
                         style: settings.paletteStyle, commands: compactCommands, selection: compactSelection.command,
-                        onRun: runCompactCommand)
+                        onRun: runCompactCommand, onSettled: { hostWindow?.invalidateShadow() })
                 }
             }
             // Next turn, once the show's `land()` and search refocus are done, so neither undoes it.
