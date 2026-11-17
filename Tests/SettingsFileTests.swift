@@ -42,12 +42,12 @@ struct SettingsFileTests {
         }
         check("each section's keys are declared together", reopened.isEmpty)
         check(
-            "sections follow the Settings sidebar",
+            "sections follow the Settings sidebar, then feature-local preferences",
             SettingsFileKey.sections == [
                 "general", "appearance", "hyperKey", "calculator", "search", "applications",
                 "systemSettings", "systemActions", "commands", "quicklinks", "appleShortcuts", "ai",
                 "quickActions", "dictation", "fileSearch", "notes", "snippets", "navigation",
-                "windowManagement", "clipboard", "emoji", "calendar", "extensions"
+                "windowManagement", "clipboard", "emoji", "calendar", "extensions", "secureItems"
             ])
 
         // A file that could switch one of these on would grant what only the app may ask for.
