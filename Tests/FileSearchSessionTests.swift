@@ -45,14 +45,6 @@ actor FileSearchProbe {
         return true
     }
 
-    func waitUntilFinished() async -> Bool {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while calls.isEmpty || active != 0, ContinuousClock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(5))
-        }
-        return !calls.isEmpty && active == 0
-    }
-
     func resumePausedSearch() {
         pauseEnabled = false
         pausedContinuation?.resume()
@@ -167,10 +159,7 @@ struct FileSearchSessionTests {
     static func blankScreenOpensOnKeptRecents() async {
         let probe = FileSearchProbe()
         let session = makeSession(probe: probe)
-        session.refresh()
-        let finished = await probe.waitUntilFinished()
-        expect(finished, "the initial Recent query completes")
-        await Task.yield()
+        await session.refreshRecent().value
         session.search("")
         expect(
             session.state == .ready && !session.results.isEmpty,
@@ -186,12 +175,15 @@ struct FileSearchSessionTests {
     }
 
     static func recentRefreshLeavesTheOpenListAlone() async {
-        let probe = FileSearchProbe()
+        let probe = FileSearchProbe(pausing: "")
         let session = makeSession(probe: probe)
         session.search("report")
         await waitUntil { session.state == .ready }
-        session.refreshRecent()
-        try? await Task.sleep(for: .milliseconds(150))
+        let refresh = session.refreshRecent()
+        guard await probe.waitUntilPaused() else { return expect(false, "the Recent refresh starts") }
+        expect(session.results.first?.name == "report", "a pending Recent refresh leaves the open list alone")
+        await probe.resumePausedSearch()
+        await refresh.value
         expect(session.results.first?.name == "report", "a Recent refresh leaves the open list alone")
         session.cancel()
         session.search("")

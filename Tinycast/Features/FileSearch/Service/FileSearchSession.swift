@@ -64,8 +64,9 @@ final class FileSearchSession {
     }
 
     /// Only the kept rows move, so a list on screen never shifts under the pointer.
-    func refreshRecent() {
-        Task { [weak self] in await self?.run(.recent) }
+    @discardableResult
+    func refreshRecent() -> Task<Void, Never> {
+        Task { [weak self] in _ = await self?.run(.recent) }
     }
 
     /// Idle already means no results and nothing that can publish, so it notifies no observer.
