@@ -29,6 +29,7 @@ struct TestSecureRepository: SecureItemsRepository {
         coordinator.unlock()
         await settle(coordinator)
         precondition(coordinator.isUnlocked && coordinator.items == [original])
+        precondition(core.paletteCoordinator.restoredFocusCount == 1, "Authentication must restore palette focus")
         coordinator.edit(original)
         coordinator.updateDraft(value: "replacement")
         coordinator.save()
@@ -58,6 +59,22 @@ struct TestSecureRepository: SecureItemsRepository {
         denied.unlock()
         await settle(denied)
         precondition(!denied.isUnlocked && denied.items.isEmpty)
+        var requestedIdleDurations: [Int] = []
+        let timed = SecureItemsCoordinator(
+            core: core, keychain: TestSecureRepository(), clipboard: SecureItemsClipboard(pasteboard: board),
+            waitForIdle: { seconds in
+                requestedIdleDurations.append(seconds)
+                try await Task.sleep(for: .seconds(3_600))
+            }, authenticate: { _ in true })
+        timed.start()
+        timed.unlock()
+        await settle(timed)
+        try? await Task.sleep(for: .milliseconds(20))
+        precondition(requestedIdleDurations == [120])
+        core.settings.secureItemsIdleSeconds = 30
+        try? await Task.sleep(for: .milliseconds(20))
+        precondition(requestedIdleDurations == [120, 30], "Preference changes must replace the active idle timer")
+        timed.lock()
         print("SecureItemsCoordinatorTests passed")
     }
 }

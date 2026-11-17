@@ -1624,6 +1624,10 @@ struct RootPaletteView: View {
     }
 
     private func handleEscape() -> KeyPress.Result {
+        if vm.mode == .secureItems, core.secureItemsCoordinator.isShowingSettings {
+            core.secureItemsCoordinator.isShowingSettings = false
+            return .handled
+        }
         if vm.mode == .extensionStoreDetail, core.extensionCoordinator.storeScreenshot != nil {
             core.extensionCoordinator.closeStoreScreenshot()
             return .handled

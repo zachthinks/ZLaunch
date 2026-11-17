@@ -1,6 +1,8 @@
 import Foundation
+import Observation
 
 @MainActor final class AppCore {
+    let settings = TestSecureSettings()
     let palette = TestSecurePalette()
     let paletteCoordinator = TestSecurePaletteCoordinator()
     var messages: [String] = []
@@ -18,5 +20,12 @@ enum TestSecureMode { case secureItems, secureItemEditor }
 }
 @MainActor final class TestSecurePaletteCoordinator {
     func showPalette(mode: TestSecureMode) {}
+    var restoredFocusCount = 0
+    func restoreAfterAuthentication() { restoredFocusCount += 1 }
     func hidePalette() {}
+}
+
+@MainActor @Observable final class TestSecureSettings {
+    var secureItemsIdleSeconds = 120
+    var secureItemsClipboardSeconds = 30
 }

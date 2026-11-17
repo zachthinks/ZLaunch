@@ -10,7 +10,7 @@ final class SecureItemsClipboard {
         self.pasteboard = pasteboard
     }
 
-    func copy(_ value: String) {
+    func copy(_ value: String, clearAfter seconds: Int = 30) {
         clearing?.cancel()
         pasteboard.prepareForNewContents(with: .currentHostOnly)
         let item = NSPasteboardItem()
@@ -22,7 +22,7 @@ final class SecureItemsClipboard {
         pasteboard.writeObjects([item])
         changeCount = pasteboard.changeCount
         clearing = Task { [weak self] in
-            do { try await Task.sleep(for: .seconds(30)) } catch { return }
+            do { try await Task.sleep(for: .seconds(SecureItemsTiming.clipboardSeconds(seconds))) } catch { return }
             self?.clearIfOwned()
         }
     }

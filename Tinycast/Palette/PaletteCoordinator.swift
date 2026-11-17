@@ -54,6 +54,10 @@ final class PaletteCoordinator {
         windowController.isVisible && palette.mode == mode
     }
 
+    func restoreAfterAuthentication() {
+        windowController.restoreAfterAuthentication()
+    }
+
     func togglePalette() {
         if isShowing(.launcher) {
             hidePalette()

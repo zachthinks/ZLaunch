@@ -28,6 +28,10 @@ enum SettingsFileSchema {
         }
 
         switch key {
+        case .secureItemsIdleSeconds:
+            return bind(settings, \.secureItemsIdleSeconds) { [30, 60, 120, 300, 600, 900, 1800].contains($0) ? $0 : nil }
+        case .secureItemsClipboardSeconds:
+            return bind(settings, \.secureItemsClipboardSeconds) { [15, 30, 60, 120, 300].contains($0) ? $0 : nil }
         case .launcherShortcut:
             return shortcuts.binding(
                 for: key, action: .togglePalette, name: String(localized: "App Launcher"))

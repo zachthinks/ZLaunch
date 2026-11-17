@@ -436,6 +436,13 @@ final class AppSettings {
     }
 
     /// Also keyword-expansion consent, so it confirms first and never rides a backup.
+    var secureItemsIdleSeconds: Int {
+        didSet { defaults.set(secureItemsIdleSeconds, forKey: Key.secureItemsIdleSeconds.rawValue) }
+    }
+    var secureItemsClipboardSeconds: Int {
+        didSet { defaults.set(secureItemsClipboardSeconds, forKey: Key.secureItemsClipboardSeconds.rawValue) }
+    }
+
     var snippetsEnabled: Bool {
         didSet { defaults.set(snippetsEnabled, forKey: Key.snippetsEnabled.rawValue) }
     }
@@ -840,6 +847,8 @@ final class AppSettings {
         customCommandsShowInLauncher =
             defaults.object(forKey: Key.customCommandsShowInLauncher.rawValue) == nil
             || defaults.bool(forKey: Key.customCommandsShowInLauncher.rawValue)
+        secureItemsIdleSeconds = defaults.object(forKey: Key.secureItemsIdleSeconds.rawValue) as? Int ?? 120
+        secureItemsClipboardSeconds = defaults.object(forKey: Key.secureItemsClipboardSeconds.rawValue) as? Int ?? 30
         snippetsEnabled = defaults.bool(forKey: Key.snippetsEnabled.rawValue)
         quickActionsEnabled = defaults.bool(forKey: Key.quickActionsEnabled.rawValue)
         snippetsShowInLauncher =

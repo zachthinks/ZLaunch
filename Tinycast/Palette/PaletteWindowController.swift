@@ -76,6 +76,12 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
 
     func preserveFocusForNextShow() { preserveFocusOnNextShow = true }
 
+    func restoreAfterAuthentication() {
+        guard let panel, panel.isVisible, core.palette.mode == .secureItems else { return }
+        panel.makeKeyAndOrderFront(nil)
+        core.palette.focusToken = UUID()
+    }
+
     func show() {
         Signposts.interval("PaletteWindowController.show") {
             isPoppedToRoot = false
@@ -451,6 +457,14 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         // Handled at the panel: the field editor or a missing main menu eats these first.
         panel.onCommandShortcut = { [weak self] event in
             guard let self else { return false }
+            if core.palette.mode == .secureItems,
+                event.keyCode == kVK_Return || event.keyCode == kVK_ANSI_KeypadEnter,
+                event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
+                !core.secureItemsCoordinator.isUnlocked, !core.secureItemsCoordinator.isShowingSettings
+            {
+                core.secureItemsCoordinator.unlock()
+                return true
+            }
             if core.palette.mode.isNativeEditor,
                 event.keyCode == kVK_Return || event.keyCode == kVK_ANSI_KeypadEnter,
                 event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
