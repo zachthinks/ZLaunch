@@ -65,6 +65,9 @@ together at the bottom, under its name, rather than streamed where they happened
 a compiler diagnostic is far longer than `PIPE_BUF`, so eleven workers streaming at once would
 interleave into nonsense.
 
+Crash diagnostics stay in that harness's log; only the elapsed-time line enters the progress report.
+`bash Custom/tests/harness-report-test.sh` verifies this with a synthetic crashing executable.
+
 A `run` line takes optional markers before the harness name. `-O` compiles that harness optimised,
 which is worth it only where the run dominates the compile — `RaycastTests` spends 47 seconds in
 scrypt at `-Onone` and one second at `-O`. `slow` dispatches it in the first wave, so the longest

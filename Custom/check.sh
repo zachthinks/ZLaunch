@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+bash Custom/tests/harness-report-test.sh
 node Custom/verify-config.mjs
 node Custom/tests/sync-test.mjs
 node Custom/tests/workflow-policy-test.mjs

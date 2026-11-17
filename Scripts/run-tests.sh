@@ -41,8 +41,11 @@ if [ "${1:-}" = "--exec" ]; then
     done
     wait "$pid"
     status=$?
-    took=$(< "$BIN/$name.time")
-    if [ "$status" -gt 128 ]; then fail "crashed (signal $((status - 128))) after ${took}s"; fi
+    took=$(tail -n 1 "$BIN/$name.time")
+    if [ "$status" -gt 128 ]; then
+        cat "$BIN/$name.time" >> "$BIN/$name.log"
+        fail "crashed (signal $((status - 128))) after ${took}s"
+    fi
     if [ "$status" -ne 0 ]; then fail "assertion failed after ${took}s"; fi
     printf '\033[32mok\033[0m    %-25s %5ss  \033[2m(compile %ss)\033[0m\n' "$name" "$took" "$compiled"
     exit 0
