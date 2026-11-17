@@ -101,6 +101,7 @@ struct SecureItemsScreen: PaletteScreen {
 }
 
 private struct SecureItemsContent: View {
+    @FocusState private var lockedFocused: Bool
     let coordinator: SecureItemsCoordinator
     let vm: PaletteState
     let rows: [SecureItem]
@@ -123,6 +124,9 @@ private struct SecureItemsContent: View {
                     if coordinator.isBusy { ProgressView().controlSize(.small) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .focusable().focusEffectDisabled().focused($lockedFocused)
+                .onAppear { lockedFocused = true }
+                .onChange(of: vm.focusToken) { lockedFocused = true }
             } else if vm.mode == .secureItemEditor {
                 SecureItemEditor().environment(coordinator)
             } else {
