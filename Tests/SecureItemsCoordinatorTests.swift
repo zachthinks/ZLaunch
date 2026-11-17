@@ -4,8 +4,10 @@ import LocalAuthentication
 struct TestSecureRepository: SecureItemsRepository {
     var initial: [SecureItem] = []
     var fails = false
+    var writeDelay: Duration = .zero
     func read(context: SecureItemsAuthentication) async throws -> [SecureItem] { initial }
     func write(_ items: [SecureItem], context: SecureItemsAuthentication) async throws {
+        try await Task.sleep(for: writeDelay)
         if fails { throw SecureItemsKeychain.Failure.invalidData }
     }
 }
@@ -31,6 +33,14 @@ struct TestSecureRepository: SecureItemsRepository {
         precondition(coordinator.isUnlocked && coordinator.items == [original])
         precondition(core.paletteCoordinator.restoredFocusCount == 1, "Authentication must restore palette focus")
         coordinator.edit(original)
+        coordinator.reveal(original)
+        coordinator.isShowingSettings = true
+        coordinator.leaveScreen()
+        precondition(coordinator.isUnlocked && coordinator.items == [original], "Leaving must preserve the unlocked session")
+        precondition(coordinator.draft == nil && coordinator.revealedID == nil && !coordinator.isShowingSettings)
+        coordinator.unlock()
+        precondition(!coordinator.isBusy, "Reopening an unlocked session must not authenticate again")
+        coordinator.edit(original)
         coordinator.updateDraft(value: "replacement")
         coordinator.save()
         coordinator.updateDraft(value: "lost edit")
@@ -50,7 +60,7 @@ struct TestSecureRepository: SecureItemsRepository {
             })
         late.unlock()
         await Task.yield()
-        late.lock()
+        late.leaveScreen()
         await settle(late)
         precondition(!late.isUnlocked && late.items.isEmpty)
         let denied = SecureItemsCoordinator(
@@ -75,6 +85,36 @@ struct TestSecureRepository: SecureItemsRepository {
         try? await Task.sleep(for: .milliseconds(20))
         precondition(requestedIdleDurations == [120, 30], "Preference changes must replace the active idle timer")
         timed.lock()
+        core.settings.secureItemsIdleSeconds = 21_600
+        var expire: CheckedContinuation<Void, any Error>?
+        let expiring = SecureItemsCoordinator(
+            core: core, keychain: TestSecureRepository(initial: [original]),
+            clipboard: SecureItemsClipboard(pasteboard: board), waitForIdle: { seconds in
+                precondition(seconds == 21_600)
+                try await withCheckedThrowingContinuation { expire = $0 }
+            }, authenticate: { _ in true })
+        expiring.unlock()
+        await settle(expiring)
+        expiring.leaveScreen()
+        precondition(expiring.isUnlocked)
+        for _ in 0..<100 where expire == nil { try? await Task.sleep(for: .milliseconds(10)) }
+        precondition(expire != nil, "The idle timer must remain armed after closing")
+        expire?.resume()
+        for _ in 0..<100 where expiring.isUnlocked { try? await Task.sleep(for: .milliseconds(10)) }
+        precondition(!expiring.isUnlocked && expiring.items.isEmpty, "Idle expiry must still lock a closed screen")
+        let saving = SecureItemsCoordinator(
+            core: core, keychain: TestSecureRepository(writeDelay: .milliseconds(50)),
+            clipboard: SecureItemsClipboard(pasteboard: board), authenticate: { _ in true })
+        saving.unlock()
+        await settle(saving)
+        saving.edit(original)
+        saving.save()
+        core.palette.mode = .launcher
+        saving.leaveScreen()
+        await settle(saving)
+        precondition(saving.isUnlocked && saving.items == [original])
+        precondition(core.palette.mode == .launcher && saving.draft == nil, "A late save must not reopen Secure Items")
+        saving.lock()
         print("SecureItemsCoordinatorTests passed")
     }
 }

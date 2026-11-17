@@ -65,6 +65,14 @@ final class SecureItemsCoordinator {
 
     func show() { core.paletteCoordinator.showPalette(mode: .secureItems) }
 
+    func leaveScreen() {
+        guard isUnlocked else { lock(); return }
+        draft = nil
+        revealedID = nil
+        isShowingSettings = false
+        if core.palette.mode == .secureItemEditor { core.palette.replace(mode: .secureItems) }
+    }
+
     func unlock() {
         guard !isBusy, !isUnlocked else { return }
         let authentication = SecureItemsAuthentication()
@@ -218,7 +226,8 @@ final class SecureItemsCoordinator {
                 guard self.generation == ticket, !Task.isCancelled else { return }
                 self.items = next
                 self.revealedID = nil
-                self.cancelEditing()
+                self.draft = nil
+                if self.core.palette.mode == .secureItemEditor { self.cancelEditing() }
                 self.core.showMessage(String(localized: "Saved"))
             } catch {
                 guard self.generation == ticket, !Task.isCancelled else { return }

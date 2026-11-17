@@ -447,8 +447,7 @@ struct RootPaletteView: View {
             .onChange(of: vm.isVisible) {
                 resetCompactSelection()
                 if !vm.isVisible {
-                    core.secureItemsCoordinator.revealedID = nil
-                    if vm.mode == .secureItemEditor { core.secureItemsCoordinator.cancelEditing() }
+                    core.secureItemsCoordinator.leaveScreen()
                 }
             }
             .onChange(of: vm.isComposing) {
@@ -493,7 +492,7 @@ struct RootPaletteView: View {
                 fileSearch.search(vm.query, filter: vm.fileSearchFilter)
             }
             .onChange(of: vm.mode) {
-                if vm.mode != .secureItems && vm.mode != .secureItemEditor { core.secureItemsCoordinator.lock() }
+                if vm.mode != .secureItems && vm.mode != .secureItemEditor { core.secureItemsCoordinator.leaveScreen() }
                 vm.clipboardFilter = .all
                 vm.emojiCategoryFilter = .all
                 vm.emojiGridColumnsOverride = nil

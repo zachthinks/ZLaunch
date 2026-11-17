@@ -233,6 +233,10 @@ private struct SecureItemsSettingsView: View {
                                 Text("\(seconds) seconds")
                             } else if seconds == 60 {
                                 Text("1 minute")
+                            } else if seconds == 7_200 {
+                                Text("2 hours")
+                            } else if seconds == 21_600 {
+                                Text("6 hours")
                             } else {
                                 Text("\(seconds / 60) minutes")
                             }

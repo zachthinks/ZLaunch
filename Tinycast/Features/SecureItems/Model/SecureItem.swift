@@ -45,7 +45,7 @@ struct SecureItem: Codable, Equatable, Identifiable, Sendable {
 }
 
 enum SecureItemsTiming {
-    static let idleOptions = [30, 60, 120, 300, 600, 900, 1800]
+    static let idleOptions = [30, 60, 120, 300, 600, 900, 1800, 7_200, 21_600]
     static let clipboardOptions = [15, 30, 60, 120, 300]
     static func idleSeconds(_ value: Int) -> Int { idleOptions.contains(value) ? value : 120 }
     static func clipboardSeconds(_ value: Int) -> Int { clipboardOptions.contains(value) ? value : 30 }

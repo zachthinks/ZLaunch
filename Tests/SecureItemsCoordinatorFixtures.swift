@@ -12,7 +12,7 @@ import Observation
 }
 enum TestSecureTone { case neutral, danger }
 enum TestSecureRole { case destructive }
-enum TestSecureMode { case secureItems, secureItemEditor }
+enum TestSecureMode { case launcher, secureItems, secureItemEditor }
 @MainActor final class TestSecurePalette {
     var mode: TestSecureMode = .secureItems
     var query = ""

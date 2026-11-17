@@ -23,6 +23,8 @@ struct SecureItemsTests {
         let taggedRoundTrip = try JSONDecoder().decode(SecureItem.self, from: JSONEncoder().encode(tagged))
         precondition(taggedRoundTrip == tagged)
         precondition(SecureItemsTiming.idleSeconds(0) == 120)
+        precondition(SecureItemsTiming.idleSeconds(7_200) == 7_200)
+        precondition(SecureItemsTiming.idleSeconds(21_600) == 21_600)
         precondition(SecureItemsTiming.clipboardSeconds(-1) == 30)
         let board = NSPasteboard.withUniqueName()
         defer { board.releaseGlobally() }
